@@ -26,8 +26,8 @@ class NumPyBoolBHV(AbstractBHV):
     def __or__(self, other: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.bitwise_or(self.data, other.data))
 
-    def __invert__(self, other: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
-        return NumPyBoolBHV(np.bitwise_not(self.data, other.data))
+    def __invert__(self) -> 'NumPyBoolBHV':
+        return NumPyBoolBHV(np.bitwise_not(self.data))
 
     def active(self) -> int:
         return int(np.sum(self.data))
