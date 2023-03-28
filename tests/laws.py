@@ -38,41 +38,59 @@ class TestImpl:
         print(f"Done testing {cls.__name__} ({t*1000:.3} ms)")
 
 
-class TestJoinLattice(TestImpl):
+class Comm:
     def test_associative(self):
         for x, y, z in product(self.xs, self.ys, self.zs):
             self.assertEqual(self.op(self.op(x, y), z), self.op(x, self.op(y, z)))
 
+
+class Assoc:
     def test_commutative(self):
         for x, y in product(self.xs, self.ys):
             self.assertEqual(self.op(x, y), self.op(y, x))
 
+
+class JoinLattice(Comm, Assoc):
     def test_idempotent(self):
         for x in self.xs:
             self.assertEqual(self.op(x, x), x)
 
 
-class TestBoundedJoinLattice(TestJoinLattice):
+class SelfInv:
+    def test_self_inverse(self):
+        for x in self.xs:
+            self.assertEqual(self.op(x, x), self.bot)
+
+
+class BottomIdentity:
     def test_bottom_identity(self):
         for x in self.xs:
             self.assertEqual(self.op(x, self.bot), x)
 
+
+class BoundedJoinLattice(JoinLattice, BottomIdentity):
     def test_top_absorbing(self):
         for x in self.xs:
             self.assertEqual(self.op(x, self.top), self.top)
 
 
 @for_implementations(ALL)
-class TestAndBoundedJoinLattice(TestBoundedJoinLattice):
+class TestAND(BoundedJoinLattice):
     op = lambda _, x, y: x & y
     top = property(lambda self: self.impl.ZERO)
     bot = property(lambda self: self.impl.ONE)
 
 
 @for_implementations(ALL)
-class TestOrBoundedJoinLattice(TestBoundedJoinLattice):
+class TestOR(BoundedJoinLattice):
     op = lambda _, x, y: x | y
     top = property(lambda self: self.impl.ONE)
+    bot = property(lambda self: self.impl.ZERO)
+
+
+@for_implementations(ALL)
+class TestXOR(CommAssoc, SelfInv, BottomIdentity):
+    op = lambda _, x, y: x ^ y
     bot = property(lambda self: self.impl.ZERO)
 
 
