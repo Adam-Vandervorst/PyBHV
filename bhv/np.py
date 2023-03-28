@@ -18,7 +18,7 @@ class NumPyBoolBHV(AbstractBHV):
         return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:
-        return self.data == other.data
+        return np.array_equal(self.data, other.data)
 
     def __xor__(self, other: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.bitwise_xor(self.data, other.data))
@@ -58,7 +58,7 @@ class NumPyPacked8BHV(AbstractBHV):
         return NumPyBoolBHV.random(active).pack8()
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
-        return self.data == other.data
+        return np.array_equal(self.data, other.data)
 
     def __xor__(self, other: 'NumPyPacked8BHV') -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(np.bitwise_xor(self.data, other.data))
@@ -96,7 +96,7 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyBoolBHV.random(active).pack64()
 
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
-        return self.data == other.data
+        return np.array_equal(self.data, other.data)
 
     def __xor__(self, other: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(np.bitwise_xor(self.data, other.data))

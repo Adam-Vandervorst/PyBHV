@@ -44,7 +44,7 @@ class TorchBoolBHV(AbstractBHV):
         return TorchBoolBHV(torch.where(self.data, when1.data, when0.data))
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
-        return torch.eq(self.data, other.data)
+        return torch.equal(self.data, other.data)
 
     def __xor__(self, other: 'TorchBoolBHV') -> 'TorchBoolBHV':
         return TorchBoolBHV(torch.bitwise_xor(self.data, other.data))
@@ -82,7 +82,7 @@ class TorchPackedBHV(AbstractBHV):
         return TorchBoolBHV.random(active).pack()
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
-        return torch.eq(self.data, other.data)
+        return torch.equal(self.data, other.data)
 
     def __xor__(self, other: 'TorchPackedBHV') -> 'TorchPackedBHV':
         return TorchPackedBHV(torch.bitwise_xor(self.data, other.data))
