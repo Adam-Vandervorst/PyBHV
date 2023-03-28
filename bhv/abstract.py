@@ -40,6 +40,9 @@ class AbstractHV:
     def __or__(self, other: Self) -> Self:
         raise NotImplementedError()
 
+    def __invert__(self) -> Self:
+        raise NotImplementedError()
+
     def select(self, when1: Self, when0: Self) -> Self:
         return when0 ^ (self & (when0 ^ when1))
 

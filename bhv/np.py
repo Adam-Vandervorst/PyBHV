@@ -26,6 +26,9 @@ class NumPyBoolHV(AbstractHV):
     def __or__(self, other: 'NumPyBoolHV') -> 'NumPyBoolHV':
         return NumPyBoolHV(np.bitwise_or(self.data, other.data))
 
+    def __invert__(self, other: 'NumPyBoolHV') -> 'NumPyBoolHV':
+        return NumPyBoolHV(np.bitwise_not(self.data, other.data))
+
     def active(self) -> int:
         return int(np.sum(self.data))
 
@@ -60,6 +63,9 @@ class NumPyPacked8HV(AbstractHV):
     def __or__(self, other: 'NumPyPacked8HV') -> 'NumPyPacked8HV':
         return NumPyPacked8HV(np.bitwise_or(self.data, other.data))
 
+    def __invert__(self) -> 'NumPyPacked8HV':
+        return NumPyPacked8HV(np.bitwise_not(self.data))
+
     def active(self) -> int:
         return sum(x.bit_count() for x in self.data)
 
@@ -91,6 +97,9 @@ class NumPyPacked64HV(AbstractHV):
 
     def __or__(self, other: 'NumPyPacked64HV') -> 'NumPyPacked64HV':
         return NumPyPacked64HV(np.bitwise_or(self.data, other.data))
+
+    def __invert__(self) -> 'NumPyPacked64HV':
+        return NumPyPacked64HV(np.bitwise_not(self.data))
 
     def active(self) -> int:
         return sum(x.bit_count() for x in self.data)

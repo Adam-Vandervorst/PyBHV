@@ -52,6 +52,9 @@ class TorchBoolHV(AbstractHV):
     def __or__(self, other: 'TorchBoolHV') -> 'TorchBoolHV':
         return TorchBoolHV(torch.bitwise_or(self.data, other.data))
 
+    def __invert__(self) -> 'TorchBoolHV':
+        return TorchBoolHV(torch.bitwise_not(self.data))
+
     def active(self) -> int:
         return torch.sum(self.data).item()
 
@@ -83,6 +86,9 @@ class TorchPackedHV(AbstractHV):
 
     def __or__(self, other: 'TorchPackedHV') -> 'TorchPackedHV':
         return TorchPackedHV(torch.bitwise_or(self.data, other.data))
+
+    def __invert__(self) -> 'TorchPackedHV':
+        return TorchPackedHV(torch.bitwise_not(self.data))
 
     def active(self) -> int:
         # currently no efficient implementation available for this https://github.com/pytorch/pytorch/issues/36380
