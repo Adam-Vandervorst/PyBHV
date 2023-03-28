@@ -1,7 +1,7 @@
 from .shared import *
 
 
-class AbstractHV:
+class AbstractBHV:
     # recall
     # information_entropy(p) = -p*log2(p) - (1 - p)*log2(1 - p)
     # so for some active fractions, it should be a lot cheaper than for others

@@ -28,67 +28,67 @@ def unpack_long_to_bool(packed_tensor):
     return bool_tensor
 
 
-class TorchBoolHV(AbstractHV):
+class TorchBoolBHV(AbstractBHV):
     def __init__(self, tensor: torch.BoolTensor):
         self.data: torch.BoolTensor = tensor
 
     @classmethod
-    def rand(cls) -> 'TorchBoolHV':
-        return TorchBoolHV(torch.empty(DIMENSION, dtype=torch.bool).random_())
+    def rand(cls) -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.empty(DIMENSION, dtype=torch.bool).random_())
 
     @classmethod
-    def random(cls, active=0.5) -> 'TorchBoolHV':
-        return TorchBoolHV(torch.empty(DIMENSION, dtype=torch.bool).bernoulli_(active))
+    def random(cls, active=0.5) -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.empty(DIMENSION, dtype=torch.bool).bernoulli_(active))
 
-    def select(self, when1: 'TorchBoolHV', when0: 'TorchBoolHV') -> 'TorchBoolHV':
-        return TorchBoolHV(torch.where(self.data, when1.data, when0.data))
+    def select(self, when1: 'TorchBoolBHV', when0: 'TorchBoolBHV') -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.where(self.data, when1.data, when0.data))
 
-    def __xor__(self, other: 'TorchBoolHV') -> 'TorchBoolHV':
-        return TorchBoolHV(torch.bitwise_xor(self.data, other.data))
+    def __xor__(self, other: 'TorchBoolBHV') -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.bitwise_xor(self.data, other.data))
 
-    def __and__(self, other: 'TorchBoolHV') -> 'TorchBoolHV':
-        return TorchBoolHV(torch.bitwise_and(self.data, other.data))
+    def __and__(self, other: 'TorchBoolBHV') -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.bitwise_and(self.data, other.data))
 
-    def __or__(self, other: 'TorchBoolHV') -> 'TorchBoolHV':
-        return TorchBoolHV(torch.bitwise_or(self.data, other.data))
+    def __or__(self, other: 'TorchBoolBHV') -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.bitwise_or(self.data, other.data))
 
-    def __invert__(self) -> 'TorchBoolHV':
-        return TorchBoolHV(torch.bitwise_not(self.data))
+    def __invert__(self) -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.bitwise_not(self.data))
 
     def active(self) -> int:
         return torch.sum(self.data).item()
 
-    def pack(self) -> 'TorchPackedHV':
-        return TorchPackedHV(pack_bool_to_long(self.data))
+    def pack(self) -> 'TorchPackedBHV':
+        return TorchPackedBHV(pack_bool_to_long(self.data))
 
-TorchBoolHV.ZERO = TorchBoolHV(torch.zeros(DIMENSION, dtype=torch.bool))
-TorchBoolHV.ONE = TorchBoolHV(torch.ones(DIMENSION, dtype=torch.bool))
+TorchBoolBHV.ZERO = TorchBoolBHV(torch.zeros(DIMENSION, dtype=torch.bool))
+TorchBoolBHV.ONE = TorchBoolBHV(torch.ones(DIMENSION, dtype=torch.bool))
 
 
-class TorchPackedHV(AbstractHV):
+class TorchPackedBHV(AbstractBHV):
     def __init__(self, tensor: torch.LongTensor):
         assert DIMENSION % 64 == 0
         self.data: torch.LongTensor = tensor
 
     @classmethod
     def rand(cls) -> Self:
-        return TorchPackedHV(torch.randint(-9223372036854775808, 9223372036854775807, size=(DIMENSION//64,), dtype=torch.long))
+        return TorchPackedBHV(torch.randint(-9223372036854775808, 9223372036854775807, size=(DIMENSION//64,), dtype=torch.long))
 
     @classmethod
     def random(cls, active=0.5) -> Self:
-        return TorchBoolHV.random(active).pack()
+        return TorchBoolBHV.random(active).pack()
 
-    def __xor__(self, other: 'TorchPackedHV') -> 'TorchPackedHV':
-        return TorchPackedHV(torch.bitwise_xor(self.data, other.data))
+    def __xor__(self, other: 'TorchPackedBHV') -> 'TorchPackedBHV':
+        return TorchPackedBHV(torch.bitwise_xor(self.data, other.data))
 
-    def __and__(self, other: 'TorchPackedHV') -> 'TorchPackedHV':
-        return TorchPackedHV(torch.bitwise_and(self.data, other.data))
+    def __and__(self, other: 'TorchPackedBHV') -> 'TorchPackedBHV':
+        return TorchPackedBHV(torch.bitwise_and(self.data, other.data))
 
-    def __or__(self, other: 'TorchPackedHV') -> 'TorchPackedHV':
-        return TorchPackedHV(torch.bitwise_or(self.data, other.data))
+    def __or__(self, other: 'TorchPackedBHV') -> 'TorchPackedBHV':
+        return TorchPackedBHV(torch.bitwise_or(self.data, other.data))
 
-    def __invert__(self) -> 'TorchPackedHV':
-        return TorchPackedHV(torch.bitwise_not(self.data))
+    def __invert__(self) -> 'TorchPackedBHV':
+        return TorchPackedBHV(torch.bitwise_not(self.data))
 
     def active(self) -> int:
         # currently no efficient implementation available for this https://github.com/pytorch/pytorch/issues/36380
@@ -99,8 +99,8 @@ class TorchPackedHV(AbstractHV):
         x = (x * 0x0101010101010101) >> 56
         return torch.sum(x).item()
 
-    def unpack(self) -> 'TorchBoolHV':
-        return TorchBoolHV(unpack_long_to_bool(self.data))
+    def unpack(self) -> 'TorchBoolBHV':
+        return TorchBoolBHV(unpack_long_to_bool(self.data))
 
-TorchPackedHV.ZERO = TorchPackedHV(torch.zeros(DIMENSION//64, dtype=torch.long))
-TorchPackedHV.ONE = TorchPackedHV(torch.full((DIMENSION//64,), fill_value=-1, dtype=torch.long))  # -1 is all ones in torch's encoding
+TorchPackedBHV.ZERO = TorchPackedBHV(torch.zeros(DIMENSION//64, dtype=torch.long))
+TorchPackedBHV.ONE = TorchPackedBHV(torch.full((DIMENSION//64,), fill_value=-1, dtype=torch.long))  # -1 is all ones in torch's encoding

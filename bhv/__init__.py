@@ -1,4 +1,4 @@
-from .abstract import AbstractHV
+from .abstract import AbstractBHV
 from .shared import DIMENSION
-from .pytorch import TorchBoolHV, TorchPackedHV
+from .pytorch import TorchBoolBHV, TorchPackedBHV
 
