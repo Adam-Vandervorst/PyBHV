@@ -23,6 +23,9 @@ class NumPyBoolHV(AbstractHV):
     def __and__(self, other: 'NumPyBoolHV') -> 'NumPyBoolHV':
         return NumPyBoolHV(np.bitwise_and(self.data, other.data))
 
+    def __or__(self, other: 'NumPyBoolHV') -> 'NumPyBoolHV':
+        return NumPyBoolHV(np.bitwise_or(self.data, other.data))
+
     def active(self) -> int:
         return int(np.sum(self.data))
 
@@ -48,11 +51,14 @@ class NumPyPacked8HV(AbstractHV):
     def random(cls, active=0.5) -> 'NumPyPacked8HV':
         return NumPyBoolHV.random(active).pack8()
 
-    def __xor__(self, other: 'NumPyBoolHV') -> 'NumPyPacked8HV':
+    def __xor__(self, other: 'NumPyPacked8HV') -> 'NumPyPacked8HV':
         return NumPyPacked8HV(np.bitwise_xor(self.data, other.data))
 
-    def __and__(self, other: 'NumPyBoolHV') -> 'NumPyPacked8HV':
+    def __and__(self, other: 'NumPyPacked8HV') -> 'NumPyPacked8HV':
         return NumPyPacked8HV(np.bitwise_and(self.data, other.data))
+
+    def __or__(self, other: 'NumPyPacked8HV') -> 'NumPyPacked8HV':
+        return NumPyPacked8HV(np.bitwise_or(self.data, other.data))
 
     def active(self) -> int:
         return sum(x.bit_count() for x in self.data)
@@ -77,11 +83,14 @@ class NumPyPacked64HV(AbstractHV):
     def random(cls, active=0.5) -> 'NumPyPacked64HV':
         return NumPyBoolHV.random(active).pack64()
 
-    def __xor__(self, other: 'NumPyBoolHV') -> 'NumPyPacked64HV':
+    def __xor__(self, other: 'NumPyPacked64HV') -> 'NumPyPacked64HV':
         return NumPyPacked64HV(np.bitwise_xor(self.data, other.data))
 
-    def __and__(self, other: 'NumPyBoolHV') -> 'NumPyPacked64HV':
+    def __and__(self, other: 'NumPyPacked64HV') -> 'NumPyPacked64HV':
         return NumPyPacked64HV(np.bitwise_and(self.data, other.data))
+
+    def __or__(self, other: 'NumPyPacked64HV') -> 'NumPyPacked64HV':
+        return NumPyPacked64HV(np.bitwise_or(self.data, other.data))
 
     def active(self) -> int:
         return sum(x.bit_count() for x in self.data)

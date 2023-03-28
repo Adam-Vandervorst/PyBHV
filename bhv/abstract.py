@@ -37,14 +37,14 @@ class AbstractHV:
     def __and__(self, other: Self) -> Self:
         raise NotImplementedError()
 
+    def __or__(self, other: Self) -> Self:
+        raise NotImplementedError()
+
     def select(self, when1: Self, when0: Self) -> Self:
         return when0 ^ (self & (when0 ^ when1))
 
     def mix(self, other: 'PyTorchBoolHV', pick_l=0.5) -> 'PyTorchBoolHV':
         return self.random(pick_l).select(self, other)
-
-    def bit_error_rate(self, other: Self) -> float:
-        return (self ^ other).active_fraction()
 
     def active(self) -> int:
         raise NotImplementedError()
@@ -56,6 +56,15 @@ class AbstractHV:
 
     def active_fraction(self) -> float:
         return self.active()/DIMENSION
+
+    def bit_error_rate(self, other: Self) -> float:
+        return (self ^ other).active_fraction()
+
+    def jaccard(self, other: Self) -> float:
+        return 1. - float((self & other).active()) / float((self | other).active())
+
+    def cosine(self, other: Self) -> float:
+        return float((self & other).active()) / float(self.active() + other.active())
 
     ZERO: Self
     ONE: Self
