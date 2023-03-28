@@ -18,8 +18,8 @@ def absorptive(m, w): return lambda x, y: m(x, w(x, y)) == x
 def distributive(m, w): return lambda x, y, z: m(x, w(y, z)) == w(m(x, y), m(x, z))
 def demorgan(f, m, w): return lambda x, y: f(m(x, y)) == w(f(x), f(y))
 def drop_left(f, m): return lambda x, y: f(m(x, y)) == m(f(x), y)
-def expand_single_inner(f, k, m, w): return lambda x, y: True  # k(x, y) == m(w(x, f(y)), w(f(x), y))
-def expand_single_outer(f, k, m, w): return lambda x, y: True  # k(x, y) == m(w(x, y), f(m(x, y)))
+def expand_single_inner(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, f(y)), w(f(x), y))
+def expand_single_outer(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, y), f(m(x, y)))
 
 
 def lattice(join): return [associative(join), commutative(join), idempotent(join)]
@@ -34,8 +34,8 @@ def bhv_props(impl: AbstractBHV):
         demorgan(impl.__invert__, impl.__or__, impl.__and__),
         demorgan(impl.__invert__, impl.__and__, impl.__or__),
         drop_left(impl.__invert__, impl.__xor__),
-        expand_single_inner(impl.__invert__, impl.__xor__, impl.__and__, impl.__or__),
-        expand_single_outer(impl.__invert__, impl.__xor__, impl.__or__, impl.__and__),
+        expand_single_inner(impl.__invert__, impl.__xor__, impl.__or__, impl.__and__),
+        expand_single_outer(impl.__invert__, impl.__xor__, impl.__and__, impl.__or__),
         distributive(impl.__and__, impl.__xor__)
     ]
 
