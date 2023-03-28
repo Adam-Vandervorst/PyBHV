@@ -86,6 +86,44 @@ class BoundedJoinLattice(JoinLattice, BottomIdentity):
             self.assertEqual(self.op(x, self.top), self.top)
 
 
+class Absorptive:
+    def test_absorptive(self):
+        for x, y in product(self.xs, self.ys):
+            self.assertEqual(self.op1(x, self.op2(x, y)), x)
+            self.assertEqual(self.op2(x, self.op1(x, y)), x)
+
+
+class Distributive:
+    def test_distributive(self):
+        for x, y, z in product(self.xs, self.ys, self.zs):
+            self.assertEqual(self.op1(x, self.op2(y, z)), self.op2(self.op1(x, y), self.op1(x, z)))
+            self.assertEqual(self.op2(x, self.op1(y, z)), self.op1(self.op2(x, y), self.op2(x, z)))
+
+
+class DeMorgan:
+    def test_demorgan(self):
+        for x, y in product(self.xs, self.ys):
+            self.assertEqual(self.op(self.op1(x, y)), self.op2(self.op(x), self.op(y)))
+            self.assertEqual(self.op(self.op2(x, y)), self.op1(self.op(x), self.op(y)))
+
+
+class DropSingle:
+    def test_drop_single(self):
+        for x, y in product(self.xs, self.ys):
+            self.assertEqual(self.op(self.op1(x, y)), self.op1(self.op(x), y))
+            self.assertEqual(self.op(self.op1(x, y)), self.op1(x, self.op(y)))
+
+
+class ExpandSingle:
+    def test_expand_single_inner(self):
+        for x, y in product(self.xs, self.ys):
+            self.assertEqual(self.op3(x, y), self.op1(self.op2(x, self.op(y)), self.op2(self.op(x), y)))
+
+    def test_expand_single_outer(self):
+        for x, y in product(self.xs, self.ys):
+            self.assertEqual(self.op3(x, y), self.op2(self.op1(x, y), self.op(self.op2(x, y))))
+
+
 @for_implementations(ALL)
 class TestAND(BoundedJoinLattice):
     op = lambda _, x, y: x & y
@@ -113,6 +151,32 @@ class TestNOT(SelfInvOp, Inverse):
     top = property(lambda self: self.impl.ONE)
 
 
+@for_implementations(ALL)
+class TestORAND(Absorptive, Distributive):
+    op1 = lambda _, x, y: x | y
+    op2 = lambda _, x, y: x & y
+
+
+@for_implementations(ALL)
+class TestORANDNOT(DeMorgan):
+    op = lambda _, x: ~x
+    op1 = lambda _, x, y: x | y
+    op2 = lambda _, x, y: x & y
+
+
+@for_implementations(ALL)
+class TestXORNOT(DropSingle):
+    op = lambda _, x: ~x
+    op1 = lambda _, x, y: x ^ y
+
+
+@for_implementations(ALL)
+class TestXORORANDNOT(ExpandSingle):
+    op = lambda _, x: ~x
+    op1 = lambda _, x, y: x | y
+    op2 = lambda _, x, y: x & y
+    op3 = lambda _, x, y: x ^ y
+
+
 if __name__ == '__main__':
     unittest.main()
-
