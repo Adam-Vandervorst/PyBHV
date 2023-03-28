@@ -67,7 +67,7 @@ class AbstractBHV:
         return 1. - float((self & other).active()) / float((self | other).active())
 
     def cosine(self, other: Self) -> float:
-        return float((self & other).active()) / float(self.active() * other.active())**.5
+        return 1 - float((self & other).active()) / float(self.active() * other.active())**.5
 
     ZERO: Self
     ONE: Self
