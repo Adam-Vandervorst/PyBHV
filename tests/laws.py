@@ -62,6 +62,18 @@ class SelfInv:
             self.assertEqual(self.op(x, x), self.bot)
 
 
+class SelfInvOp:
+    def test_self_inverse_op(self):
+        for x in self.xs:
+            self.assertEqual(self.op(self.op(x)), x)
+
+
+class Inverse:
+    def test_extrema(self):
+        self.assertEqual(self.op(self.top), self.bot)
+        self.assertEqual(self.op(self.bot), self.top)
+
+
 class BottomIdentity:
     def test_bottom_identity(self):
         for x in self.xs:
@@ -89,9 +101,16 @@ class TestOR(BoundedJoinLattice):
 
 
 @for_implementations(ALL)
-class TestXOR(CommAssoc, SelfInv, BottomIdentity):
+class TestXOR(Comm, Assoc, SelfInv, BottomIdentity):
     op = lambda _, x, y: x ^ y
     bot = property(lambda self: self.impl.ZERO)
+
+
+@for_implementations(ALL)
+class TestNOT(SelfInvOp, Inverse):
+    op = lambda _, x: ~x
+    bot = property(lambda self: self.impl.ZERO)
+    top = property(lambda self: self.impl.ONE)
 
 
 if __name__ == '__main__':
