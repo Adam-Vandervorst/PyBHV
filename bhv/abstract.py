@@ -31,6 +31,9 @@ class AbstractBHV:
     def nrandom(cls, n, active=0.5) -> list[Self]:
         return [cls.random(active) for _ in range(n)]
 
+    def __eq__(self, other: Self) -> bool:
+        raise NotImplementedError()
+
     def __xor__(self, other: Self) -> Self:
         raise NotImplementedError()
 
