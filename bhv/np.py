@@ -17,6 +17,18 @@ class NumPyBoolBHV(AbstractBHV):
     def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
+    @classmethod
+    def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        data = [v.data for v in vs]
+        extra = [cls.rand().data] if len(vs) % 2 == 0 else []
+
+        tensor = np.stack(data + extra)
+        counts = tensor.sum(axis=-2, dtype=np.uint8)
+
+        threshold = (len(vs) + len(extra))//2
+
+        return NumPyBoolBHV(np.greater(counts, threshold))
+
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:
         return np.array_equal(self.data, other.data)
 

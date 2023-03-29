@@ -43,6 +43,18 @@ class TorchBoolBHV(AbstractBHV):
     def select(self, when1: 'TorchBoolBHV', when0: 'TorchBoolBHV') -> 'TorchBoolBHV':
         return TorchBoolBHV(torch.where(self.data, when1.data, when0.data))
 
+    @classmethod
+    def majority(cls, vs: list['TorchBoolBHV']) -> 'TorchBoolBHV':
+        data = [v.data for v in vs]
+        extra = [cls.rand().data] if len(vs) % 2 == 0 else []
+
+        tensor = torch.stack(data + extra)
+        counts = tensor.sum(dim=-2, dtype=torch.int8)
+
+        threshold = (len(vs) + len(extra)) // 2
+
+        return TorchBoolBHV(torch.greater(counts,  threshold).to(torch.bool))
+
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
 

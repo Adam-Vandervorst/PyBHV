@@ -32,6 +32,10 @@ class AbstractBHV:
     def nrandom(cls, n, active=0.5) -> list[Self]:
         return [cls.random(active) for _ in range(n)]
 
+    @classmethod
+    def majority(cls, vs: list[Self]) -> Self:
+        raise NotImplementedError()
+
     def __eq__(self, other: Self) -> bool:
         raise NotImplementedError()
 
