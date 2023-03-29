@@ -11,7 +11,7 @@ class AbstractBHV:
         raise NotImplementedError()
 
     @classmethod
-    def nrand(cls, n) -> Self:
+    def nrand(cls, n) -> list[Self]:
         return [cls.rand() for _ in range(n)]
 
     @classmethod
@@ -20,7 +20,7 @@ class AbstractBHV:
         return r if power == 1 else r & cls.rand2(power - 1)
 
     @classmethod
-    def nrand2(cls, n, power=1) -> Self:
+    def nrand2(cls, n, power=1) -> list[Self]:
         return [cls.rand2(power) for _ in range(n)]
 
     @classmethod
