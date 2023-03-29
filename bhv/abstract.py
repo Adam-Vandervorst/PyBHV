@@ -1,4 +1,5 @@
 from .shared import *
+from statistics import NormalDist
 
 
 class AbstractBHV:
@@ -63,6 +64,9 @@ class AbstractBHV:
     def active_fraction(self) -> float:
         return self.active()/DIMENSION
 
+    def hamming(self, other: Self) -> int:
+        return (self ^ other).active()
+
     def bit_error_rate(self, other: Self) -> float:
         return (self ^ other).active_fraction()
 
@@ -71,6 +75,20 @@ class AbstractBHV:
 
     def cosine(self, other: Self) -> float:
         return 1 - float((self & other).active()) / float(self.active() * other.active())**.5
+
+    def zscore(self, other: Self) -> float:
+        p = 0.5
+        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        return n.zscore(self.hamming(other))
+
+    def pvalue(self, other: Self) -> float:
+        p = 0.5
+        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        s = n.cdf(self.hamming(other))
+        return 2*min(s, 1 - s)
+
+    def sixsigma(self, other: Self) -> bool:
+        return abs(self.zscore(other)) < 6
 
     ZERO: Self
     ONE: Self
