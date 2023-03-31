@@ -160,6 +160,12 @@ class NumPyPacked64BHV(AbstractBHV):
         return cls._majority3(a, cls._majority3(b, c, d), cls._majority3(e, d, cls._majority3(c, b, a)))
 
     @classmethod
+    def _majority7_via_3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV', f: 'NumPyPacked64BHV', g: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        mdef = cls._majority3(d, e, f)
+        mabc = cls._majority3(a, b, c)
+        return cls._majority3(g, cls._majority3(c, mdef, cls._majority3(a, b, mdef)), cls._majority3(f, mabc, cls._majority3(d, e, mabc)))
+
+    @classmethod
     def majority(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         # potential breakup
         #

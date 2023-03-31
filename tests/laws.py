@@ -24,8 +24,10 @@ def determinism(f): return lambda x: f(x) == f(x)
 def extensionality(f, g): return lambda x: f(x) == g(x)
 def extensionality2(f, g): return lambda x, y: f(x, y) == g(x, y)
 def extensionality3(f, g): return lambda x, y, z: f(x, y, z) == g(x, y, z)
-def extensionality4(f, g): return lambda x, y, z, w: f(x, y, z, w) == g(x, y, z, w)
-def extensionality5(f, g): return lambda x, y, z, w, v: f(x, y, z, w, v) == g(x, y, z, w, v)
+def extensionality4(f, g): return lambda x, y, z, u: f(x, y, z, u) == g(x, y, z, u)
+def extensionality5(f, g): return lambda x, y, z, u, v: f(x, y, z, u, v) == g(x, y, z, u, v)
+def extensionality6(f, g): return lambda x, y, z, u, v, w: f(x, y, z, u, v, w) == g(x, y, z, u, v, w)
+def extensionality7(f, g): return lambda x, y, z, u, v, w, r: f(x, y, z, u, v, w, r) == g(x, y, z, u, v, w, r)
 def encode_decode(enc, dec): return lambda x: x == dec(enc(x))
 def invariant_under(f, p): return lambda x: f(x) == f(p(x))
 def invariant_under2(f, p): return lambda x, y: f(x, y) == f(p(x), p(y))
@@ -125,6 +127,7 @@ def run():
         extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_unpacked([x, y, z])),
         extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, w, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, w, v])),
         extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
+        extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r]))
     ])
 
 
