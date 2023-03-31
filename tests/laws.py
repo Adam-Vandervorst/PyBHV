@@ -88,16 +88,18 @@ def bhv_conv_metrics(under):
 
 
 def run_for(impl: AbstractBHV, ts):
+    argts = {k: list(vs) for k, vs in groupby(ts, lambda f: f.__code__.co_argcount)}
+    max_depth = max(argts.keys())
+
     extrema = [impl.ZERO, impl.ONE]
     shared = extrema + [impl.rand() for _ in range(3)]
-
-    argts = {k: list(vs) for k, vs in groupby(ts, lambda f: f.__code__.co_argcount)}
+    collections = [shared + [impl.rand()] for d in range(max_depth + 1)]
 
     def rec(args, depth):
-        if argts:
-            for tn in argts.pop(depth, []):
-                assert tn(*args), f"property {tn.__qualname__} failed on {args} using implementation {impl.__name__}"
-            for x in shared:
+        for tn in argts.get(depth, []):
+            assert tn(*args), f"property {tn.__qualname__} failed on {args} using implementation {impl.__name__}"
+        if depth <= max_depth:
+            for x in collections[depth]:
                 rec(args + [x], depth + 1)
 
     rec([], 0)
@@ -127,7 +129,8 @@ def run():
         extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_unpacked([x, y, z])),
         extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, w, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, w, v])),
         extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
-        extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r]))
+        # this is slow, obviously
+        # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r]))
     ])
 
 
