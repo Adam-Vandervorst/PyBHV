@@ -137,6 +137,16 @@ class NumPyPacked64BHV(AbstractBHV):
         return a.select(b | c, b & c)
 
     @classmethod
+    def _majority5_via_ite(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        # 7 OR
+        # 9 AND
+        # 6 XOR
+        return a.select(b.select(c | d | e,
+                                 cls._majority3(c, d, e)),
+                        b.select(cls._majority3(c, d, e),
+                                 c & d & e))
+
+    @classmethod
     def _majority5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         # at least 3/5 agreeing on TRUE
 

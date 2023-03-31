@@ -127,6 +127,7 @@ def run():
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [
         extensionality3(NumPyPacked64BHV._majority3, NumPyPacked64BHV._majority3_via_ite),
+        extensionality5(NumPyPacked64BHV._majority5, NumPyPacked64BHV._majority5_via_ite),
         extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_unpacked([x, y, z])),
         extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, w, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, w, v])),
         extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
