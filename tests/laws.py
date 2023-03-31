@@ -132,7 +132,8 @@ def run():
         extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, w, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, w, v])),
         extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
         # this is slow, obviously
-        # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r]))
+        # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
+        # extensionality7(NumPyPacked64BHV._majority7_via_ite, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
     ])
 
 

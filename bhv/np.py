@@ -138,13 +138,21 @@ class NumPyPacked64BHV(AbstractBHV):
 
     @classmethod
     def _majority5_via_ite(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
-        # 7 OR
-        # 9 AND
-        # 6 XOR
+        mcde = cls._majority3_via_ite(c, d, e)
         return a.select(b.select(c | d | e,
-                                 cls._majority3(c, d, e)),
-                        b.select(cls._majority3(c, d, e),
+                                 mcde),
+                        b.select(mcde,
                                  c & d & e))
+
+    @classmethod
+    def _majority7_via_ite(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV', f: 'NumPyPacked64BHV', g: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        mefg = cls._majority3_via_ite(e, f, g)
+        mcdefg = cls._majority5_via_ite(c, d, e, f, g)
+        # the | and & can be optimized to a single application, too
+        return a.select(b.select(c.select(d | e | f | g,  d.select(e | f | g, mefg)),  # d select with abc'
+                                 mcdefg),
+                        b.select(mcdefg,
+                                 c.select(d.select(mefg, e & f & g), d & e & f & g)))  # d select with a'b'c
 
     @classmethod
     def _majority5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
