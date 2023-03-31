@@ -113,10 +113,10 @@ class NumPyPacked64BHV(AbstractBHV):
 
     @classmethod
     def _majority3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
-        # a:  1 0 0 1 0 1
-        # b:  1 1 0 1 0 1
-        # c:  1 0 1 0 0 0
-        # M:  1 0 0 1 0 1
+        # a:  1 0 0 1 0 1 1
+        # b:  1 1 0 1 0 1 0
+        # c:  1 0 1 0 0 0 0
+        # M:  1 0 0 1 0 1 0
 
         # at least 2/3 agreeing on TRUE
         abh = a & b
@@ -124,6 +124,17 @@ class NumPyPacked64BHV(AbstractBHV):
         cah = c & a
         h = abh | bch | cah
         return h
+
+    @classmethod
+    def _majority3_via_ite(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        # C:  1 0 0 1 0 1 1
+
+        # |:  1 1 1 1 0 1 0
+        # &:  1 0 0 0 0 0 0
+
+        # M:  1 0 0 1 0 1 0
+
+        return a.select(b | c, b & c)
 
     @classmethod
     def _majority5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
