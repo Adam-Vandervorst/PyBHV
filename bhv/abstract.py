@@ -75,10 +75,10 @@ class AbstractBHV:
         return (self ^ other).active_fraction()
 
     def jaccard(self, other: Self) -> float:
-        return 1. - float((self & other).active()) / float((self | other).active())
+        return 1. - float((self & other).active()) / float((self | other).active() + 1E-7)
 
     def cosine(self, other: Self) -> float:
-        return 1 - float((self & other).active()) / float(self.active() * other.active())**.5
+        return 1 - float((self & other).active()) / float(self.active() * other.active() + 1E-7)**.5
 
     def zscore(self, other: Self) -> float:
         p = 0.5

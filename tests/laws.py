@@ -20,7 +20,19 @@ def demorgan(f, m, w): return lambda x, y: f(m(x, y)) == w(f(x), f(y))
 def drop_left(f, m): return lambda x, y: f(m(x, y)) == m(f(x), y)
 def expand_single_inner(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, f(y)), w(f(x), y))
 def expand_single_outer(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, y), f(m(x, y)))
+def determinism(f): return lambda x: f(x) == f(x)
+def extensionality(f, g): return lambda x: f(x) == g(x)
+def extensionality2(f, g): return lambda x, y: f(x, y) == g(x, y)
+def extensionality3(f, g): return lambda x, y, z: f(x, y, z) == g(x, y, z)
+def extensionality4(f, g): return lambda x, y, z, w: f(x, y, z, w) == g(x, y, z, w)
+def extensionality5(f, g): return lambda x, y, z, w, v: f(x, y, z, w, v) == g(x, y, z, w, v)
+def encode_decode(enc, dec): return lambda x: x == dec(enc(x))
+def invariant_under(f, p): return lambda x: f(x) == f(p(x))
+def invariant_under2(f, p): return lambda x, y: f(x, y) == f(p(x), p(y))
 
+def transport(law, l, r): return lambda f, g: law(f, lambda x: r(g(l(x))))
+def transport2(law, l, r): return lambda f, g: law(f, lambda x, y: r(g(l(x), l(y))))
+def transport3(law, l, r): return lambda f, g: law(f, lambda x, y, z: r(g(l(x), l(y), l(z))))
 
 def lattice(join): return [associative(join), commutative(join), idempotent(join)]
 def bounded_lattice(join, top, bot): return lattice(join) + [right_unit(join, bot), right_absorbing(join, top)]
@@ -48,6 +60,31 @@ def bhv_props(impl: AbstractBHV):
         extra)
 
 
+def bhv_conv_ops(dom: AbstractBHV, codom: AbstractBHV, l, r):
+    return [
+        transport(extensionality, l, r)(dom.__invert__, codom.__invert__),
+        transport2(extensionality2, l, r)(dom.__or__, codom.__or__),
+        transport2(extensionality2, l, r)(dom.__and__, codom.__and__),
+        transport2(extensionality2, l, r)(dom.__xor__, codom.__xor__),
+        transport3(extensionality3, l, r)(dom.select, codom.select),
+    ]
+
+
+def bhv_conv_metrics(under):
+    return [
+        invariant_under(lambda x: x.active(), under),
+        invariant_under(lambda x: x.active_fraction(), under),
+
+        invariant_under2(lambda x, y: x.hamming(y), under),
+        invariant_under2(lambda x, y: x.cosine(y), under),
+        invariant_under2(lambda x, y: x.jaccard(y), under),
+        invariant_under2(lambda x, y: x.zscore(y), under),
+        invariant_under2(lambda x, y: x.pvalue(y), under),
+        invariant_under2(lambda x, y: x.sixsigma(y), under),
+        invariant_under2(lambda x, y: x.bit_error_rate(y), under),
+    ]
+
+
 def run_for(impl: AbstractBHV, ts):
     extrema = [impl.ZERO, impl.ONE]
     shared = extrema + [impl.rand() for _ in range(3)]
@@ -55,8 +92,8 @@ def run_for(impl: AbstractBHV, ts):
     argts = {k: list(vs) for k, vs in groupby(ts, lambda f: f.__code__.co_argcount)}
 
     def rec(args, depth):
-        if depth in argts:
-            for tn in argts[depth]:
+        if argts:
+            for tn in argts.pop(depth, []):
                 assert tn(*args), f"property {tn.__qualname__} failed on {args} using implementation {impl.__name__}"
             for x in shared:
                 rec(args + [x], depth + 1)
@@ -73,6 +110,15 @@ def run():
         run_for(impl, bhv_props(impl))
         t = monotonic() - t0
         print(f"took ({t*1000:.3} ms)")
+
+    print(f"Testing packing and unpacking NumPyBoolBHV...")
+    run_for(NumPyBoolBHV, [encode_decode(NumPyBoolBHV.pack64, NumPyPacked64BHV.unpack)])
+    print(f"Testing packing and unpacking NumPyPacked64BHV...")
+    run_for(NumPyPacked64BHV, [encode_decode(NumPyPacked64BHV.unpack, NumPyBoolBHV.pack64)])
+    print("Testing operators equal between NumPyBoolBHV and NumPyPacked64BHV")
+    run_for(NumPyBoolBHV, bhv_conv_ops(NumPyBoolBHV, NumPyPacked64BHV, NumPyBoolBHV.pack64, NumPyPacked64BHV.unpack))
+    print("Testing metrics invariant under pack64")
+    run_for(NumPyBoolBHV, bhv_conv_metrics(NumPyBoolBHV.pack64))
 
 
 if __name__ == '__main__':
