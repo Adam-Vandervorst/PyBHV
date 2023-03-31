@@ -107,6 +107,66 @@ class NumPyPacked64BHV(AbstractBHV):
     def random(cls, active=0.5) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.random(active).pack64()
 
+    @classmethod
+    def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
+        return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
+
+    @classmethod
+    def _majority_of_3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        # a:  1 0 0 1 0 1
+        # b:  1 1 0 1 0 1
+        # c:  1 0 1 0 0 0
+        # M:  1 0 0 1 0 1
+
+        # at least 2/3 agreeing on TRUE
+        abh = a & b
+        bch = b & c
+        cah = c & a
+        h = abh | bch | cah
+        return h
+
+    @classmethod
+    def _majority_of_5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        # at least 3/5 agreeing on TRUE
+
+        # 2*10 AND
+        # 9*1 OR
+        # (b ∧ d ∧ e) ∨ (a ∧ d ∧ e) ∨ (b ∧ c ∧ e) ∨ (a ∧ c ∧ e) ∨ (b ∧ c ∧ d) ∨ (a ∧ c ∧ d) ∨ (c ∧ d ∧ e) ∨ (a ∧ b ∧ e) ∨ (a ∧ b ∧ d) ∨ (a ∧ b ∧ c)
+
+        ab = a & b
+        cd = c & d
+        de = d & e
+        ce = c & e
+
+        bde = b & de
+        ade = a & de
+
+        bce = b & ce
+        ace = a & ce
+
+        bcd = b & cd
+        acd = a & cd
+        cde = e & cd
+
+        abe = ab & e
+        abd = ab & d
+        abc = ab & c
+
+        h = bde | ade | bce | ace | bcd | acd | cde | abe | abd | abc
+        return h
+
+    @classmethod
+    def majority(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
+        # potential breakup
+        #
+        # majority_functions = [majority_3, majority_5, ...]
+        # def rec(vs):
+        #     match len(vs) % ...:
+        #         case ...: majority_functions[...](*[...])
+        #
+
+        cls._majority_via_unpacked(vs)
+
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
         return np.array_equal(self.data, other.data)
 
