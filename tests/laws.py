@@ -120,6 +120,13 @@ def run():
     print("Testing metrics invariant under pack64")
     run_for(NumPyBoolBHV, bhv_conv_metrics(NumPyBoolBHV.pack64))
 
+    print("Testing NumPyPacked64BHV majority equivalence")
+    run_for(NumPyPacked64BHV, [
+        extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_unpacked([x, y, z])),
+        extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, w, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, w, v])),
+        extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
+    ])
+
 
 if __name__ == '__main__':
     run()

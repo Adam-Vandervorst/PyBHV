@@ -112,7 +112,7 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
 
     @classmethod
-    def _majority_of_3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+    def _majority3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         # a:  1 0 0 1 0 1
         # b:  1 1 0 1 0 1
         # c:  1 0 1 0 0 0
@@ -126,7 +126,7 @@ class NumPyPacked64BHV(AbstractBHV):
         return h
 
     @classmethod
-    def _majority_of_5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+    def _majority5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         # at least 3/5 agreeing on TRUE
 
         # 2*10 AND
@@ -154,6 +154,10 @@ class NumPyPacked64BHV(AbstractBHV):
 
         h = bde | ade | bce | ace | bcd | acd | cde | abe | abd | abc
         return h
+
+    @classmethod
+    def _majority5_via_3(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
+        return cls._majority3(a, cls._majority3(b, c, d), cls._majority3(e, d, cls._majority3(c, b, a)))
 
     @classmethod
     def majority(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
