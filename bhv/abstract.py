@@ -95,6 +95,18 @@ class AbstractBHV:
         return abs(self.zscore(other)) < 6
 
     @classmethod
+    def _majority5_simplified(cls, x4: Self, x3: Self, x2: Self, x1: Self, x0: Self) -> Self:
+        t1 = x1 | x0
+        b1 = x1 & x0
+        m2 = x2.select(t1, b1)
+        t2 = x2 | t1
+        b2 = x2 & b1
+        m3h = x3.select(t2, m2)
+        m3l = x3.select(m2, b2)
+        m4 = x4.select(m3h, m3l)
+        return m4
+
+    @classmethod
     def _majority7_simplified(cls, x6: Self, x5: Self, x4: Self, x3: Self, x2: Self, x1: Self, x0: Self) -> Self:
         t1 = x1 | x0
         b1 = x1 & x0
@@ -115,36 +127,29 @@ class AbstractBHV:
 
     @classmethod
     def _majority9_simplified(cls, x8: Self, x7: Self, x6: Self, x5: Self, x4: Self, x3: Self, x2: Self, x1: Self, x0: Self) -> Self:
-        t1 = x1 | x0
-        b1 = x1 & x0
+        t1 = x0 | x1
+        b1 = x0 & x1
         m2 = x2.select(t1, b1)
         t2 = x2 | t1
         b2 = x2 & b1
         m3h = x3.select(t2, m2)
         m3l = x3.select(m2, b2)
-        m4 = x4.select(m3h, m3l)
         t3 = x3 | t2
         b3 = x3 & b2
         m4h = x4.select(t3, m3h)
+        m4 = x4.select(m3h, m3l)
         m4l = x4.select(m3l, b3)
-        m5h = x5.select(m4h, m4)
-        m5l = x5.select(m4, m4l)
-        m5 = x5.select(m4h, m4l)
-
-        m6 = x6.select(m5h, m5l)
-
         t4 = x4 | t3
         b4 = x4 & b3
-
-        t5 = x5 | t4
-        b5 = x5 & b4
-
-        m6h = x6.select(t5, m5h)
-        m6l = x6.select(m5l, b5)
-
+        m5hh = x5.select(t4, m4h)
+        m5h = x5.select(m4h, m4)
+        m5l = x5.select(m4, m4l)
+        m5ll = x5.select(m4l, b4)
+        m6h = x6.select(m5hh, m5h)
+        m6 = x6.select(m5h, m5l)
+        m6l = x6.select(m5l, m5ll)
         m7h = x7.select(m6h, m6)
         m7l = x7.select(m6, m6l)
-
         m8 = x8.select(m7h, m7l)
         return m8
 
