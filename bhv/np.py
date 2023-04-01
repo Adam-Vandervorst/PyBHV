@@ -1,4 +1,5 @@
 from .abstract import *
+from typing import Tuple
 import numpy as np
 
 
@@ -153,6 +154,26 @@ class NumPyPacked64BHV(AbstractBHV):
                                  mcdefg),
                         b.select(mcdefg,
                                  c.select(d.select(mefg, e & f & g), d & e & f & g)))  # d select with a'b'c
+
+    @classmethod
+    def _majority_via_ite(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
+        def rec(sl: list['NumPyPacked64BHV']) -> Tuple['NumPyPacked64BHV', 'NumPyPacked64BHV', 'NumPyPacked64BHV']:
+            if len(sl) == 3:
+                (a, b, c) = sl
+                top = b | c
+                bottom = b & c
+                maj = a.select(top, bottom)
+                return maj, a | top, a & bottom
+            else:
+                (a, b, *rs) = sl
+                pmaj, ptop, pbot = rec(rs)
+                top_maj = b.select(ptop, pmaj)
+                bot_maj = b.select(pmaj, pbot)
+                maj = a.select(top_maj, bot_maj)
+                top = a.select(b | ptop, top_maj)
+                bot = a.select(bot_maj, b & pbot)
+                return maj, top, bot
+        return rec(vs)[0]
 
     @classmethod
     def _majority5(cls, a: 'NumPyPacked64BHV', b: 'NumPyPacked64BHV', c: 'NumPyPacked64BHV', d: 'NumPyPacked64BHV', e: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
