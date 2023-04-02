@@ -2,25 +2,30 @@ from dataclasses import dataclass, field, fields
 from .abstract import *
 from .shared import stable_hashcode
 
-done = set()
+
 class SymbolicBHV(AbstractBHV):
-    def nodename(self):
+    def nodename(self, **kwargs):
         return f"{type(self).__name__.upper()}"
 
-    def nodeid(self):
-        return f"{type(self).__name__}{getattr(self, 'name', stable_hashcode(self).replace('-', ''))}"
+    def nodeid(self, structural=False, **kwargs):
+        return f"{type(self).__name__}{stable_hashcode(self).replace('-', '') if structural else str(id(self))}"
 
-    def graphviz(self):
-        noden = self.nodeid()
+    def children(self, **kwargs):
+        return [(getattr(self, f.name), f.name) for f in fields(self) if issubclass(f.type, SymbolicBHV)]
+
+    def graphviz(self, structural=False, done=None, **kwargs):
+        noden = self.nodeid(structural, **kwargs)
+        if done is None:
+            done = set()
         if noden in done:
             return
         done.add(noden)
-        nodecs = [(getattr(self, f.name), f.name) for f in fields(self) if issubclass(f.type, SymbolicBHV)]
-        print(f"{noden} [label=\"{self.nodename()}\"];")
+        kwargs |= dict(done=done, structural=structural)
+        nodecs = self.children(**kwargs)
+        print(f"{noden} [label=\"{self.nodename(**kwargs)}\"];")
         for c, label in nodecs:
-            print(f"{noden} -> {c.nodeid()};")
-            c.graphviz()
-
+            print(f"{noden} -> {c.nodeid(**kwargs)};")
+            c.graphviz(**kwargs)
 
     @classmethod
     def rand(cls) -> Self:
@@ -99,8 +104,7 @@ class SymbolicBHV(AbstractBHV):
 @dataclass
 class Var(SymbolicBHV):
     name: str
-
-    def nodename(self):
+    def nodename(self, **kwards):
         return f"{self.name}"
 @dataclass
 class Zero(SymbolicBHV):
@@ -151,17 +155,10 @@ class Select(SymbolicBHV):
     cond: SymbolicBHV
     when1: SymbolicBHV
     when0: SymbolicBHV
-
-    def graphviz(self):
-        noden = self.nodeid()
-        if noden in done:
-            return
-        done.add(noden)
-        nodecs = [(self.when1, "1"), (self.when0, "0")]
-        print(f"{noden} [label=\"ON {self.cond.nodename()}\"];")
-        for c, label in nodecs:
-            print(f"{noden} -> {c.nodeid()} [label=\"{label}\"];")
-            c.graphviz()
+    def nodename(self, compact_select=True, **kwargs):
+        return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
+    def children(self, compact_select=True, **kwargs):
+        return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().nodename(**kwargs)
 @dataclass
 class Mix(SymbolicBHV):
     frac: float

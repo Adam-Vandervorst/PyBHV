@@ -1,6 +1,12 @@
 from bhv.abstract import AbstractBHV
 from bhv.symbolic import Var
+from string import ascii_uppercase
+
+
+def short_name(i: int, letters=ascii_uppercase) -> str:
+    n = len(letters)
+    return letters[i%n] + str(i//n)
 
 
 if __name__ == '__main__':
-    print(AbstractBHV._majority9_simplified(*[Var(f"X{i}") for i in range(9, 0, -1)]).graphviz())
+    AbstractBHV._majority_simplified([Var(short_name(i)) for i in range(98, -1, -1)]).graphviz(structural=False)
