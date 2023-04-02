@@ -37,6 +37,10 @@ class AbstractBHV:
         return [cls.random(active) for _ in range(n)]
 
     @classmethod
+    def majority3(cls, x, y, z):
+        return cls.majority([x, y, z])
+
+    @classmethod
     def majority(cls, vs: list[Self]) -> Self:
         half = len(vs)//2
         disjunction = list(accumulate(vs[:half-1:-1], or_))[1:]

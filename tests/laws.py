@@ -7,7 +7,9 @@ from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 
 
 def associative(m): return lambda x, y, z: m(m(x, y), z) == m(x, m(y, z))
+def associative3(m): return lambda x, y, z, u: m(x, u, m(y, u, z)) == m(z, u, m(y, u, x))
 def commutative(m): return lambda x, y: m(x, y) == m(y, x)
+def commutative3(m): return lambda x, y, z: m(x, y, z) == m(y, x, z) == m(z, y, x)
 def idempotent(m): return lambda x: m(x, x) == x
 def self_inverse(m, u): return lambda x: m(x, x) == u
 def self_inverse_op(f): return lambda x: f(f(x)) == x
@@ -16,8 +18,12 @@ def right_unit(m, u): return lambda x: m(x, u) == x
 def right_absorbing(m, z): return lambda x: m(x, z) == z
 def absorptive(m, w): return lambda x, y: m(x, w(x, y)) == x
 def distributive(m, w): return lambda x, y, z: m(x, w(y, z)) == w(m(x, y), m(x, z))
+def distributive3(m, w): return lambda x, y, z, u, v: m(x, y, w(u, v, z)) == w(m(x, y, u), m(x, y, v), z)
 def demorgan(f, m, w): return lambda x, y: f(m(x, y)) == w(f(x), f(y))
 def drop_left(f, m): return lambda x, y: f(m(x, y)) == m(f(x), y)
+def propagate(f, m): return lambda x: f(m(x)) == m(f(x))
+def propagate2(f, m): return lambda x, y: f(m(x, y)) == m(f(x), f(y))
+def propagate3(f, m): return lambda x, y, z: f(m(x, y, z)) == m(f(x), f(y), f(z))
 def expand_single_inner(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, f(y)), w(f(x), y))
 def expand_single_outer(f, k, m, w): return lambda x, y: k(x, y) == m(w(x, y), f(m(x, y)))
 def determinism(f): return lambda x: f(x) == f(x)
@@ -31,10 +37,15 @@ def extensionality7(f, g): return lambda x, y, z, u, v, w, r: f(x, y, z, u, v, w
 def encode_decode(enc, dec): return lambda x: x == dec(enc(x))
 def invariant_under(f, p): return lambda x: f(x) == f(p(x))
 def invariant_under2(f, p): return lambda x, y: f(x, y) == f(p(x), p(y))
+def identity(f): return lambda x: f(x) == x
+def invariant2(m): return lambda x, y: m(x, y) == y
+def invariant3(m): return lambda x, y, z: m(x, y, z) == z
+def invariant3_2(m): return lambda x, y, z: m(x, y, z) == y == z
 
 def transport(law, l, r): return lambda f, g: law(f, lambda x: r(g(l(x))))
 def transport2(law, l, r): return lambda f, g: law(f, lambda x, y: r(g(l(x), l(y))))
 def transport3(law, l, r): return lambda f, g: law(f, lambda x, y, z: r(g(l(x), l(y), l(z))))
+def assume3(law, p): return lambda f: lambda x, y, z: True if p(x, y, z) else law(f)(x, y, z)
 
 def lattice(join): return [associative(join), commutative(join), idempotent(join)]
 def bounded_lattice(join, top, bot): return lattice(join) + [right_unit(join, bot), right_absorbing(join, top)]
@@ -50,6 +61,15 @@ def gf2(add, mul, one, zero):
         idempotent(mul),
         self_inverse(add, zero),
         distributive(mul, add)
+    ]
+def maj3_inv(maj3, inv):
+    return [
+        commutative3(maj3),
+        assume3(invariant3_2(lambda x, y, z: maj3(z, y, x)), lambda x, y, z: x == y),
+        assume3(invariant3(maj3), lambda x, y, z: x == inv(y)),
+        associative3(maj3),
+        distributive3(maj3, maj3),
+        propagate3(inv, maj3)
     ]
 
 
@@ -70,6 +90,7 @@ def bhv_props(impl: AbstractBHV):
         not_props(impl.__invert__, impl.ZERO, impl.ONE) +
         or_and_props(impl.__or__, impl.__and__) +
         gf2(impl.__xor__, impl.__and__, impl.ONE, impl.ZERO) +
+        maj3_inv(impl.majority3, impl.__invert__) +
         extra)
 
 
@@ -124,7 +145,7 @@ def run():
         t0 = monotonic()
         run_for(impl, bhv_props(impl))
         t = monotonic() - t0
-        print(f"took ({t*1000:.3} ms)")
+        print(f"took ({t:.3} s)")
 
     print(f"Testing packing and unpacking NumPyBoolBHV...")
     run_for(NumPyBoolBHV, [encode_decode(NumPyBoolBHV.pack64, NumPyPacked64BHV.unpack)])

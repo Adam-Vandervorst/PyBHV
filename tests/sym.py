@@ -9,4 +9,4 @@ def short_name(i: int, letters=ascii_uppercase) -> str:
 
 
 if __name__ == '__main__':
-    AbstractBHV._majority_simplified([Var(short_name(i)) for i in range(98, -1, -1)]).graphviz(structural=False)
+    AbstractBHV.majority([Var(short_name(i)) for i in range(98, -1, -1)]).graphviz(structural=False)
