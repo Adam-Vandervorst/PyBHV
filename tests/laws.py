@@ -92,8 +92,8 @@ def run_for(impl: AbstractBHV, ts):
     max_depth = max(argts.keys())
 
     extrema = [impl.ZERO, impl.ONE]
-    shared = extrema + impl.nrand2(3)
-    collections = [shared + impl.nrand2(1) for d in range(max_depth + 1)]
+    shared = extrema + impl.nrand(3)
+    collections = [shared + impl.nrand(1) for d in range(max_depth + 1)]
 
     def rec(args, depth):
         for tn in argts.get(depth, []):
@@ -126,13 +126,9 @@ def run():
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [
-        extensionality3(NumPyPacked64BHV._majority3, NumPyPacked64BHV._majority3_via_ite),
-        extensionality5(NumPyPacked64BHV._majority5, NumPyPacked64BHV._majority5_via_ite),
         extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_unpacked([x, y, z])),
         extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, u, v: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v])),
         extensionality5(NumPyPacked64BHV._majority5_via_3, NumPyPacked64BHV._majority5),
-        extensionality3(NumPyPacked64BHV._majority3, lambda x, y, z: NumPyPacked64BHV._majority_via_ite([x, y, z])),
-        extensionality5(NumPyPacked64BHV._majority5, lambda x, y, z, u, v: NumPyPacked64BHV._majority_via_ite([x, y, z, u, v])),
         # this is slow, obviously
         # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
         # extensionality7(NumPyPacked64BHV._majority7_via_ite, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
@@ -140,12 +136,11 @@ def run():
     ])
 
     t0 = monotonic()
-    for _ in range(10):
-        for s in [3, 5, 7, 9, 11, 13, 15]:
-            rs = NumPyPacked64BHV.nrand2(s)
-            assert NumPyPacked64BHV._majority_via_ite(rs) == NumPyPacked64BHV._majority_via_unpacked(rs), f"mismatch for size {s}"
+    for s in range(3, 55, 2):
+        rs = NumPyPacked64BHV.nrand(s)
+        assert NumPyPacked64BHV.majority(rs) == NumPyPacked64BHV._majority_via_unpacked(rs), f"mismatch for size {s}"
     t = monotonic() - t0
-    print(f"took ({t*1000:.3} ms)")
+    print(f"took ({t:.3} s)")
 
 
 if __name__ == '__main__':
