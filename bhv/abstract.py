@@ -36,6 +36,33 @@ class AbstractBHV:
     def nrandom(cls, n, active=0.5) -> list[Self]:
         return [cls.random(active) for _ in range(n)]
 
+    def select_rand(self, other):
+        return self.rand().select(self, other)
+
+    def select_rand2(self, other, power_left=1):
+        return self.rand2(power_left).select(self, other)
+
+    def select_random(self, other, frac_left=0.5):
+        return self.random(frac_left).select(self, other)
+
+    def randomize_half(self):
+        return self.select_rand(self.rand())
+
+    def randomize_pow(self, pow_randomize=1):
+        return self.rand().select_rand2(self, pow_randomize)
+
+    def randomize_frac(self, frac_randomize=0.5):
+        return self.rand().select_random(self, frac_randomize)
+
+    def flip_half(self):
+        return self ^ self.rand()
+
+    def flip_pow(self, pow_flip=1):
+        return self ^ self.rand2(pow_flip)
+
+    def flip_frac(self, frac_flip=0.5):
+        return self ^ self.random(frac_flip)
+
     @classmethod
     def majority3(cls, x, y, z):
         return cls.majority([x, y, z])
