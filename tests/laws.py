@@ -41,6 +41,7 @@ def identity(f): return lambda x: f(x) == x
 def invariant2(m): return lambda x, y: m(x, y) == y
 def invariant3(m): return lambda x, y, z: m(x, y, z) == z
 def invariant3_2(m): return lambda x, y, z: m(x, y, z) == y == z
+def complement(m, f, z): return lambda x: m(x, f(x)) == z
 
 def transport(law, l, r): return lambda f, g: law(f, lambda x: r(g(l(x))))
 def transport2(law, l, r): return lambda f, g: law(f, lambda x, y: r(g(l(x), l(y))))
@@ -71,6 +72,20 @@ def maj3_inv(maj3, inv):
         distributive3(maj3, maj3),
         propagate3(inv, maj3)
     ]
+def boolean_algebra(conj, disj, inv, zero, one):
+    return [
+        right_unit(disj, zero),
+        right_unit(conj, one),
+        commutative(conj),
+        commutative(disj),
+        distributive(conj, disj),
+        distributive(disj, conj),
+        associative(conj),
+        associative(disj),
+        complement(disj, inv, one),
+        complement(conj, inv, zero),
+    ]
+
 
 
 def bhv_props(impl: AbstractBHV):
@@ -91,6 +106,7 @@ def bhv_props(impl: AbstractBHV):
         or_and_props(impl.__or__, impl.__and__) +
         gf2(impl.__xor__, impl.__and__, impl.ONE, impl.ZERO) +
         maj3_inv(impl.majority3, impl.__invert__) +
+        boolean_algebra(impl.__and__, impl.__or__, impl.__invert__, impl.ZERO, impl.ONE) +
         extra)
 
 
