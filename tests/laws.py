@@ -41,6 +41,16 @@ def bounded_lattice(join, top, bot): return lattice(join) + [right_unit(join, bo
 def xor_props(xor_, bot): return [associative(xor_), commutative(xor_), self_inverse(xor_, bot), right_unit(xor_, bot)]
 def not_props(not_, bot, top): return [self_inverse_op(not_), equals(not_, top, bot), equals(not_, bot, top)]
 def or_and_props(or_, and_): return [distributive(or_, and_), distributive(and_, or_), absorptive(or_, and_), absorptive(and_, or_)]
+def gf2(add, mul, one, zero):
+    return [
+        right_unit(add, zero),
+        right_unit(mul, one),
+        associative(add), commutative(add),
+        associative(mul), commutative(mul),
+        idempotent(mul),
+        self_inverse(add, zero),
+        distributive(mul, add)
+    ]
 
 
 def bhv_props(impl: AbstractBHV):
@@ -59,6 +69,7 @@ def bhv_props(impl: AbstractBHV):
         xor_props(impl.__xor__, impl.ZERO) +
         not_props(impl.__invert__, impl.ZERO, impl.ONE) +
         or_and_props(impl.__or__, impl.__and__) +
+        gf2(impl.__xor__, impl.__and__, impl.ONE, impl.ZERO) +
         extra)
 
 
