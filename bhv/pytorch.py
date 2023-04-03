@@ -55,6 +55,13 @@ class TorchBoolBHV(AbstractBHV):
 
         return TorchBoolBHV(torch.greater(counts,  threshold).to(torch.bool))
 
+    def roll_bits(self, n: int) -> 'TorchBoolBHV':
+        return TorchBoolBHV(torch.roll(self.data, n))
+
+    def permute(self, permutation_id: int) -> 'TorchBoolBHV':
+        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION permutations with roll_bits implementation"
+        return self.roll_bits(permutation_id)
+
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
 
@@ -92,6 +99,13 @@ class TorchPackedBHV(AbstractBHV):
     @classmethod
     def random(cls, active=0.5) -> Self:
         return TorchBoolBHV.random(active).pack()
+
+    def roll_words(self, n: int) -> 'TorchPackedBHV':
+        return TorchPackedBHV(torch.roll(self.data, n))
+
+    def permute(self, permutation_id: int) -> 'TorchPackedBHV':
+        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION/64 permutations with roll_words implementation"
+        return self.roll_words(permutation_id)
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)

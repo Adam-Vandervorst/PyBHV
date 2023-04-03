@@ -18,6 +18,13 @@ class NumPyBoolBHV(AbstractBHV):
     def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
+    def roll_bits(self, n: int) -> 'NumPyBoolBHV':
+        return NumPyBoolBHV(np.roll(self.data, n))
+
+    def permute(self, permutation_id: int) -> 'NumPyBoolBHV':
+        assert abs(permutation_id) < DIMENSION, "only supports DIMENSION permutations with roll_bits implementation"
+        return self.roll_bits(permutation_id)
+
     @classmethod
     def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
         data = [v.data for v in vs]
@@ -70,6 +77,13 @@ class NumPyPacked8BHV(AbstractBHV):
     def random(cls, active=0.5) -> 'NumPyPacked8BHV':
         return NumPyBoolBHV.random(active).pack8()
 
+    def roll_bytes(self, n: int) -> 'NumPyPacked8BHV':
+        return NumPyPacked8BHV(np.roll(self.data, n))
+
+    def permute(self, permutation_id: int) -> 'NumPyPacked8BHV':
+        assert abs(permutation_id) < DIMENSION//8, "only supports DIMENSION/8 permutations with roll_bytes implementation"
+        return self.roll_bytes(permutation_id)
+
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
 
@@ -111,6 +125,13 @@ class NumPyPacked64BHV(AbstractBHV):
     @classmethod
     def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
+
+    def roll_words(self, n: int) -> 'NumPyPacked64BHV':
+        return NumPyPacked64BHV(np.roll(self.data, n))
+
+    def permute(self, permutation_id: int) -> 'NumPyPacked64BHV':
+        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION/64 permutations with roll_words implementation"
+        return self.roll_words(permutation_id)
 
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
         return np.array_equal(self.data, other.data)

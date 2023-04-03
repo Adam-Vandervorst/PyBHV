@@ -43,6 +43,9 @@ class SymbolicBHV(AbstractBHV):
     def majority(cls, vs: list[Self]) -> Self:
         return Majority(vs)
 
+    def permute(self, permutation_id: int) -> Self:
+        return Permute(permutation_id, self)
+
     def __eq__(self, other: Self) -> bool:
         return Eq(self, other)
 
@@ -131,6 +134,10 @@ class Random(SymbolicBHV):
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
+@dataclass
+class Permute(SymbolicBHV):
+    id: int
+    v: SymbolicBHV
 @dataclass
 class Eq:
     l: SymbolicBHV
