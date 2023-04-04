@@ -21,9 +21,23 @@ class NumPyBoolBHV(AbstractBHV):
     def roll_bits(self, n: int) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.roll(self.data, n))
 
+    def permute_bits(self, permutation: list[int] | np.ndarray) -> 'NumPyBoolBHV':
+        return NumPyBoolBHV(self.data[np.asarray(permutation)])
+
+    rng = np.random.default_rng()
+    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyBoolBHV':
-        assert abs(permutation_id) < DIMENSION, "only supports DIMENSION permutations with roll_bits implementation"
-        return self.roll_bits(permutation_id)
+        if permutation_id in self.permutations:
+            permutation = self.permutations[permutation_id]
+        elif -permutation_id in self.permutations:
+            inv_permutation = self.permutations[-permutation_id]
+            permutation = np.empty_like(inv_permutation)
+            permutation[p] = np.arange(DIMENSION)
+            self.permutations[permutation_id] = permutation
+        else:
+            permutation = self.rng.permutation(DIMENSION)
+            self.permutations[permutation_id] = permutation
+        return self.permute_bits(permutation)
 
     @classmethod
     def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
@@ -78,11 +92,26 @@ class NumPyPacked8BHV(AbstractBHV):
         return NumPyBoolBHV.random(active).pack8()
 
     def roll_bytes(self, n: int) -> 'NumPyPacked8BHV':
+        assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return NumPyPacked8BHV(np.roll(self.data, n))
 
+    def permute_bytes(self, permutation: list[int] | np.ndarray) -> 'NumPyPacked8BHV':
+        return NumPyPacked8BHV(self.data[np.asarray(permutation)])
+
+    rng = np.random.default_rng()
+    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyPacked8BHV':
-        assert abs(permutation_id) < DIMENSION//8, "only supports DIMENSION/8 permutations with roll_bytes implementation"
-        return self.roll_bytes(permutation_id)
+        if permutation_id in self.permutations:
+            permutation = self.permutations[permutation_id]
+        elif -permutation_id in self.permutations:
+            inv_permutation = self.permutations[-permutation_id]
+            permutation = np.empty_like(inv_permutation)
+            permutation[p] = np.arange(DIMENSION//8)
+            self.permutations[permutation_id] = permutation
+        else:
+            permutation = self.rng.permutation(DIMENSION//8)
+            self.permutations[permutation_id] = permutation
+        return self.permute_bytes(permutation)
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
@@ -127,11 +156,40 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
 
     def roll_words(self, n: int) -> 'NumPyPacked64BHV':
+        assert abs(n) < DIMENSION//64, "only supports DIMENSION/64 rolls"
         return NumPyPacked64BHV(np.roll(self.data, n))
 
+    def roll_word_bits(self, n: int) -> 'NumPyPacked64BHV':
+        assert abs(permutation_id) < 64, "only supports 64 rolls"
+        if n == 0:
+            return NumPyPacked64BHV(self.data)
+        elif n > 0:
+            return np.bitwise_or(np.right_shift(self.data, d), np.left_shift(self.data, (64 - d)))
+        else:
+            return np.bitwise_or(np.left_shift(self.data, d), np.right_shift(self.data, (64 - d)))
+
+    # roll_words and roll_word_bits could be combined for more options allowing positive and negative combinations
+    # ((1 2 3 4) (a b c d) (α β γ δ))
+    # rolled by 1, -2 for example results in
+    # ((γ δ α β) (3 4 1 2) (c d a b))
+
+    def permute_words(self, permutation: list[int] | np.ndarray) -> 'NumPyPacked64BHV':
+        return NumPyPacked64BHV(self.data[np.asarray(permutation)])
+
+    rng = np.random.default_rng()
+    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyPacked64BHV':
-        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION/64 permutations with roll_words implementation"
-        return self.roll_words(permutation_id)
+        if permutation_id in self.permutations:
+            permutation = self.permutations[permutation_id]
+        elif -permutation_id in self.permutations:
+            inv_permutation = self.permutations[-permutation_id]
+            permutation = np.empty_like(inv_permutation)
+            permutation[p] = np.arange(DIMENSION//64)
+            self.permutations[permutation_id] = permutation
+        else:
+            permutation = self.rng.permutation(DIMENSION//64)
+            self.permutations[permutation_id] = permutation
+        return self.permute_words(permutation)
 
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
         return np.array_equal(self.data, other.data)

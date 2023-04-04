@@ -85,17 +85,34 @@ def boolean_algebra(conj, disj, inv, zero, one):
         complement(disj, inv, one),
         complement(conj, inv, zero),
     ]
-
+def permute_props(permute):
+    π, τ, σ = 42, 13, 39
+    Π, Τ, Σ = lambda x: permute(x, π), lambda x: impl.permute(x, τ), lambda x: impl.permute(x, σ)
+    Πinv, Τinv, Σinv = lambda x: permute(x, -π), lambda x: impl.permute(x, -τ), lambda x: impl.permute(x, -σ)
+    return [
+        extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (π, τ))),
+        extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, (τ, σ)))),
+        identity(lambda x: permute(x, 0)),
+        identity(lambda x: Πinv(Π(x))),
+        identity(lambda x: Τinv(Τ(x))),
+        identity(lambda x: Σ(Σinv(x))),
+    ]
 
 
 def bhv_props(impl: AbstractBHV):
+    Π, Τ, Σ = lambda x: impl.permute(x, 42), lambda x: impl.permute(x, 13), lambda x: impl.permute(x, -39)
     extra = [
         demorgan(impl.__invert__, impl.__or__, impl.__and__),
         demorgan(impl.__invert__, impl.__and__, impl.__or__),
         drop_left(impl.__invert__, impl.__xor__),
         expand_single_inner(impl.__invert__, impl.__xor__, impl.__or__, impl.__and__),
         expand_single_outer(impl.__invert__, impl.__xor__, impl.__and__, impl.__or__),
-        distributive(impl.__and__, impl.__xor__)
+        distributive(impl.__and__, impl.__xor__),
+        propagate(Π, impl.__invert__),
+        propagate2(Π, impl.__xor__),
+        propagate2(Π, impl.__and__),
+        propagate2(Π, impl.__or__),
+        propagate3(Π, impl.majority3),
     ]
 
     return (
@@ -107,6 +124,8 @@ def bhv_props(impl: AbstractBHV):
         gf2(impl.__xor__, impl.__and__, impl.ONE, impl.ZERO) +
         maj3_inv(impl.majority3, impl.__invert__) +
         boolean_algebra(impl.__and__, impl.__or__, impl.__invert__, impl.ZERO, impl.ONE) +
+        # permute_props(impl.permute) +
+        bhv_conv_metrics(Π) +
         extra)
 
 

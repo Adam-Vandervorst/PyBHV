@@ -58,9 +58,22 @@ class TorchBoolBHV(AbstractBHV):
     def roll_bits(self, n: int) -> 'TorchBoolBHV':
         return TorchBoolBHV(torch.roll(self.data, n))
 
+    def permute_bits(self, permutation: list[int] | torch.IntTensor) -> 'TorchBoolBHV':
+        return TorchBoolBHV(self.data[torch.as_tensor(permutation)])
+
+    permutations = {}
     def permute(self, permutation_id: int) -> 'TorchBoolBHV':
-        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION permutations with roll_bits implementation"
-        return self.roll_bits(permutation_id)
+        if permutation_id in self.permutations:
+            permutation = self.permutations[permutation_id]
+        elif -permutation_id in self.permutations:
+            inv_permutation = self.permutations[-permutation_id]
+            permutation = torch.empty_like(inv_permutation)
+            permutation[p] = torch.arange(DIMENSION)
+            self.permutations[permutation_id] = permutation
+        else:
+            permutation = torch.randperm(DIMENSION)
+            self.permutations[permutation_id] = permutation
+        return self.permute_bits(permutation)
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
@@ -103,9 +116,22 @@ class TorchPackedBHV(AbstractBHV):
     def roll_words(self, n: int) -> 'TorchPackedBHV':
         return TorchPackedBHV(torch.roll(self.data, n))
 
+    def permute_words(self, permutation: list[int] | torch.IntTensor) -> 'TorchPackedBHV':
+        return TorchPackedBHV(self.data[torch.as_tensor(permutation)])
+
+    permutations = {}
     def permute(self, permutation_id: int) -> 'TorchPackedBHV':
-        assert abs(permutation_id) < DIMENSION//64, "only supports DIMENSION/64 permutations with roll_words implementation"
-        return self.roll_words(permutation_id)
+        if permutation_id in self.permutations:
+            permutation = self.permutations[permutation_id]
+        elif -permutation_id in self.permutations:
+            inv_permutation = self.permutations[-permutation_id]
+            permutation = torch.empty_like(inv_permutation)
+            permutation[p] = torch.arange(DIMENSION//64)
+            self.permutations[permutation_id] = permutation
+        else:
+            permutation = torch.randperm(DIMENSION//64)
+            self.permutations[permutation_id] = permutation
+        return self.permute_words(permutation)
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
