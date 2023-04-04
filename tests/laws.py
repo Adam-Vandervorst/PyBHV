@@ -92,6 +92,7 @@ def permute_props(permute):
     return [
         extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (π, τ))),
         extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, (τ, σ)))),
+        extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, σ, τ))),
         identity(lambda x: permute(x, 0)),
         identity(lambda x: Πinv(Π(x))),
         identity(lambda x: Τinv(Τ(x))),
@@ -124,7 +125,7 @@ def bhv_props(impl: AbstractBHV):
         gf2(impl.__xor__, impl.__and__, impl.ONE, impl.ZERO) +
         maj3_inv(impl.majority3, impl.__invert__) +
         boolean_algebra(impl.__and__, impl.__or__, impl.__invert__, impl.ZERO, impl.ONE) +
-        # permute_props(impl.permute) +
+        permute_props(impl.permute) +
         bhv_conv_metrics(Π) +
         extra)
 

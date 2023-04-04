@@ -1,6 +1,25 @@
 from .abstract import *
-from typing import Tuple
 import numpy as np
+
+
+class NumPyBoolPermutation(MemoizedPermutation):
+    _permutations: dict[int | tuple[int, ...], Self] = {}
+    rng = np.random.default_rng()
+
+    def __init__(self, array: np.ndarray):
+        self.data: np.ndarray = array
+
+    @classmethod
+    def random(cls) -> 'NumPyBoolPermutation':
+        return NumPyBoolPermutation(cls.rng.permutation(DIMENSION))
+
+    def compose(self, other: 'NumPyBoolPermutation') -> 'NumPyBoolPermutation':
+        return NumPyBoolPermutation(self.data[other.data])
+
+    def invert(self) -> 'NumPyBoolPermutation':
+        inv_permutation = np.empty_like(self.data)
+        inv_permutation[self.data] = np.arange(DIMENSION)
+        return NumPyBoolPermutation(inv_permutation)
 
 
 class NumPyBoolBHV(AbstractBHV):
@@ -21,23 +40,11 @@ class NumPyBoolBHV(AbstractBHV):
     def roll_bits(self, n: int) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.roll(self.data, n))
 
-    def permute_bits(self, permutation: list[int] | np.ndarray) -> 'NumPyBoolBHV':
-        return NumPyBoolBHV(self.data[np.asarray(permutation)])
+    def permute_bits(self, permutation: 'NumPyBoolPermutation') -> 'NumPyBoolBHV':
+        return NumPyBoolBHV(self.data[permutation.data])
 
-    rng = np.random.default_rng()
-    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyBoolBHV':
-        if permutation_id in self.permutations:
-            permutation = self.permutations[permutation_id]
-        elif -permutation_id in self.permutations:
-            inv_permutation = self.permutations[-permutation_id]
-            permutation = np.empty_like(inv_permutation)
-            permutation[inv_permutation] = np.arange(DIMENSION)
-            self.permutations[permutation_id] = permutation
-        else:
-            permutation = self.rng.permutation(DIMENSION)
-            self.permutations[permutation_id] = permutation
-        return self.permute_bits(permutation)
+        return self.permute_bits(NumPyBoolPermutation.get(permutation_id))
 
     @classmethod
     def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
@@ -79,6 +86,27 @@ NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
 
 
+class NumPyBytePermutation(MemoizedPermutation):
+    _permutations: dict[int | tuple[int, ...], Self] = {}
+    rng = np.random.default_rng()
+
+    def __init__(self, array: np.ndarray):
+        print("array size", array.size)
+        self.data: np.ndarray = array
+
+    @classmethod
+    def random(cls) -> 'NumPyBytePermutation':
+        return NumPyBytePermutation(cls.rng.permutation(DIMENSION//8))
+
+    def compose(self, other: 'NumPyBytePermutation') -> 'NumPyBytePermutation':
+        return NumPyBytePermutation(self.data[other.data])
+
+    def invert(self) -> 'NumPyBytePermutation':
+        inv_permutation = np.empty_like(self.data)
+        inv_permutation[self.data] = np.arange(DIMENSION//8)
+        return NumPyBytePermutation(inv_permutation)
+
+
 class NumPyPacked8BHV(AbstractBHV):
     def __init__(self, array: np.ndarray):
         self.data: np.ndarray = array
@@ -95,23 +123,11 @@ class NumPyPacked8BHV(AbstractBHV):
         assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return NumPyPacked8BHV(np.roll(self.data, n))
 
-    def permute_bytes(self, permutation: list[int] | np.ndarray) -> 'NumPyPacked8BHV':
-        return NumPyPacked8BHV(self.data[np.asarray(permutation)])
+    def permute_bytes(self, permutation: 'NumPyBytePermutation') -> 'NumPyPacked8BHV':
+        return NumPyPacked8BHV(self.data[permutation.data])
 
-    rng = np.random.default_rng()
-    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyPacked8BHV':
-        if permutation_id in self.permutations:
-            permutation = self.permutations[permutation_id]
-        elif -permutation_id in self.permutations:
-            inv_permutation = self.permutations[-permutation_id]
-            permutation = np.empty_like(inv_permutation)
-            permutation[inv_permutation] = np.arange(DIMENSION//8)
-            self.permutations[permutation_id] = permutation
-        else:
-            permutation = self.rng.permutation(DIMENSION//8)
-            self.permutations[permutation_id] = permutation
-        return self.permute_bytes(permutation)
+        return self.permute_bytes(NumPyBytePermutation.get(permutation_id))
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
@@ -138,14 +154,35 @@ NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
 NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtype=np.uint8))
 
 
-RAND = np.random.SFC64()
+class NumPyWordPermutation(MemoizedPermutation):
+    _permutations: dict[int | tuple[int, ...], Self] = {}
+    rng = np.random.default_rng()
+
+    def __init__(self, array: np.ndarray):
+        self.data: np.ndarray = array
+
+    @classmethod
+    def random(cls) -> 'NumPyWordPermutation':
+        return NumPyWordPermutation(cls.rng.permutation(DIMENSION//64))
+
+    def compose(self, other: 'NumPyWordPermutation') -> 'NumPyWordPermutation':
+        return NumPyWordPermutation(self.data[other.data])
+
+    def invert(self) -> 'NumPyWordPermutation':
+        inv_permutation = np.empty_like(self.data)
+        inv_permutation[self.data] = np.arange(DIMENSION//64)
+        return NumPyWordPermutation(inv_permutation)
+
+
 class NumPyPacked64BHV(AbstractBHV):
+    rng = np.random.SFC64()
+
     def __init__(self, array: np.ndarray):
         self.data: np.ndarray = array
 
     @classmethod
     def rand(cls) -> 'NumPyPacked64BHV':
-        return NumPyPacked64BHV(RAND.random_raw(DIMENSION//64))
+        return NumPyPacked64BHV(cls.rng.random_raw(DIMENSION//64))
 
     @classmethod
     def random(cls, active=0.5) -> 'NumPyPacked64BHV':
@@ -173,23 +210,11 @@ class NumPyPacked64BHV(AbstractBHV):
     # rolled by 1, -2 for example results in
     # ((γ δ α β) (3 4 1 2) (c d a b))
 
-    def permute_words(self, permutation: list[int] | np.ndarray) -> 'NumPyPacked64BHV':
-        return NumPyPacked64BHV(self.data[np.asarray(permutation)])
+    def permute_words(self, permutation: 'NumPyWordPermutation') -> 'NumPyPacked64BHV':
+        return NumPyPacked64BHV(self.data[permutation.data])
 
-    rng = np.random.default_rng()
-    permutations = {}
     def permute(self, permutation_id: int) -> 'NumPyPacked64BHV':
-        if permutation_id in self.permutations:
-            permutation = self.permutations[permutation_id]
-        elif -permutation_id in self.permutations:
-            inv_permutation = self.permutations[-permutation_id]
-            permutation = np.empty_like(inv_permutation)
-            permutation[inv_permutation] = np.arange(DIMENSION//64)
-            self.permutations[permutation_id] = permutation
-        else:
-            permutation = self.rng.permutation(DIMENSION//64)
-            self.permutations[permutation_id] = permutation
-        return self.permute_words(permutation)
+        return self.permute_words(NumPyWordPermutation.get(permutation_id))
 
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
         return np.array_equal(self.data, other.data)
