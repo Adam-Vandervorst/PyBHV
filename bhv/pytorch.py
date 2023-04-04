@@ -68,7 +68,7 @@ class TorchBoolBHV(AbstractBHV):
         elif -permutation_id in self.permutations:
             inv_permutation = self.permutations[-permutation_id]
             permutation = torch.empty_like(inv_permutation)
-            permutation[p] = torch.arange(DIMENSION)
+            permutation[inv_permutation] = torch.arange(DIMENSION)
             self.permutations[permutation_id] = permutation
         else:
             permutation = torch.randperm(DIMENSION)
@@ -126,7 +126,7 @@ class TorchPackedBHV(AbstractBHV):
         elif -permutation_id in self.permutations:
             inv_permutation = self.permutations[-permutation_id]
             permutation = torch.empty_like(inv_permutation)
-            permutation[p] = torch.arange(DIMENSION//64)
+            permutation[inv_permutation] = torch.arange(DIMENSION//64)
             self.permutations[permutation_id] = permutation
         else:
             permutation = torch.randperm(DIMENSION//64)

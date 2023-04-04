@@ -32,7 +32,7 @@ class NumPyBoolBHV(AbstractBHV):
         elif -permutation_id in self.permutations:
             inv_permutation = self.permutations[-permutation_id]
             permutation = np.empty_like(inv_permutation)
-            permutation[p] = np.arange(DIMENSION)
+            permutation[inv_permutation] = np.arange(DIMENSION)
             self.permutations[permutation_id] = permutation
         else:
             permutation = self.rng.permutation(DIMENSION)
@@ -106,7 +106,7 @@ class NumPyPacked8BHV(AbstractBHV):
         elif -permutation_id in self.permutations:
             inv_permutation = self.permutations[-permutation_id]
             permutation = np.empty_like(inv_permutation)
-            permutation[p] = np.arange(DIMENSION//8)
+            permutation[inv_permutation] = np.arange(DIMENSION//8)
             self.permutations[permutation_id] = permutation
         else:
             permutation = self.rng.permutation(DIMENSION//8)
@@ -184,7 +184,7 @@ class NumPyPacked64BHV(AbstractBHV):
         elif -permutation_id in self.permutations:
             inv_permutation = self.permutations[-permutation_id]
             permutation = np.empty_like(inv_permutation)
-            permutation[p] = np.arange(DIMENSION//64)
+            permutation[inv_permutation] = np.arange(DIMENSION//64)
             self.permutations[permutation_id] = permutation
         else:
             permutation = self.rng.permutation(DIMENSION//64)
