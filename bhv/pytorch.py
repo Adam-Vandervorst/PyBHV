@@ -46,6 +46,9 @@ class TorchBoolPermutation(MemoizedPermutation):
         inv_permutation[self.data] = torch.arange(DIMENSION)
         return TorchBoolPermutation(inv_permutation)
 
+    def __call__(self, hv: 'TorchBoolBHV') -> 'TorchBoolBHV':
+        return hv.permute_bits(self)
+
 
 class TorchBoolBHV(AbstractBHV):
     def __init__(self, tensor: torch.BoolTensor):
@@ -125,6 +128,9 @@ class TorchWordPermutation(MemoizedPermutation):
         inv_permutation = torch.empty_like(self.data)
         inv_permutation[self.data] = torch.arange(DIMENSION//64)
         return TorchWordPermutation(inv_permutation)
+
+    def __call__(self, hv: 'TorchPackedBHV') -> 'TorchPackedBHV':
+        return hv.permute_words(self)
 
 
 class TorchPackedBHV(AbstractBHV):

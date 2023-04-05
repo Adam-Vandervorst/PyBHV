@@ -296,6 +296,9 @@ class MemoizedPermutation:
             permutation = permutation*permutation
         return permutation
 
+    def __call__(self, hv: 'AbstractBHV') -> 'AbstractBHV':
+        raise NotImplementedError()
+
     @classmethod
     def _get_singular(cls, permutation_id: int) -> Self:
         if permutation_id in cls._permutations:
