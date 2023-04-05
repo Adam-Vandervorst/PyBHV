@@ -3,6 +3,52 @@ from .abstract import *
 from .shared import stable_hashcode
 
 
+class SymbolicPermutation(MemoizedPermutation):
+    _permutations: dict[int | tuple[int, ...], Self] = {}
+
+    @classmethod
+    def random(cls) -> 'SymbolicPermutation':
+        return PermRandom()
+
+    def __mul__(self, other: 'SymbolicPermutation') -> 'SymbolicPermutation':
+        return PermCompose(self, other)
+
+    def __invert__(self) -> 'SymbolicPermutation':
+        return PermInvert(self)
+
+    def __call__(self, hv: 'SymbolicBHV') -> 'SymbolicBHV':
+        return PermApply(self, hv)
+
+@dataclass
+class PermVar(SymbolicPermutation):
+    name: str
+    def nodename(self, **kwards):
+        return f"{self.name}"
+@dataclass
+class PermUnit(SymbolicPermutation):
+    pass
+SymbolicPermutation.UNIT = PermUnit()
+randpermid = 0
+def next_perm_id():
+    global randpermid
+    randpermid += 1
+    return randpermid
+@dataclass
+class PermRandom(SymbolicPermutation):
+    id: int = field(default_factory=next_perm_id)
+@dataclass
+class PermCompose(SymbolicPermutation):
+    l: 'SymbolicPermutation'
+    r: 'SymbolicPermutation'
+@dataclass
+class PermInvert(SymbolicPermutation):
+    p: 'SymbolicPermutation'
+@dataclass
+class PermApply(SymbolicPermutation):
+    p: 'SymbolicPermutation'
+    v: 'SymbolicBHV'
+
+
 class SymbolicBHV(AbstractBHV):
     def nodename(self, **kwargs):
         return f"{type(self).__name__.upper()}"
