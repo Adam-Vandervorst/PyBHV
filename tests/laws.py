@@ -148,8 +148,7 @@ def bhv_conv_metrics(under):
         invariant_under2(lambda x, y: x.hamming(y), under),
         invariant_under2(lambda x, y: x.cosine(y), under),
         invariant_under2(lambda x, y: x.jaccard(y), under),
-        invariant_under2(lambda x, y: x.zscore(y), under),
-        invariant_under2(lambda x, y: x.pvalue(y), under),
+        invariant_under2(lambda x, y: x.std_apart(y), under),
         invariant_under2(lambda x, y: x.sixsigma(y), under),
         invariant_under2(lambda x, y: x.bit_error_rate(y), under),
     ]

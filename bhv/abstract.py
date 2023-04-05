@@ -63,6 +63,12 @@ class AbstractBHV:
     def flip_frac(self, frac_flip=0.5) -> Self:
         return self ^ self.random(frac_flip)
 
+    def flip_frac_on(self, flip_on_frac) -> Self:
+        return self | self.flip_frac(2*flip_on_frac)
+
+    def flip_frac_off(self, flip_off_frac) -> Self:
+        return self & self.flip_frac(2*flip_off_frac)
+
     def permute(self, permutation_id: int) -> Self:
         raise NotImplementedError()
 
@@ -133,19 +139,24 @@ class AbstractBHV:
     def cosine(self, other: Self) -> float:
         return 1 - float((self & other).active()) / float(self.active() * other.active() + 1E-7)**.5
 
-    def zscore(self, other: Self) -> float:
+    def std_apart(self, other: Self) -> float:
         p = 0.5
-        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
         return n.zscore(self.hamming(other))
 
-    def pvalue(self, other: Self) -> float:
+    def zscore(self) -> float:
         p = 0.5
         n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
-        s = n.cdf(self.hamming(other))
-        return 2*min(s, 1 - s)
+        return n.zscore(self.active())
+
+    def pvalue(self) -> float:
+        p = 0.5
+        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        s = n.cdf(self.active())
+        return 2.*min(s, 1. - s)
 
     def sixsigma(self, other: Self) -> bool:
-        return abs(self.zscore(other)) < 6
+        return abs(self.std_apart(other)) < 6
 
     # Alternative implementations
 
