@@ -29,7 +29,7 @@ def unpack_long_to_bool(packed_tensor):
 
 
 class TorchBoolPermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
 
     def __init__(self, tensor: torch.IntTensor):
         self.data: torch.BoolTensor = tensor
@@ -83,7 +83,7 @@ class TorchBoolBHV(AbstractBHV):
     def permute_bits(self, permutation: TorchBoolPermutation) -> 'TorchBoolBHV':
         return TorchBoolBHV(self.data[permutation.data])
 
-    def permute(self, permutation_id: int | tuple[int, ...]) -> 'TorchBoolBHV':
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'TorchBoolBHV':
         return self.permute_bits(TorchBoolPermutation.get(permutation_id))
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
@@ -112,7 +112,7 @@ TorchBoolBHV.ONE = TorchBoolBHV(torch.ones(DIMENSION, dtype=torch.bool))
 
 
 class TorchWordPermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
 
     def __init__(self, tensor: torch.IntTensor):
         self.data: torch.BoolTensor = tensor
@@ -152,7 +152,7 @@ class TorchPackedBHV(AbstractBHV):
     def permute_words(self, permutation: TorchWordPermutation) -> 'TorchPackedBHV':
         return TorchPackedBHV(self.data[permutation.data])
 
-    def permute(self, permutation_id: int) -> 'TorchPackedBHV':
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'TorchPackedBHV':
         return self.permute_words(TorchWordPermutation.get(permutation_id))
 
     def __eq__(self, other: 'TorchBoolBHV') -> bool:

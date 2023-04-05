@@ -289,7 +289,7 @@ class AbstractBHV:
 
 
 class MemoizedPermutation:
-    _permutations: dict[int | tuple[int, ...], Self]
+    _permutations: 'dict[int | tuple[int, ...], Self]'
 
     @classmethod
     def random(cls) -> Self:
@@ -325,7 +325,7 @@ class MemoizedPermutation:
             return permutation
 
     @classmethod
-    def _get_composite(cls, permutation_id: tuple[int, ...]) -> Self:
+    def _get_composite(cls, permutation_id: 'tuple[int, ...]') -> Self:
         # this can be optimized a lot by looking for partial compositions
         composite_permutation = cls._get_singular(permutation_id[0])
         for component_permutation_id in permutation_id[1:]:
@@ -336,7 +336,7 @@ class MemoizedPermutation:
         return composite_permutation
 
     @classmethod
-    def get(cls, permutation_id: int | tuple[int, ...]) -> Self:
+    def get(cls, permutation_id: 'int | tuple[int, ...]') -> Self:
         permutation = cls._get_singular(permutation_id) if isinstance(permutation_id, int) else \
             cls._get_composite(permutation_id)
         return permutation

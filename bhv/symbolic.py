@@ -4,7 +4,7 @@ from .shared import stable_hashcode
 
 
 class SymbolicPermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
 
     @classmethod
     def random(cls) -> 'SymbolicPermutation':
@@ -89,7 +89,7 @@ class SymbolicBHV(AbstractBHV):
     def majority(cls, vs: list[Self]) -> Self:
         return Majority(vs)
 
-    def permute(self, permutation_id: int) -> Self:
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> Self:
         return Permute(permutation_id, self)
 
     def __eq__(self, other: Self) -> bool:

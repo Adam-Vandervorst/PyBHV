@@ -100,8 +100,7 @@ vector.
 So we expect two BHVs in the space to be 100 (or in our case, 90) STDs apart.
 """
 
-r = BHV.rand()
-print(r.std_apart(BHV.rand()))
+print(BHV.rand().std_apart(BHV.rand()))
 
 """
 This peculiar distribution of the space makes hyperdimensional representation robust. When meaningful entities
@@ -115,6 +114,8 @@ unrelated vector chosen so far, with near certainty.
 Let's try and flip 1/3 bits, and see how many STDs they are apart.
 This is a lot less than the previous test!
 """
+
+r = BHV.rand()
 
 print(r.std_apart(r.flip_frac(1/3)))
 

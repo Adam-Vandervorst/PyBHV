@@ -3,7 +3,7 @@ import numpy as np
 
 
 class NumPyBoolPermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
     rng = np.random.default_rng()
 
     def __init__(self, array: np.ndarray):
@@ -46,7 +46,7 @@ class NumPyBoolBHV(AbstractBHV):
     def permute_bits(self, permutation: 'NumPyBoolPermutation') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(self.data[permutation.data])
 
-    def permute(self, permutation_id: int) -> 'NumPyBoolBHV':
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'NumPyBoolBHV':
         return self.permute_bits(NumPyBoolPermutation.get(permutation_id))
 
     @classmethod
@@ -90,7 +90,7 @@ NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
 
 
 class NumPyBytePermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
     rng = np.random.default_rng()
 
     def __init__(self, array: np.ndarray):
@@ -132,7 +132,7 @@ class NumPyPacked8BHV(AbstractBHV):
     def permute_bytes(self, permutation: 'NumPyBytePermutation') -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(self.data[permutation.data])
 
-    def permute(self, permutation_id: int) -> 'NumPyPacked8BHV':
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'NumPyPacked8BHV':
         return self.permute_bytes(NumPyBytePermutation.get(permutation_id))
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
@@ -161,7 +161,7 @@ NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtyp
 
 
 class NumPyWordPermutation(MemoizedPermutation):
-    _permutations: dict[int | tuple[int, ...], Self] = {}
+    _permutations: 'dict[int | tuple[int, ...], Self]' = {}
     rng = np.random.default_rng()
 
     def __init__(self, array: np.ndarray):
@@ -222,7 +222,7 @@ class NumPyPacked64BHV(AbstractBHV):
     def permute_words(self, permutation: 'NumPyWordPermutation') -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(self.data[permutation.data])
 
-    def permute(self, permutation_id: int) -> 'NumPyPacked64BHV':
+    def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'NumPyPacked64BHV':
         return self.permute_words(NumPyWordPermutation.get(permutation_id))
 
     def __eq__(self, other: 'NumPyPacked64BHV') -> bool:
