@@ -284,11 +284,17 @@ class MemoizedPermutation:
     def random(cls) -> Self:
         raise NotImplementedError()
 
-    def compose(self, other: Self) -> Self:
+    def __mul__(self, other: Self) -> Self:
         raise NotImplementedError()
 
-    def invert(self) -> Self:
+    def __invert__(self) -> Self:
         raise NotImplementedError()
+
+    def __pow__(self, power):
+        permutation = self
+        for _ in range(power - 1):
+            permutation = permutation*permutation
+        return permutation
 
     @classmethod
     def _get_singular(cls, permutation_id: int) -> Self:
@@ -296,7 +302,7 @@ class MemoizedPermutation:
             return cls._permutations[permutation_id]
         elif -permutation_id in cls._permutations:
             inv_permutation = cls._permutations[-permutation_id]
-            permutation = inv_permutation.invert()
+            permutation = ~inv_permutation
             cls._permutations[permutation_id] = permutation
             return permutation
         else:
@@ -310,7 +316,7 @@ class MemoizedPermutation:
         composite_permutation = cls._get_singular(permutation_id[0])
         for component_permutation_id in permutation_id[1:]:
             component_permutation = cls.get(component_permutation_id)
-            composite_permutation = composite_permutation.compose(component_permutation)
+            composite_permutation = composite_permutation * component_permutation
 
         cls._permutations[permutation_id] = composite_permutation
         return composite_permutation

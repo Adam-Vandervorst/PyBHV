@@ -13,10 +13,10 @@ class NumPyBoolPermutation(MemoizedPermutation):
     def random(cls) -> 'NumPyBoolPermutation':
         return NumPyBoolPermutation(cls.rng.permutation(DIMENSION))
 
-    def compose(self, other: 'NumPyBoolPermutation') -> 'NumPyBoolPermutation':
+    def __mul__(self, other: 'NumPyBoolPermutation') -> 'NumPyBoolPermutation':
         return NumPyBoolPermutation(self.data[other.data])
 
-    def invert(self) -> 'NumPyBoolPermutation':
+    def __invert__(self) -> 'NumPyBoolPermutation':
         inv_permutation = np.empty_like(self.data)
         inv_permutation[self.data] = np.arange(DIMENSION)
         return NumPyBoolPermutation(inv_permutation)
@@ -98,10 +98,10 @@ class NumPyBytePermutation(MemoizedPermutation):
     def random(cls) -> 'NumPyBytePermutation':
         return NumPyBytePermutation(cls.rng.permutation(DIMENSION//8))
 
-    def compose(self, other: 'NumPyBytePermutation') -> 'NumPyBytePermutation':
+    def __mul__(self, other: 'NumPyBytePermutation') -> 'NumPyBytePermutation':
         return NumPyBytePermutation(self.data[other.data])
 
-    def invert(self) -> 'NumPyBytePermutation':
+    def __invert__(self) -> 'NumPyBytePermutation':
         inv_permutation = np.empty_like(self.data)
         inv_permutation[self.data] = np.arange(DIMENSION//8)
         return NumPyBytePermutation(inv_permutation)
@@ -165,10 +165,10 @@ class NumPyWordPermutation(MemoizedPermutation):
     def random(cls) -> 'NumPyWordPermutation':
         return NumPyWordPermutation(cls.rng.permutation(DIMENSION//64))
 
-    def compose(self, other: 'NumPyWordPermutation') -> 'NumPyWordPermutation':
+    def __mul__(self, other: 'NumPyWordPermutation') -> 'NumPyWordPermutation':
         return NumPyWordPermutation(self.data[other.data])
 
-    def invert(self) -> 'NumPyWordPermutation':
+    def __invert__(self) -> 'NumPyWordPermutation':
         inv_permutation = np.empty_like(self.data)
         inv_permutation[self.data] = np.arange(DIMENSION//64)
         return NumPyWordPermutation(inv_permutation)

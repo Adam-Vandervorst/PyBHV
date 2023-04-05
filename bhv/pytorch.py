@@ -38,10 +38,10 @@ class TorchBoolPermutation(MemoizedPermutation):
     def random(cls) -> 'TorchBoolPermutation':
         return TorchBoolPermutation(torch.randperm(DIMENSION))
 
-    def compose(self, other: 'TorchBoolPermutation') -> 'TorchBoolPermutation':
+    def __mul__(self, other: 'TorchBoolPermutation') -> 'TorchBoolPermutation':
         return TorchBoolPermutation(self.data[other.data])
 
-    def invert(self) -> 'TorchBoolPermutation':
+    def __invert__(self) -> 'TorchBoolPermutation':
         inv_permutation = torch.empty_like(self.data)
         inv_permutation[self.data] = torch.arange(DIMENSION)
         return TorchBoolPermutation(inv_permutation)
@@ -118,10 +118,10 @@ class TorchWordPermutation(MemoizedPermutation):
     def random(cls) -> 'TorchWordPermutation':
         return TorchWordPermutation(torch.randperm(DIMENSION//64))
 
-    def compose(self, other: 'TorchWordPermutation') -> 'TorchWordPermutation':
+    def __mul__(self, other: 'TorchWordPermutation') -> 'TorchWordPermutation':
         return TorchWordPermutation(self.data[other.data])
 
-    def invert(self) -> 'TorchWordPermutation':
+    def __invert__(self) -> 'TorchWordPermutation':
         inv_permutation = torch.empty_like(self.data)
         inv_permutation[self.data] = torch.arange(DIMENSION//64)
         return TorchWordPermutation(inv_permutation)
