@@ -1,7 +1,7 @@
 try:
     from typing import Self
 except ImportError:
-    Self = 'AbstractHV'
+    Self = 'AbstractBHV'
 
 DIMENSION = 8192
 

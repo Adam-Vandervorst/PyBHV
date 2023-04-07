@@ -139,10 +139,12 @@ class AbstractBHV:
     def cosine(self, other: Self) -> float:
         return 1 - float((self & other).active()) / float(self.active() * other.active() + 1E-7)**.5
 
-    def std_apart(self, other: Self) -> float:
+    def std_apart(self, other: Self, invert=False) -> float:
         p = 0.5
         n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
-        return n.zscore(self.hamming(other))
+        estdvs = n.zscore(p*DIMENSION)
+        stdvs = n.zscore(self.hamming(other))
+        return estdvs - stdvs if invert else stdvs
 
     def zscore(self) -> float:
         p = 0.5
@@ -155,8 +157,11 @@ class AbstractBHV:
         s = n.cdf(self.active())
         return 2.*min(s, 1. - s)
 
-    def sixsigma(self, other: Self) -> bool:
-        return abs(self.std_apart(other)) < 6
+    def related(self, other: Self, stdvs=6) -> bool:
+        return abs(self.std_apart(other)) < stdvs
+
+    def unrelated(self, other: Self, stdvs=6) -> bool:
+        return abs(self.std_apart(other, invert=True)) < stdvs
 
     # Alternative implementations
 

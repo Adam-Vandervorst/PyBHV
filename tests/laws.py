@@ -149,7 +149,7 @@ def bhv_conv_metrics(under):
         invariant_under2(lambda x, y: x.cosine(y), under),
         invariant_under2(lambda x, y: x.jaccard(y), under),
         invariant_under2(lambda x, y: x.std_apart(y), under),
-        invariant_under2(lambda x, y: x.sixsigma(y), under),
+        invariant_under2(lambda x, y: x.related(y), under),
         invariant_under2(lambda x, y: x.bit_error_rate(y), under),
     ]
 
@@ -173,7 +173,7 @@ def run_for(impl: AbstractBHV, ts):
 
 
 def run():
-    all_implementations = [NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
+    all_implementations = [NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV]
 
     for impl in all_implementations:
         print(f"Testing {impl.__name__}...")

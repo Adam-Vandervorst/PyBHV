@@ -90,7 +90,8 @@ There's a "related" function that fixes a certainty called `sixsigma`.
 random_bhvs = BHV.nrand(10)
 for x in random_bhvs:
     for y in random_bhvs:
-        assert x.sixsigma(y) == (x == y)
+        if x != y:
+            assert x.unrelated(y)
 
 """
 Measured in standard deviations, the bulk of the space, and
