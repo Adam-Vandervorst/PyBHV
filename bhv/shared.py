@@ -9,6 +9,9 @@ from dataclasses import fields, is_dataclass
 from base64 import _urlsafe_encode_translation
 import hashlib
 import binascii
+import sys
+
+sys.setrecursionlimit(75_000)
 
 
 def stable_hash(d) -> bytes:
