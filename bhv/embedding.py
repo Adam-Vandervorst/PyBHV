@@ -4,15 +4,15 @@ from typing import Generic, TypeVar, Type, Optional
 T = TypeVar('T')
 
 
-class Translation(Generic[T]):
+class Embedding(Generic[T]):
     def forward(self, x: T) -> AbstractBHV:
         raise NotImplementedError()
 
-    def back(self, x: AbstractBHV) -> T:
+    def back(self, x: AbstractBHV) -> Optional[T]:
         raise NotImplementedError()
 
 
-class Random(Translation):
+class Random(Embedding):
     def __init__(self, hvt: Type[AbstractBHV]):
         self.hvt = hvt
         self.hvs = {}
@@ -36,7 +36,7 @@ class Random(Translation):
         return best_x
 
 
-class InterpolateBetween(Translation):
+class InterpolateBetween(Embedding):
     def __init__(self, hvt: Type[AbstractBHV], begin: AbstractBHV = None, end: AbstractBHV = None):
         self.hvt = hvt
         self.begin = hvt.rand() if begin is None else begin
