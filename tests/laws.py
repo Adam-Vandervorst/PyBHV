@@ -3,7 +3,7 @@ from itertools import product, groupby
 
 from bhv.abstract import AbstractBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
-from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
+# from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 
 
 def associative(m): return lambda x, y, z: m(m(x, y), z) == m(x, m(y, z))
@@ -87,8 +87,8 @@ def boolean_algebra(conj, disj, inv, zero, one):
     ]
 def permute_props(permute):
     π, τ, σ = 42, 13, 39
-    Π, Τ, Σ = lambda x: permute(x, π), lambda x: impl.permute(x, τ), lambda x: impl.permute(x, σ)
-    Πinv, Τinv, Σinv = lambda x: permute(x, -π), lambda x: impl.permute(x, -τ), lambda x: impl.permute(x, -σ)
+    Π, Τ, Σ = lambda x: permute(x, π), lambda x: permute(x, τ), lambda x: permute(x, σ)
+    Πinv, Τinv, Σinv = lambda x: permute(x, -π), lambda x: permute(x, -τ), lambda x: permute(x, -σ)
     return [
         extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (π, τ))),
         extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, (τ, σ)))),
