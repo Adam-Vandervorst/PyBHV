@@ -1,5 +1,5 @@
 from bhv.abstract import AbstractBHV
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar, Type, Optional
 
 T = TypeVar('T')
 
@@ -14,18 +14,18 @@ class Translation(Generic[T]):
 
 class Random(Translation):
     def __init__(self, hvt: Type[AbstractBHV]):
-        self.hv = hvt
+        self.hvt = hvt
         self.hvs = {}
 
     def forward(self, x: T) -> AbstractBHV:
         if x in self.hvs:
             return self.hvs[x]
         else:
-            hv = self.hv.rand()
+            hv = self.hvt.rand()
             self.hvs[x] = hv
             return hv
 
-    def back(self, input_hv: AbstractBHV, threshold=.1) -> T:
+    def back(self, input_hv: AbstractBHV, threshold=.1) -> Optional[T]:
         best_x = None
         best_score = 1.
         for x, hv in self.hvs.items():
@@ -35,3 +35,19 @@ class Random(Translation):
                 best_x = x
         return best_x
 
+
+class InterpolateBetween(Translation):
+    def __init__(self, hvt: Type[AbstractBHV], begin: AbstractBHV = None, end: AbstractBHV = None):
+        self.hvt = hvt
+        self.begin = hvt.rand() if begin is None else begin
+        self.end = hvt.rand() if end is None else end
+
+    def forward(self, x: float) -> AbstractBHV:
+        return self.end.select_random(self.begin, x)
+
+    def back(self, input_hv: AbstractBHV, threshold=.1) -> Optional[float]:
+        beginh = self.begin.bit_error_rate(input_hv)
+        endh = self.end.bit_error_rate(input_hv)
+        totalh = endh + beginh
+        if abs(totalh - .5) < threshold:
+            return beginh/totalh
