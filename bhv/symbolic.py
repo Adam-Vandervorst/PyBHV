@@ -70,7 +70,7 @@ class SymbolicBHV(AbstractBHV):
         nodecs = self.children(**kwargs)
         print(f"{noden} [label=\"{self.nodename(**kwargs)}\"];")
         for c, label in nodecs:
-            print(f"{noden} -> {c.nodeid(**kwargs)};")
+            print(f"{noden} -> {c.nodeid(**kwargs)} [label=\"{label}\"];")
             c.graphviz(**kwargs)
 
     @classmethod
