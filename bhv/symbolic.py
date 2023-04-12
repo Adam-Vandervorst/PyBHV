@@ -3,7 +3,41 @@ from .abstract import *
 from .shared import stable_hashcode
 
 
-class SymbolicPermutation(MemoizedPermutation):
+class Symbolic:
+    def nodename(self, **kwargs):
+        return f"{type(self).__name__.upper()}"
+
+    def nodeid(self, structural=False, **kwargs):
+        return f"{type(self).__name__}{stable_hashcode(self).replace('-', '') if structural else str(id(self))}"
+
+    def children(self, **kwargs):
+        return [(getattr(self, f.name), f.name) for f in fields(self) if issubclass(f.type, Symbolic)]
+
+    def graphviz(self, structural=False, done=None, **kwargs):
+        noden = self.nodeid(structural, **kwargs)
+        if done is None:
+            done = set()
+        if noden in done:
+            return
+        done.add(noden)
+        kwargs |= dict(done=done, structural=structural)
+        nodecs = self.children(**kwargs)
+        print(f"{noden} [label=\"{self.nodename(**kwargs)}\"];")
+        for c, label in nodecs:
+            print(f"{noden} -> {c.nodeid(**kwargs)} [label=\"{label}\"];")
+            c.graphviz(**kwargs)
+
+    def show(self, **kwargs):
+        """
+        Shows the expression tree code-style.
+        Only works on referentially transparent DAGs.
+        :param kwargs: drawing options
+        :return: str
+        """
+        raise NotImplementedError()
+
+
+class SymbolicPermutation(Symbolic, MemoizedPermutation):
     _permutations: 'dict[int | tuple[int, ...], Self]' = {}
 
     @classmethod
@@ -22,11 +56,15 @@ class SymbolicPermutation(MemoizedPermutation):
 @dataclass
 class PermVar(SymbolicPermutation):
     name: str
-    def nodename(self, **kwards):
-        return f"{self.name}"
+    def nodename(self, **kwargs):
+        return self.name
+
+    def show(self, symbolic_var=False, **kwargs):
+        return f"ParmVar(\"{self.name}\")" if symbolic_var else self.name
 @dataclass
 class PermUnit(SymbolicPermutation):
-    pass
+    def show(self, impl="", **kwargs):
+        return impl + "UNIT"
 SymbolicPermutation.UNIT = PermUnit()
 randpermid = 0
 def next_perm_id():
@@ -36,43 +74,31 @@ def next_perm_id():
 @dataclass
 class PermRandom(SymbolicPermutation):
     id: int = field(default_factory=next_perm_id)
+
+    def show(self, impl="", **kwargs):
+        return impl + "random()"
 @dataclass
 class PermCompose(SymbolicPermutation):
     l: 'SymbolicPermutation'
     r: 'SymbolicPermutation'
+
+    def show(self, **kwargs):
+        return f"({self.l.show(**kwargs)} * {self.r.show(**kwargs)})"
 @dataclass
 class PermInvert(SymbolicPermutation):
     p: 'SymbolicPermutation'
+
+    def show(self, **kwargs):
+        return f"(~{self.p.show(**kwargs)})"
 @dataclass
 class PermApply(SymbolicPermutation):
     p: 'SymbolicPermutation'
     v: 'SymbolicBHV'
 
+    def show(self, **kwargs):
+        return f"{self.p.show(**kwargs)}({self.v.show(**kwargs)})"
 
-class SymbolicBHV(AbstractBHV):
-    def nodename(self, **kwargs):
-        return f"{type(self).__name__.upper()}"
-
-    def nodeid(self, structural=False, **kwargs):
-        return f"{type(self).__name__}{stable_hashcode(self).replace('-', '') if structural else str(id(self))}"
-
-    def children(self, **kwargs):
-        return [(getattr(self, f.name), f.name) for f in fields(self) if issubclass(f.type, SymbolicBHV)]
-
-    def graphviz(self, structural=False, done=None, **kwargs):
-        noden = self.nodeid(structural, **kwargs)
-        if done is None:
-            done = set()
-        if noden in done:
-            return
-        done.add(noden)
-        kwargs |= dict(done=done, structural=structural)
-        nodecs = self.children(**kwargs)
-        print(f"{noden} [label=\"{self.nodename(**kwargs)}\"];")
-        for c, label in nodecs:
-            print(f"{noden} -> {c.nodeid(**kwargs)} [label=\"{label}\"];")
-            c.graphviz(**kwargs)
-
+class SymbolicBHV(Symbolic, AbstractBHV):
     @classmethod
     def rand(cls) -> Self:
         return Rand()
@@ -154,13 +180,18 @@ class SymbolicBHV(AbstractBHV):
 class Var(SymbolicBHV):
     name: str
     def nodename(self, **kwards):
-        return f"{self.name}"
+        return self.name
+
+    def show(self, symbolic_var=False, **kwargs):
+        return f"Var(\"{self.name}\")" if symbolic_var else self.name
 @dataclass
 class Zero(SymbolicBHV):
-    pass
+    def show(self, impl="", **kwargs):
+        return impl + "ZERO"
 @dataclass
 class One(SymbolicBHV):
-    pass
+    def show(self, impl="", **kwargs):
+        return impl + "ONE"
 SymbolicBHV.ZERO = Zero()
 SymbolicBHV.ONE = One()
 randid = 0
@@ -171,38 +202,68 @@ def next_id():
 @dataclass
 class Rand(SymbolicBHV):
     id: int = field(default_factory=next_id)
+
+    def show(self, impl="", **kwargs):
+        return impl + "rand()"
 @dataclass
 class Rand2(SymbolicBHV):
     power: int
+
+    def show(self, impl="", **kwargs):
+        return impl + f"rand2({self.power})"
 @dataclass
 class Random(SymbolicBHV):
     active: float
+
+    def show(self, impl="", **kwargs):
+        return impl + f"random({self.active})"
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
+
+    def show(self, impl="", **kwargs):
+        return impl + f"majority({[v.show(**kwargs) for v in self.vs]})"
 @dataclass
 class Permute(SymbolicBHV):
-    id: int
+    id: 'int | tuple[int, ...]'
     v: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.v.show(**kwargs)}.permute({self.id})"
 @dataclass
 class Eq:
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"({self.l.show(**kwargs)} == {self.r.show(**kwargs)})"
 @dataclass
 class Xor(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"({self.l.show(**kwargs)} ^ {self.r.show(**kwargs)})"
 @dataclass
 class And(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"({self.l.show(**kwargs)} & {self.r.show(**kwargs)})"
 @dataclass
 class Or(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"({self.l.show(**kwargs)} | {self.r.show(**kwargs)})"
 @dataclass
 class Invert(SymbolicBHV):
     v: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"(~{self.v.show(**kwargs)})"
 @dataclass
 class Select(SymbolicBHV):
     cond: SymbolicBHV
@@ -212,16 +273,28 @@ class Select(SymbolicBHV):
         return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
     def children(self, compact_select=True, **kwargs):
         return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().nodename(**kwargs)
+
+    def show(self, **kwargs):
+        return f"{self.cond.show(**kwargs)}.select({self.when1.show(**kwargs)}, {self.when0.show(**kwargs)})"
 @dataclass
 class Mix(SymbolicBHV):
     frac: float
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.frac})"
 @dataclass
-class Active:
+class Active(SymbolicBHV):
     v: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.v.show(**kwargs)}.active()"
 @dataclass
-class BiasRel:
+class BiasRel(SymbolicBHV):
     rel: SymbolicBHV
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
