@@ -298,6 +298,10 @@ class MemoizedPermutation:
     _permutations: 'dict[int | tuple[int, ...], Self]'
 
     @classmethod
+    def nrandom(cls, n) -> list[Self]:
+        return [cls.random() for _ in range(n)]
+
+    @classmethod
     def random(cls) -> Self:
         raise NotImplementedError()
 
