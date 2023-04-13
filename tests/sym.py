@@ -13,6 +13,13 @@ def large_majority_plot():
     AbstractBHV.majority(all_vars).graphviz(structural=False, compact_select=True)
 
 
+def mock(T, **fields):
+    return type(f"Mocked{T.__name__}", (T,), fields)
+
+
 if __name__ == '__main__':
     print(SymbolicBHV.random(.25).select((Var("X") & ~Var("Y")), (Var("X") | ~Var("Y")))
           .show(impl="SymbolicBHV.", symbolic_var=True))
+
+    print(mock(SymbolicBHV, majority=vars(AbstractBHV)['majority']).majority([Var("X"), Var("Y")])
+          .show(random_id=True))

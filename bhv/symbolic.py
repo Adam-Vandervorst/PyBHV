@@ -75,8 +75,8 @@ def next_perm_id():
 class PermRandom(SymbolicPermutation):
     id: int = field(default_factory=next_perm_id)
 
-    def show(self, impl="", **kwargs):
-        return impl + "random()"
+    def show(self, impl="", random_id=False, **kwargs):
+        return f"<{impl}random {self.id}>" if random_id else impl + "random()"
 @dataclass
 class PermCompose(SymbolicPermutation):
     l: 'SymbolicPermutation'
@@ -203,8 +203,8 @@ def next_id():
 class Rand(SymbolicBHV):
     id: int = field(default_factory=next_id)
 
-    def show(self, impl="", **kwargs):
-        return impl + "rand()"
+    def show(self, impl="", random_id=False, **kwargs):
+        return f"<{impl}rand {self.id}>" if random_id else impl + "rand()"
 @dataclass
 class Rand2(SymbolicBHV):
     power: int

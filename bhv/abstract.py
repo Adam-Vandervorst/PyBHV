@@ -78,7 +78,20 @@ class AbstractBHV:
 
     @classmethod
     def majority(cls, vs: list[Self]) -> Self:
-        assert len(vs) % 2 == 1,  "The majority function which is only defined on uneven length inputs, see maj_bundle"
+        n = len(vs)
+
+        if n == 0:
+            return cls.rand()
+        elif n == 1:
+            return vs[0]
+        elif n % 2 == 0:
+            return cls.majority([cls.rand()] + vs)
+        else:
+            return cls._true_majority(vs)
+
+    @classmethod
+    def _true_majority(cls, vs: list[Self]) -> Self:
+        assert len(vs) % 2 == 1,  "The true majority function which is only defined on uneven length inputs, see `majority`"
         half = len(vs)//2
         disjunction = list(accumulate(vs[:half-1:-1], or_))[1:]
         conjunction = list(accumulate(vs[:half-1:-1], and_))[1:]
