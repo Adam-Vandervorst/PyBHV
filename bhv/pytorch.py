@@ -86,6 +86,16 @@ class TorchBoolBHV(AbstractBHV):
     def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'TorchBoolBHV':
         return self.permute_bits(TorchBoolPermutation.get(permutation_id))
 
+    def swap_halves(self) -> 'TorchBoolBHV':
+        return self.roll_bits(DIMENSION//2)
+
+    def rehash(self) -> 'TorchBoolBHV':
+        offsets = [(H & self).active() for H in self.HS]
+        res = self.HASH
+        for o in offsets:
+            res = res ^ self.roll_bits(o)
+        return res
+
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
 
@@ -109,6 +119,12 @@ class TorchBoolBHV(AbstractBHV):
 
 TorchBoolBHV.ZERO = TorchBoolBHV(torch.zeros(DIMENSION, dtype=torch.bool))
 TorchBoolBHV.ONE = TorchBoolBHV(torch.ones(DIMENSION, dtype=torch.bool))
+TorchBoolBHV.HASH = TorchBoolBHV.rand()
+TorchBoolBHV.HS = TorchBoolBHV.nrand2(8, power=6)
+TorchBoolBHV._FEISTAL_SUBKEYS = TorchBoolBHV.nrand2(TorchBoolBHV._FEISTAL_ROUNDS, 4)
+_halfb = torch.zeros(DIMENSION, dtype=torch.bool)
+_halfb[:DIMENSION//2] = 1
+TorchBoolBHV.HALF = TorchBoolBHV(_halfb)
 
 
 class TorchWordPermutation(MemoizedPermutation):
@@ -155,6 +171,12 @@ class TorchPackedBHV(AbstractBHV):
     def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'TorchPackedBHV':
         return self.permute_words(TorchWordPermutation.get(permutation_id))
 
+    def swap_halves(self) -> 'TorchPackedBHV':
+        return self.roll_words(DIMENSION//128)
+
+    def rehash(self) -> 'TorchPackedBHV':
+        return self.unpack().rehash().pack()
+
     def __eq__(self, other: 'TorchBoolBHV') -> bool:
         return torch.equal(self.data, other.data)
 
@@ -184,3 +206,7 @@ class TorchPackedBHV(AbstractBHV):
 
 TorchPackedBHV.ZERO = TorchPackedBHV(torch.zeros(DIMENSION//64, dtype=torch.long))
 TorchPackedBHV.ONE = TorchPackedBHV(torch.full((DIMENSION//64,), fill_value=-1, dtype=torch.long))  # -1 is all ones in torch's encoding
+TorchPackedBHV._FEISTAL_SUBKEYS = TorchPackedBHV.nrand2(TorchPackedBHV._FEISTAL_ROUNDS, 4)
+_half64 = torch.zeros(DIMENSION//64, dtype=torch.long)
+_half64[:DIMENSION//128] = -1
+TorchPackedBHV.HALF = TorchPackedBHV(_half64)

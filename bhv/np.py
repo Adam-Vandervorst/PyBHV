@@ -40,6 +40,12 @@ class NumPyBoolBHV(AbstractBHV):
     def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
+    def swap_halves(self) -> 'NumPyBoolBHV':
+        return self.roll_bits(DIMENSION//2)
+
+    def rehash(self) -> 'NumPyBoolBHV':
+        return self.pack8().rehash().unpack()
+
     def roll_bits(self, n: int) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.roll(self.data, n))
 
@@ -87,6 +93,10 @@ class NumPyBoolBHV(AbstractBHV):
 
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
+NumPyBoolBHV._FEISTAL_SUBKEYS = NumPyBoolBHV.nrand2(NumPyBoolBHV._FEISTAL_ROUNDS, 4)
+_halfb = np.zeros(DIMENSION, dtype=np.bool_)
+_halfb[:DIMENSION//2] = np.bool_(True)
+NumPyBoolBHV.HALF = NumPyBoolBHV(_halfb)
 
 
 class NumPyBytePermutation(MemoizedPermutation):
@@ -94,7 +104,6 @@ class NumPyBytePermutation(MemoizedPermutation):
     rng = np.random.default_rng()
 
     def __init__(self, array: np.ndarray):
-        print("array size", array.size)
         self.data: np.ndarray = array
 
     @classmethod
@@ -129,11 +138,20 @@ class NumPyPacked8BHV(AbstractBHV):
         assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return NumPyPacked8BHV(np.roll(self.data, n))
 
+    def swap_halves(self) -> 'NumPyPacked8BHV':
+        return self.roll_bytes(DIMENSION//16)
+
     def permute_bytes(self, permutation: 'NumPyBytePermutation') -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(self.data[permutation.data])
 
     def permute(self, permutation_id: 'int | tuple[int, ...]') -> 'NumPyPacked8BHV':
         return self.permute_bytes(NumPyBytePermutation.get(permutation_id))
+
+    def rehash(self) -> 'NumPyPacked8BHV':
+        data = bytearray()
+        for a in self.data.reshape(-1, 512//8):
+            data.extend(hashlib.sha512(a).digest())
+        return NumPyPacked8BHV(np.array(data, dtype=np.uint8))
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
@@ -156,8 +174,15 @@ class NumPyPacked8BHV(AbstractBHV):
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data))
 
+    def repack64(self) -> 'NumPyPacked64BHV':
+        return NumPyPacked64BHV(self.data.view(dtype=np.uint64))
+
 NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
 NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtype=np.uint8))
+NumPyPacked8BHV._FEISTAL_SUBKEYS = NumPyPacked8BHV.nrand2(NumPyPacked8BHV._FEISTAL_ROUNDS, 4)
+_half8 = np.zeros(DIMENSION//8, dtype=np.uint8)
+_half8[:DIMENSION//16] = np.uint8(255)
+NumPyPacked8BHV.HALF = NumPyPacked8BHV(_half8)
 
 
 class NumPyWordPermutation(MemoizedPermutation):
@@ -200,6 +225,12 @@ class NumPyPacked64BHV(AbstractBHV):
     @classmethod
     def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
+
+    def swap_halves(self) -> 'NumPyPacked64BHV':
+        return self.roll_words(DIMENSION//128)
+
+    def rehash(self) -> 'NumPyPacked64BHV':
+        return self.repack8().rehash().repack64()
 
     def roll_words(self, n: int) -> 'NumPyPacked64BHV':
         assert abs(n) < DIMENSION//64, "only supports DIMENSION/64 rolls"
@@ -246,5 +277,12 @@ class NumPyPacked64BHV(AbstractBHV):
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data.view(np.uint8)))
 
+    def repack8(self) -> 'NumPyPacked8BHV':
+        return NumPyPacked8BHV(self.data.view(dtype=np.uint8))
+
 NumPyPacked64BHV.ZERO = NumPyPacked64BHV(np.zeros(DIMENSION//64, dtype=np.uint64))
 NumPyPacked64BHV.ONE = NumPyPacked64BHV(np.full(DIMENSION//64, fill_value=-1, dtype=np.uint64))
+NumPyPacked64BHV._FEISTAL_SUBKEYS = NumPyPacked64BHV.nrand2(NumPyPacked64BHV._FEISTAL_ROUNDS, 4)
+_half64 = np.zeros(DIMENSION//64, dtype=np.uint64)
+_half64[:DIMENSION//128] = np.uint64(-1)
+NumPyPacked64BHV.HALF = NumPyPacked64BHV(_half64)

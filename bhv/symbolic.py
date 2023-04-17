@@ -118,6 +118,12 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def permute(self, permutation_id: 'int | tuple[int, ...]') -> Self:
         return Permute(permutation_id, self)
 
+    def swap_halves(self) -> Self:
+        return SwapHalves(self)
+
+    def rehash(self) -> Self:
+        return ReHash(self)
+
     def __eq__(self, other: Self) -> bool:
         return Eq(self, other)
 
@@ -230,6 +236,18 @@ class Permute(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.permute({self.id})"
+@dataclass
+class SwapHalves(SymbolicBHV):
+    v: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.v.show(**kwargs)}.swap_halves()"
+@dataclass
+class ReHash(SymbolicBHV):
+    v: SymbolicBHV
+
+    def show(self, **kwargs):
+        return f"{self.v.show(**kwargs)}.rehash()"
 @dataclass
 class Eq:
     l: SymbolicBHV

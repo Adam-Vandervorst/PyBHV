@@ -72,6 +72,30 @@ class AbstractBHV:
     def permute(self, permutation_id: int) -> Self:
         raise NotImplementedError()
 
+    def swap_halves(self) -> Self:
+        raise NotImplementedError()
+
+    def rehash(self) -> Self:
+        raise NotImplementedError()
+
+    _FEISTAL_ROUNDS = 16
+
+    @classmethod
+    def _feistal_round(cls, block: Self, round_key: Self) -> Self:
+        L = block & cls.HALF
+        R = (block ^ (L ^ round_key).rehash().swap_halves()) & ~cls.HALF
+
+        return (L | R).swap_halves()
+
+    def feistal(self, k: Self, inv=False) -> Self:
+        block = self
+        rounds = range(self._FEISTAL_ROUNDS)
+
+        for r in reversed(rounds) if inv else rounds:
+            block = self._feistal_round(block, self._FEISTAL_SUBKEYS[r] & k)
+
+        return block.swap_halves()
+
     @classmethod
     def majority3(cls, x, y, z) -> Self:
         return cls.majority([x, y, z])
@@ -305,6 +329,7 @@ class AbstractBHV:
 
     ZERO: Self
     ONE: Self
+    HALF: Self
 
 
 class MemoizedPermutation:
