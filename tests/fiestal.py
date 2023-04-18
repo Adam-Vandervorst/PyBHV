@@ -50,7 +50,7 @@ class TestRehash(unittest.TestCase):
 
     def test_close_different(self):
         seed = BHV.rand()
-        vs = [seed.flip_pow(7) for _ in range(10)]
+        vs = [seed.flip_pow(8) for _ in range(10)]
 
         for v in vs:
             eq = False

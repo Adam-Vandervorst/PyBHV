@@ -78,7 +78,7 @@ class AbstractBHV:
     def rehash(self) -> Self:
         raise NotImplementedError()
 
-    _FEISTAL_ROUNDS = 16
+    _FEISTAL_ROUNDS = 8
 
     @classmethod
     def _feistal_round(cls, block: Self, round_key: Self) -> Self:

@@ -90,8 +90,9 @@ class TorchBoolBHV(AbstractBHV):
         return self.roll_bits(DIMENSION//2)
 
     def rehash(self) -> 'TorchBoolBHV':
-        offsets = [(H & self).active() for H in self.HS]
-        res = self.HASH
+        # torch to bytes is broken hence custom function https://github.com/pytorch/pytorch/issues/33041
+        offsets = [(H & self).active() for H in self._HS]
+        res = self._HASH
         for o in offsets:
             res = res ^ self.roll_bits(o)
         return res
@@ -119,8 +120,8 @@ class TorchBoolBHV(AbstractBHV):
 
 TorchBoolBHV.ZERO = TorchBoolBHV(torch.zeros(DIMENSION, dtype=torch.bool))
 TorchBoolBHV.ONE = TorchBoolBHV(torch.ones(DIMENSION, dtype=torch.bool))
-TorchBoolBHV.HASH = TorchBoolBHV.rand()
-TorchBoolBHV.HS = TorchBoolBHV.nrand2(8, power=6)
+TorchBoolBHV._HASH = TorchBoolBHV.rand()
+TorchBoolBHV._HS = TorchBoolBHV.nrand2(5, power=2)
 TorchBoolBHV._FEISTAL_SUBKEYS = TorchBoolBHV.nrand2(TorchBoolBHV._FEISTAL_ROUNDS, 4)
 _halfb = torch.zeros(DIMENSION, dtype=torch.bool)
 _halfb[:DIMENSION//2] = 1

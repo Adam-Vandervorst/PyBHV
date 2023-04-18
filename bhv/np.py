@@ -148,10 +148,10 @@ class NumPyPacked8BHV(AbstractBHV):
         return self.permute_bytes(NumPyBytePermutation.get(permutation_id))
 
     def rehash(self) -> 'NumPyPacked8BHV':
-        data = bytearray()
-        for a in self.data.reshape(-1, 512//8):
-            data.extend(hashlib.sha512(a).digest())
-        return NumPyPacked8BHV(np.array(data, dtype=np.uint8))
+        byte_data = self.data.tobytes()
+        rehashed_byte_data = hashlib.shake_256(byte_data).digest(DIMENSION//8)
+        rehashed_data = np.frombuffer(rehashed_byte_data, dtype=np.uint8)
+        return NumPyPacked8BHV(rehashed_data)
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
