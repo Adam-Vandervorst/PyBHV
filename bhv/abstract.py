@@ -151,9 +151,6 @@ class AbstractBHV:
     def select(self, when1: Self, when0: Self) -> Self:
         return when0 ^ (self & (when0 ^ when1))
 
-    def mix(self, other: Self, pick_l=0.5) -> Self:
-        return self.random(pick_l).select(self, other)
-
     def active(self) -> int:
         raise NotImplementedError()
 
