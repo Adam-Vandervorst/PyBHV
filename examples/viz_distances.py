@@ -11,6 +11,9 @@ a0 = a.flip_frac_off(.1)
 
 cq = c.select(a0, a1)
 
+bd = b ^ d
+abc_d = abc ^ d
+
 
 DistanceGraph({
     'a': a,
@@ -20,4 +23,6 @@ DistanceGraph({
     'a1': a1,
     'a0': a0,
     'cq': cq,
+    'abc_d': abc_d,
+    'b_d': bd,
 }).graphviz()
