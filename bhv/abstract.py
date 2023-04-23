@@ -329,9 +329,7 @@ class AbstractBHV:
     HALF: Self
 
 
-class MemoizedPermutation:
-    _permutations: 'dict[int | tuple[int, ...], Self]'
-
+class Permutation:
     @classmethod
     def nrandom(cls, n) -> list[Self]:
         return [cls.random() for _ in range(n)]
@@ -354,6 +352,10 @@ class MemoizedPermutation:
 
     def __call__(self, hv: 'AbstractBHV') -> 'AbstractBHV':
         raise NotImplementedError()
+
+
+class MemoizedPermutation(Permutation):
+    _permutations: 'dict[int | tuple[int, ...], Self]'
 
     @classmethod
     def _get_singular(cls, permutation_id: int) -> Self:
