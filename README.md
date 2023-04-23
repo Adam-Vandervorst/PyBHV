@@ -20,7 +20,8 @@ Additionally, provided are
 - Efficient bit-packed representation
 - Three redundant implementations on NumPy for performance and correctness
 - A minimal abstraction for permutations with caching and composition
-- Very basic embeddings for other datatypes (more to come) 
+- Very basic embeddings for other datatypes (more to come)
+- Graph visualization of distances in hyperdimensional space ([see example](examples/viz_distances.py)).
 
 ## Installation
 `pip install bhv`
@@ -46,7 +47,7 @@ If you like to dive into the code directly, I suggest the following entrypoints:
 If you're comming at this from a Machine Learning angle, you may enjoy:
 - [A minimal implementation](examples/winnow_classification.py) of the [winnow algorithm](https://en.wikipedia.org/wiki/Winnow_(algorithm)) on a minimal problem
 - [A minimal implementation of classification based on the majority operator](examples/majority_classification.py) on a minimal problem
-- [A Google Colab hosted MNIST classification via plain majority notebook](https://colab.research.google.com/drive/1xYQAXxcdFw89RV5CsflcvFhx3zpmEUxk?usp=sharing)
+- [A Google Colab hosted digit classification via plain majority notebook](https://colab.research.google.com/drive/1xYQAXxcdFw89RV5CsflcvFhx3zpmEUxk?usp=sharing)
 
 ## Note
 This repository is highly active, and a work-in-progress.
