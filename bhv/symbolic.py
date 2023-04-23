@@ -36,6 +36,27 @@ class Symbolic:
         """
         raise NotImplementedError()
 
+    def instantiate(self, **kwargs):
+        raise NotImplementedError()
+
+    def execute(self, random: 'dict[int, AbstractBHV]' = None,
+                rand2: 'dict[int, AbstractBHV]' = None,
+                rand: 'dict[int, AbstractBHV]' = None,
+                randomperms: 'dict[int, MemoizedPermutation]' = None,
+                calculated = None, **kwargs):
+        if random is None: random = {}
+        if rand2 is None: rand2 = {}
+        if rand is None: rand = {}
+        if randomperms is None: randomperms = {}
+        if calculated is None: calculated = {}
+        kwargs |= dict(random=random, rand2=rand2, rand=rand, randomperms=randomperms, calculated=calculated)
+        if id(self) in calculated:
+            return calculated[id(self)]
+        else:
+            result = self.instantiate(**kwargs)
+            calculated[id(self)] = result
+            return result
+
 
 class SymbolicPermutation(Symbolic, MemoizedPermutation):
     _permutations: 'dict[int | tuple[int, ...], Self]' = {}
@@ -59,13 +80,18 @@ class PermVar(SymbolicPermutation):
     def nodename(self, **kwargs):
         return self.name
 
-    def show(self, symbolic_var=False, **kwargs):
+    def show(self, **kwargs):
+        symbolic_var = kwargs.get("symbolic_var", False)
         return f"ParmVar(\"{self.name}\")" if symbolic_var else self.name
-@dataclass
-class PermUnit(SymbolicPermutation):
-    def show(self, impl="", **kwargs):
-        return impl + "UNIT"
-SymbolicPermutation.UNIT = PermUnit()
+
+    def instantiate(self, **kwargs):
+        permvars = kwargs.get("permvars")
+        if permvars is None:
+            raise RuntimeError(f"No Perm vars supplied but tried to instantiate `{self.name}`")
+        elif self.name not in permvars:
+            raise RuntimeError(f"Perm var `{self.name}` not in permvars ({set(permvars.keys())})")
+        else:
+            return permvars[self.name]
 randpermid = 0
 def next_perm_id():
     global randpermid
@@ -75,8 +101,19 @@ def next_perm_id():
 class PermRandom(SymbolicPermutation):
     id: int = field(default_factory=next_perm_id)
 
-    def show(self, impl="", random_id=False, **kwargs):
+    def show(self, **kwargs):
+        impl = kwargs.get("impl", "")
+        random_id = kwargs.get("random_id", False)
         return f"<{impl}random {self.id}>" if random_id else impl + "random()"
+
+    def instantiate(self, **kwargs):
+        randomperms = kwargs.get("randomperms")
+        if self.id in randomperms:
+            return randomperms[self.id]
+        else:
+            r = kwargs.get("perm").random()
+            randomperms[self.id] = r
+            return r
 @dataclass
 class PermCompose(SymbolicPermutation):
     l: SymbolicPermutation
@@ -84,12 +121,19 @@ class PermCompose(SymbolicPermutation):
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} * {self.r.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs) * self.r.execute(**kwargs)
 @dataclass
 class PermInvert(SymbolicPermutation):
     p: SymbolicPermutation
 
     def show(self, **kwargs):
         return f"(~{self.p.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return ~self.p.execute(**kwargs)
+
 
 class SymbolicBHV(Symbolic, AbstractBHV):
     @classmethod
@@ -135,9 +179,6 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def select(self, when1: Self, when0: Self) -> Self:
         return Select(self, when0, when1)
 
-    def mix(self, other: Self, pick_l=0.5) -> Self:
-        return Mix(pick_l, self, other)
-
     def active(self) -> int:
         return Active(self)
 
@@ -155,22 +196,40 @@ class PermApply(SymbolicBHV):
     def show(self, **kwargs):
         return f"{self.p.show(**kwargs)}({self.v.show(**kwargs)})"
 
+    def instantiate(self, **kwargs):
+        return self.p.execute(**kwargs)(self.v.execute(**kwargs))
 @dataclass
 class Var(SymbolicBHV):
     name: str
     def nodename(self, **kwards):
         return self.name
 
-    def show(self, symbolic_var=False, **kwargs):
+    def show(self, **kwargs):
+        symbolic_var = kwargs.get("symbolic_var", False)
         return f"Var(\"{self.name}\")" if symbolic_var else self.name
+
+    def instantiate(self, **kwargs):
+        vars = kwargs.get("vars")
+        if vars is None:
+            raise RuntimeError(f"No Perm vars supplied but tried to instantiate `{self.name}`")
+        elif self.name not in vars:
+            raise RuntimeError(f"Perm var `{self.name}` not in permvars ({set(vars.keys())})")
+        else:
+            return vars[self.name]
 @dataclass
 class Zero(SymbolicBHV):
-    def show(self, impl="", **kwargs):
-        return impl + "ZERO"
+    def show(self, **kwargs):
+        return kwargs.get("impl", "") + "ZERO"
+
+    def instantiate(self, bhv, **kwargs):
+        return kwargs.get("bhv").ZERO
 @dataclass
 class One(SymbolicBHV):
-    def show(self, impl="", **kwargs):
-        return impl + "ONE"
+    def show(self, **kwargs):
+        return kwargs.get("impl", "") + "ONE"
+
+    def instantiate(self, **kwargs):
+        return kwargs.get("bhv").ONE
 SymbolicBHV.ZERO = Zero()
 SymbolicBHV.ONE = One()
 randid = 0
@@ -182,20 +241,49 @@ def next_id():
 class Rand(SymbolicBHV):
     id: int = field(default_factory=next_id)
 
-    def show(self, impl="", random_id=False, **kwargs):
+    def show(self, **kwargs):
+        impl = kwargs.get("impl", "")
+        random_id = kwargs.get("random_id", False)
         return f"<{impl}rand {self.id}>" if random_id else impl + "rand()"
+
+    def instantiate(self, **kwargs):
+        rand = kwargs.get("rand")
+        if self.id in rand:
+            return rand[self.id]
+        else:
+            r = kwargs.get("bhv").rand()
+            rand[self.id] = r
+            return r
 @dataclass
 class Rand2(SymbolicBHV):
     power: int
 
-    def show(self, impl="", **kwargs):
-        return impl + f"rand2({self.power})"
+    def show(self, **kwargs):
+        return kwargs.get("impl", "") + f"rand2({self.power})"
+
+    def instantiate(self, **kwargs):
+        rand2 = kwargs.get("rand2")
+        if self.id in rand2:
+            return rand2[self.id]
+        else:
+            r = kwargs.get("bhv").rand2()
+            rand2[self.id] = r
+            return r
 @dataclass
 class Random(SymbolicBHV):
     active: float
 
-    def show(self, impl="", **kwargs):
-        return impl + f"random({self.active})"
+    def show(self, **kwargs):
+        return kwargs.get("impl", "") + f"random({self.active})"
+
+    def instantiate(self, **kwargs):
+        random = kwargs.get("random")
+        if self.id in random:
+            return random[self.id]
+        else:
+            r = kwargs.get("bhv").random()
+            random[self.id] = r
+            return r
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
@@ -203,8 +291,11 @@ class Majority(SymbolicBHV):
     def children(self, **kwargs):
         return list(zip(self.vs, map(str, range(len(self.vs)))))
 
-    def show(self, impl="", **kwargs):
-        return impl + f"majority({[v.show(**kwargs) for v in self.vs]})"
+    def show(self, **kwargs):
+        return kwargs.get("impl", "") + f"majority({[v.show(**kwargs) for v in self.vs]})"
+
+    def instantiate(self, **kwargs):
+        return kwargs.get("bhv").majority([v.execute(**kwargs) for v in self.vs])
 @dataclass
 class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
@@ -212,18 +303,27 @@ class Permute(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.permute({self.id})"
+
+    def instantiate(self, **kwargs):
+        return self.v.execute(**kwargs).permute(self.id)
 @dataclass
 class SwapHalves(SymbolicBHV):
     v: SymbolicBHV
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.swap_halves()"
+
+    def instantiate(self, **kwargs):
+        return self.v.execute(**kwargs).swap_halves()
 @dataclass
 class ReHash(SymbolicBHV):
     v: SymbolicBHV
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.rehash()"
+
+    def instantiate(self, **kwargs):
+        return self.v.execute(**kwargs).rehash()
 @dataclass
 class Eq:
     l: SymbolicBHV
@@ -231,6 +331,9 @@ class Eq:
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} == {self.r.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs) == self.r.execute(**kwargs)
 @dataclass
 class Xor(SymbolicBHV):
     l: SymbolicBHV
@@ -238,6 +341,9 @@ class Xor(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} ^ {self.r.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs) ^ self.r.execute(**kwargs)
 @dataclass
 class And(SymbolicBHV):
     l: SymbolicBHV
@@ -245,6 +351,9 @@ class And(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} & {self.r.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs) & self.r.execute(**kwargs)
 @dataclass
 class Or(SymbolicBHV):
     l: SymbolicBHV
@@ -252,12 +361,18 @@ class Or(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} | {self.r.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs) | self.r.execute(**kwargs)
 @dataclass
 class Invert(SymbolicBHV):
     v: SymbolicBHV
 
     def show(self, **kwargs):
         return f"(~{self.v.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return ~self.v.execute(**kwargs)
 @dataclass
 class Select(SymbolicBHV):
     cond: SymbolicBHV
@@ -266,24 +381,22 @@ class Select(SymbolicBHV):
     def nodename(self, compact_select=True, **kwargs):
         return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
     def children(self, compact_select=True, **kwargs):
-        return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().nodename(**kwargs)
+        return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().children(**kwargs)
 
     def show(self, **kwargs):
         return f"{self.cond.show(**kwargs)}.select({self.when1.show(**kwargs)}, {self.when0.show(**kwargs)})"
-@dataclass
-class Mix(SymbolicBHV):
-    frac: float
-    l: SymbolicBHV
-    r: SymbolicBHV
 
-    def show(self, **kwargs):
-        return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.frac})"
+    def instantiate(self, **kwargs):
+        return self.cond.execute(**kwargs).select(self.when1.execute(**kwargs), self.when0.execute(**kwargs))
 @dataclass
 class Active(Symbolic):
     v: SymbolicBHV
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.active()"
+
+    def instantiate(self, **kwargs):
+        return self.v.execute(**kwargs).active()
 @dataclass
 class BiasRel(SymbolicBHV):
     rel: SymbolicBHV
@@ -291,7 +404,10 @@ class BiasRel(SymbolicBHV):
     r: SymbolicBHV
 
     def show(self, **kwargs):
-        return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
+        return f"{self.l.show(**kwargs)}.bias_rel({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs).bias_rel(self.r.execute(**kwargs), self.rel.execute(**kwargs))
 @dataclass
 class Related(Symbolic):
     l: SymbolicBHV
@@ -300,6 +416,9 @@ class Related(Symbolic):
 
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.related({self.r.show(**kwargs)}, {self.stdvs})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs).related(self.r.execute(**kwargs), self.stdvs)
 @dataclass
 class Unrelated(Symbolic):
     l: SymbolicBHV
@@ -308,3 +427,6 @@ class Unrelated(Symbolic):
 
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.unrelated({self.r.show(**kwargs)}, {self.stdvs})"
+
+    def instantiate(self, **kwargs):
+        return self.l.execute(**kwargs).unrelated(self.r.execute(**kwargs), self.stdvs)
