@@ -11,7 +11,7 @@ class Symbolic:
         return f"{type(self).__name__}{stable_hashcode(self).replace('-', '') if structural else str(id(self))}"
 
     def children(self, **kwargs):
-        return [(getattr(self, f.name), f.name) for f in fields(self) if issubclass(f.type, Symbolic)]
+        return [(getattr(self, f.name), f.name) for f in fields(self) if type(f.type) is type and issubclass(f.type, Symbolic)]
 
     def graphviz(self, structural=False, done=None, **kwargs):
         noden = self.nodeid(structural, **kwargs)
@@ -79,24 +79,17 @@ class PermRandom(SymbolicPermutation):
         return f"<{impl}random {self.id}>" if random_id else impl + "random()"
 @dataclass
 class PermCompose(SymbolicPermutation):
-    l: 'SymbolicPermutation'
-    r: 'SymbolicPermutation'
+    l: SymbolicPermutation
+    r: SymbolicPermutation
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} * {self.r.show(**kwargs)})"
 @dataclass
 class PermInvert(SymbolicPermutation):
-    p: 'SymbolicPermutation'
+    p: SymbolicPermutation
 
     def show(self, **kwargs):
         return f"(~{self.p.show(**kwargs)})"
-@dataclass
-class PermApply(SymbolicPermutation):
-    p: 'SymbolicPermutation'
-    v: 'SymbolicBHV'
-
-    def show(self, **kwargs):
-        return f"{self.p.show(**kwargs)}({self.v.show(**kwargs)})"
 
 class SymbolicBHV(Symbolic, AbstractBHV):
     @classmethod
@@ -151,36 +144,16 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def bias_rel(self, other: Self, rel: Self) -> float:
         return BiasRel(rel, self, other)
 
-    # def active_fraction(self) -> float:
-    #     return self.active()/DIMENSION
-    #
-    # def hamming(self, other: Self) -> int:
-    #     return (self ^ other).active()
-    #
-    # def bit_error_rate(self, other: Self) -> float:
-    #     return (self ^ other).active_fraction()
-    #
-    # def jaccard(self, other: Self) -> float:
-    #     return 1. - float((self & other).active()) / float((self | other).active() + 1E-7)
-    #
-    # def cosine(self, other: Self) -> float:
-    #     return 1 - float((self & other).active()) / float(self.active() * other.active() + 1E-7)**.5
-    #
-    # def zscore(self, other: Self) -> float:
-    #     p = 0.5
-    #     n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
-    #     return n.zscore(self.hamming(other))
-    #
-    # def pvalue(self, other: Self) -> float:
-    #     p = 0.5
-    #     n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
-    #     s = n.cdf(self.hamming(other))
-    #     return 2*min(s, 1 - s)
-    #
-    # def sixsigma(self, other: Self) -> bool:
-    #     return abs(self.zscore(other)) < 6
+    def unrelated(self, other: Self, stdvs=6) -> bool:
+        return Unrelated(self, other, stdvs)
 
+@dataclass
+class PermApply(SymbolicBHV):
+    p: SymbolicPermutation
+    v: SymbolicBHV
 
+    def show(self, **kwargs):
+        return f"{self.p.show(**kwargs)}({self.v.show(**kwargs)})"
 
 @dataclass
 class Var(SymbolicBHV):
@@ -226,6 +199,9 @@ class Random(SymbolicBHV):
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
+
+    def children(self, **kwargs):
+        return list(zip(self.vs, map(str, range(len(self.vs)))))
 
     def show(self, impl="", **kwargs):
         return impl + f"majority({[v.show(**kwargs) for v in self.vs]})"
@@ -303,7 +279,7 @@ class Mix(SymbolicBHV):
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.frac})"
 @dataclass
-class Active(SymbolicBHV):
+class Active(Symbolic):
     v: SymbolicBHV
 
     def show(self, **kwargs):
@@ -316,3 +292,19 @@ class BiasRel(SymbolicBHV):
 
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.mix({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
+@dataclass
+class Related(Symbolic):
+    l: SymbolicBHV
+    r: SymbolicBHV
+    stdvs: float
+
+    def show(self, **kwargs):
+        return f"{self.l.show(**kwargs)}.related({self.r.show(**kwargs)}, {self.stdvs})"
+@dataclass
+class Unrelated(Symbolic):
+    l: SymbolicBHV
+    r: SymbolicBHV
+    stdvs: float
+
+    def show(self, **kwargs):
+        return f"{self.l.show(**kwargs)}.unrelated({self.r.show(**kwargs)}, {self.stdvs})"
