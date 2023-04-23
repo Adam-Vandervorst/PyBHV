@@ -11,18 +11,7 @@ a0 = a.flip_frac_off(.1)
 
 cq = c.select(a0, a1)
 
-bd = b ^ d
+b_d = b ^ d
 abc_d = abc ^ d
 
-
-DistanceGraph({
-    'a': a,
-    'b': b,
-    'c': c,
-    'abc': abc,
-    'a1': a1,
-    'a0': a0,
-    'cq': cq,
-    'abc_d': abc_d,
-    'b_d': bd,
-}).graphviz()
+DistanceGraph.from_scope(locals()).graphviz()
