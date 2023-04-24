@@ -57,6 +57,27 @@ class Symbolic:
             calculated[id(self)] = result
             return result
 
+    def internal_size(self):
+        return 1
+
+    def size(self):
+        t = self.internal_size()
+        for c, _ in self.children():
+            t += c.size()
+        return t
+
+    def simplify(self, **kwargs):
+        x = self
+        while True:
+            x_ = x.reduce(**kwargs)
+            if x == x_:
+                return x
+            else:
+                x = x_
+
+    def reduce(self, **kwargs):
+        return self
+
 
 class SymbolicPermutation(Symbolic, MemoizedPermutation):
     _permutations: 'dict[int | tuple[int, ...], Self]' = {}
@@ -221,7 +242,7 @@ class Zero(SymbolicBHV):
     def show(self, **kwargs):
         return kwargs.get("impl", "") + "ZERO"
 
-    def instantiate(self, bhv, **kwargs):
+    def instantiate(self, **kwargs):
         return kwargs.get("bhv").ZERO
 @dataclass
 class One(SymbolicBHV):
@@ -344,6 +365,24 @@ class Xor(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) ^ self.r.execute(**kwargs)
+
+    def reduce(self, **kwargs):
+        if self.l == self.ONE:
+            return ~self.r.simplify(**kwargs)
+        elif self.r == self.ONE:
+            return ~self.l.simplify(**kwargs)
+        if self.l == self.ZERO:
+            return self.r.simplify(**kwargs)
+        elif self.r == self.ZERO:
+            return self.l.simplify(**kwargs)
+        elif self.l == self.r:
+            return self.ZERO
+        elif self.l == ~self.r or ~self.l == self.r:
+            return self.ONE
+        elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
+            return ~Xor(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs))
+        else:
+            return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 @dataclass
 class And(SymbolicBHV):
     l: SymbolicBHV
@@ -354,6 +393,18 @@ class And(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) & self.r.execute(**kwargs)
+
+    def reduce(self, **kwargs):
+        if self.l == self.ZERO or self.r == self.ZERO:
+            return self.ZERO
+        elif self.l == self.ONE:
+            return self.r.simplify(**kwargs)
+        elif self.r == self.ONE:
+            return self.l.simplify(**kwargs)
+        elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
+            return Invert(Or(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
+        else:
+            return And(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 @dataclass
 class Or(SymbolicBHV):
     l: SymbolicBHV
@@ -364,6 +415,18 @@ class Or(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) | self.r.execute(**kwargs)
+
+    def reduce(self, **kwargs):
+        if self.l == self.ONE or self.r == self.ONE:
+            return self.ONE
+        elif self.l == self.ZERO:
+            return self.r.simplify(**kwargs)
+        elif self.r == self.ZERO:
+            return self.l.simplify(**kwargs)
+        elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
+            return Invert(And(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
+        else:
+            return Or(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 @dataclass
 class Invert(SymbolicBHV):
     v: SymbolicBHV
@@ -373,6 +436,16 @@ class Invert(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return ~self.v.execute(**kwargs)
+
+    def reduce(self, **kwargs):
+        if self.v == self.ONE:
+            return self.ZERO
+        elif self.v == self.ZERO:
+            return self.ONE
+        elif isinstance(self.v, Invert):
+            return self.v.v.simplify(**kwargs)
+        else:
+            return Invert(self.v.simplify(**kwargs))
 @dataclass
 class Select(SymbolicBHV):
     cond: SymbolicBHV
@@ -388,6 +461,39 @@ class Select(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.cond.execute(**kwargs).select(self.when1.execute(**kwargs), self.when0.execute(**kwargs))
+
+    def internal_size(self):
+        return 3
+
+    def reduce(self, **kwargs):
+        if self.when1 == self.ONE and self.when0 == self.ZERO:
+            return self.cond.simplify(**kwargs)
+        elif self.when1 == self.ZERO and self.when0 == self.ONE:
+            return ~self.cond.simplify(**kwargs)
+        elif self.when0 == self.when1:
+            return self.when0.simplify(**kwargs)
+        elif self.when1 == self.ONE:
+            return self.cond.simplify(**kwargs) | self.when0.simplify(**kwargs)
+        elif self.when1 == self.ZERO:
+            return ~self.cond.simplify(**kwargs) & self.when0.simplify(**kwargs)
+        elif self.when0 == self.ONE:
+            return ~self.cond.simplify(**kwargs) | self.when1.simplify(**kwargs)
+        elif self.when0 == self.ZERO:
+            return self.cond.simplify(**kwargs) & self.when1.simplify(**kwargs)
+        else:
+            when1_ = self.when1.simplify(**kwargs)
+            when0_ = self.when0.simplify(**kwargs)
+
+            if when1_ == ~when0_:
+                return self.cond ^ when0_
+            elif when0_ == ~when1_:
+                return self.cond ^ when0_
+            elif isinstance(when0_, Invert) and isinstance(when1_, Invert):
+                return ~Select(self.cond.simplify(**kwargs), when1_.v, when0_.v)
+            else:
+                # return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
+                return Select(self.cond.simplify(**kwargs), when1_, when0_)
+
 @dataclass
 class Active(Symbolic):
     v: SymbolicBHV
