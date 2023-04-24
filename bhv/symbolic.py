@@ -13,6 +13,17 @@ class Symbolic:
     def children(self, **kwargs):
         return [(getattr(self, f.name), f.name) for f in fields(self) if type(f.type) is type and issubclass(f.type, Symbolic)]
 
+    def draw_node(self, **kwargs):
+        print(f"{self.nodeid(**kwargs)} [label=\"{self.nodename(**kwargs)}\"];")
+
+    def draw_edges(self, **kwargs):
+        for c, label in self.children(**kwargs):
+            print(f"{c.nodeid(**kwargs)} -> {self.nodeid(**kwargs)} [label=\"{label}\"];")
+
+    def draw_children(self, **kwargs):
+        for c, label in self.children(**kwargs):
+            c.graphviz(**kwargs)
+
     def graphviz(self, structural=False, done=None, **kwargs):
         noden = self.nodeid(structural, **kwargs)
         if done is None:
@@ -21,11 +32,10 @@ class Symbolic:
             return
         done.add(noden)
         kwargs |= dict(done=done, structural=structural)
-        nodecs = self.children(**kwargs)
-        print(f"{noden} [label=\"{self.nodename(**kwargs)}\"];")
-        for c, label in nodecs:
-            print(f"{noden} -> {c.nodeid(**kwargs)} [label=\"{label}\"];")
-            c.graphviz(**kwargs)
+        self.draw_node(**kwargs)
+        self.draw_edges(**kwargs)
+        self.draw_children(**kwargs)
+
 
     def show(self, **kwargs):
         """
@@ -77,6 +87,32 @@ class Symbolic:
 
     def reduce(self, **kwargs):
         return self
+
+
+@dataclass
+class List(Symbolic):
+    name: str
+    xs: list[Symbolic]
+
+    def show(self, **kwargs):
+        return self.name + " {\n" + '\n'.join("  " + x.show(**kwargs) + ";" for x in self.xs) + "\n}"
+
+    def graphviz(self, structural=False, done=None, **kwargs):
+        noden = self.nodeid(structural, **kwargs)
+        if done is None:
+            done = set()
+        if noden in done:
+            return
+        done.add(noden)
+        kwargs |= dict(done=done, structural=structural)
+        print(f"subgraph cluster_{self.name} " + "{")
+        print(f"label = \"{self.name}\";")
+        for c in self.xs:
+            c.draw_node(**kwargs)
+        print("}")
+        for c in self.xs:
+            c.draw_edges(**kwargs)
+            c.draw_children(**kwargs)
 
 
 class SymbolicPermutation(Symbolic, MemoizedPermutation):
@@ -491,8 +527,8 @@ class Select(SymbolicBHV):
             elif isinstance(when0_, Invert) and isinstance(when1_, Invert):
                 return ~Select(self.cond.simplify(**kwargs), when1_.v, when0_.v)
             else:
-                # return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
-                return Select(self.cond.simplify(**kwargs), when1_, when0_)
+                return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
+                # return Select(self.cond.simplify(**kwargs), when1_, when0_)
 
 @dataclass
 class Active(Symbolic):
