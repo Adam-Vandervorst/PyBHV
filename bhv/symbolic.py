@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, fields
 from .abstract import *
 from .shared import stable_hashcode
+from bhv.poibin import PoiBin
 
 
 class Symbolic:
@@ -236,14 +237,18 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def select(self, when1: Self, when0: Self) -> Self:
         return Select(self, when0, when1)
 
-    def active(self) -> int:
-        return Active(self)
+    def active_fraction(self) -> int:
+        return ActiveFraction(self)
 
     def bias_rel(self, other: Self, rel: Self) -> float:
         return BiasRel(rel, self, other)
 
     def unrelated(self, other: Self, stdvs=6) -> bool:
         return Unrelated(self, other, stdvs)
+
+    def expected_active_fraction(self, **kwargs):
+        raise NotImplementedError()
+
 
 @dataclass
 class PermApply(SymbolicBHV):
@@ -255,6 +260,9 @@ class PermApply(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.p.execute(**kwargs)(self.v.execute(**kwargs))
+
+    def expected_active_fraction(self, **kwargs):
+        return self.v.expected_active(**kwargs)
 @dataclass
 class Var(SymbolicBHV):
     name: str
@@ -273,6 +281,9 @@ class Var(SymbolicBHV):
             raise RuntimeError(f"Perm var `{self.name}` not in permvars ({set(vars.keys())})")
         else:
             return vars[self.name]
+
+    def expected_active_fraction(self, **kwargs):
+        return kwargs.get("vars").get(self.name)
 @dataclass
 class Zero(SymbolicBHV):
     def show(self, **kwargs):
@@ -280,6 +291,9 @@ class Zero(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return kwargs.get("bhv").ZERO
+
+    def expected_active_fraction(self, **kwargs):
+        return 0.
 @dataclass
 class One(SymbolicBHV):
     def show(self, **kwargs):
@@ -287,6 +301,9 @@ class One(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return kwargs.get("bhv").ONE
+
+    def expected_active_fraction(self, **kwargs):
+        return 1.
 SymbolicBHV.ZERO = Zero()
 SymbolicBHV.ONE = One()
 randid = 0
@@ -311,6 +328,9 @@ class Rand(SymbolicBHV):
             r = kwargs.get("bhv").rand()
             rand[self.id] = r
             return r
+    
+    def expected_active_fraction(self, **kwargs):
+        return .5
 @dataclass
 class Rand2(SymbolicBHV):
     power: int
@@ -323,24 +343,30 @@ class Rand2(SymbolicBHV):
         if self.id in rand2:
             return rand2[self.id]
         else:
-            r = kwargs.get("bhv").rand2()
+            r = kwargs.get("bhv").rand2(self.power)
             rand2[self.id] = r
             return r
+
+    def expected_active_fraction(self, **kwargs):
+        return 1/self.power
 @dataclass
 class Random(SymbolicBHV):
-    active: float
+    frac: float
 
     def show(self, **kwargs):
-        return kwargs.get("impl", "") + f"random({self.active})"
+        return kwargs.get("impl", "") + f"random({self.frac})"
 
     def instantiate(self, **kwargs):
         random = kwargs.get("random")
         if self.id in random:
             return random[self.id]
         else:
-            r = kwargs.get("bhv").random()
+            r = kwargs.get("bhv").random(self.frac)
             random[self.id] = r
             return r
+        
+    def expected_active_fraction(self, **kwargs):
+        return self.frac
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
@@ -353,6 +379,9 @@ class Majority(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return kwargs.get("bhv").majority([v.execute(**kwargs) for v in self.vs])
+
+    def expected_active_fraction(self, **kwargs):
+        return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
 @dataclass
 class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
@@ -363,6 +392,9 @@ class Permute(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.v.execute(**kwargs).permute(self.id)
+
+    def expected_active_fraction(self, **kwargs):
+        return self.v.expected_active_fraction(**kwargs)
 @dataclass
 class SwapHalves(SymbolicBHV):
     v: SymbolicBHV
@@ -372,6 +404,9 @@ class SwapHalves(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.v.execute(**kwargs).swap_halves()
+
+    def expected_active_fraction(self, **kwargs):
+        return self.v.expected_active_fraction(**kwargs)
 @dataclass
 class ReHash(SymbolicBHV):
     v: SymbolicBHV
@@ -381,6 +416,9 @@ class ReHash(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.v.execute(**kwargs).rehash()
+
+    def expected_active_fraction(self, **kwargs):
+        return .5
 @dataclass
 class Eq:
     l: SymbolicBHV
@@ -419,6 +457,11 @@ class Xor(SymbolicBHV):
             return ~Xor(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs))
         else:
             return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
+
+    def expected_active_fraction(self, **kwargs):
+        afl = self.l.expected_active_fraction(**kwargs)
+        afr = self.r.expected_active_fraction(**kwargs)
+        return afl*(1. - afr) + (1. - afl)*afr
 @dataclass
 class And(SymbolicBHV):
     l: SymbolicBHV
@@ -441,6 +484,11 @@ class And(SymbolicBHV):
             return Invert(Or(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
         else:
             return And(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
+
+    def expected_active_fraction(self, **kwargs):
+        afl = self.l.expected_active_fraction(**kwargs)
+        afr = self.r.expected_active_fraction(**kwargs)
+        return afl*afr
 @dataclass
 class Or(SymbolicBHV):
     l: SymbolicBHV
@@ -463,6 +511,11 @@ class Or(SymbolicBHV):
             return Invert(And(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
         else:
             return Or(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
+
+    def expected_active_fraction(self, **kwargs):
+        afl = self.l.expected_active_fraction(**kwargs)
+        afr = self.r.expected_active_fraction(**kwargs)
+        return 1. - ((1. - afl)*(1. - afr))
 @dataclass
 class Invert(SymbolicBHV):
     v: SymbolicBHV
@@ -482,6 +535,9 @@ class Invert(SymbolicBHV):
             return self.v.v.simplify(**kwargs)
         else:
             return Invert(self.v.simplify(**kwargs))
+
+    def expected_active_fraction(self, **kwargs):
+        return 1. - self.v.expected_active_fraction(**kwargs)
 @dataclass
 class Select(SymbolicBHV):
     cond: SymbolicBHV
@@ -527,20 +583,25 @@ class Select(SymbolicBHV):
             elif isinstance(when0_, Invert) and isinstance(when1_, Invert):
                 return ~Select(self.cond.simplify(**kwargs), when1_.v, when0_.v)
             else:
-                return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
-                # return Select(self.cond.simplify(**kwargs), when1_, when0_)
+                # return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
+                return Select(self.cond.simplify(**kwargs), when1_, when0_)
 
+    def expected_active_fraction(self, **kwargs):
+        afc = self.cond.expected_active_fraction(**kwargs)
+        af1 = self.when1.expected_active_fraction(**kwargs)
+        af0 = self.when0.expected_active_fraction(**kwargs)
+        return afc*af1 + (1. - afc)*af0
 @dataclass
-class Active(Symbolic):
+class ActiveFraction(Symbolic):
     v: SymbolicBHV
 
     def show(self, **kwargs):
-        return f"{self.v.show(**kwargs)}.active()"
+        return f"{self.v.show(**kwargs)}.active_fraction()"
 
     def instantiate(self, **kwargs):
-        return self.v.execute(**kwargs).active()
+        return self.v.execute(**kwargs).active_fraction()
 @dataclass
-class BiasRel(SymbolicBHV):
+class BiasRel(Symbolic):
     rel: SymbolicBHV
     l: SymbolicBHV
     r: SymbolicBHV

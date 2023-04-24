@@ -31,6 +31,7 @@ for j in range(O):
     f = synth(names, target).simplify()
     fs.append(f)
 
+print([f.expected_active_fraction(vars={x: .5 for x in ascii_lowercase[:I]}) for f in fs])
 print(List("O", fs).show())
 # List("O", fs).graphviz(structural=True)
 
@@ -51,5 +52,6 @@ for size in sizes:
             layer.append(~i)
     layers.append(layer)
 
+print([f.expected_active_fraction(vars={x: .5 for x in ascii_lowercase[:I]}) for f in layers[-1]])
 print(List("O", layers[-1]).show())
 # List("O", layers[-1]).graphviz()

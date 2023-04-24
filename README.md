@@ -16,7 +16,7 @@ The fundamental research includes finding algebras with interesting properties o
 - zscore and pvalue
 
 Additionally, provided are
-- A symbolic implementation with plotting and pretty printing
+- A symbolic implementation with analysis, plotting and pretty printing
 - Efficient bit-packed representation
 - Three redundant implementations on NumPy for performance and correctness
 - A minimal abstraction for permutations with caching and composition
