@@ -2,8 +2,9 @@ import unittest
 
 import torch
 
-from bhv.np import NumPyPacked64BHV as BHV, DIMENSION
+# from bhv.np import NumPyPacked64BHV as BHV, DIMENSION
 # from bhv.pytorch import TorchPackedBHV as BHV, DIMENSION
+from bhv.vanilla import VanillaBHV as BHV, DIMENSION
 from bhv.symbolic import Var, SymbolicBHV
 
 

@@ -1,6 +1,7 @@
 # Python Boolean Hyper-Vectors
 
 WIP repository for research into vector symbolic architectures like Multiply-Add-Permute and Binary Spatter Codes.
+Can be used dependency-free.
 
 ## Contains
 The fundamental research includes finding algebras with interesting properties on top of large boolean vectors. To this extend the library has [laws used for testing](tests/laws.py) and an expansive [set of operators](bhv/abstract.py) including:
@@ -26,7 +27,7 @@ Additionally, provided are
 ## Installation
 `pip install bhv`
 
-If you only want to work with the symbolic implementation, you're good to go with `from bhv.symbolic import Var, SymbolicBHV`.
+If you only want to work with plain Python, you're good to go with `from bhv.vanilla VanillaBHV as BHV`.
 
 Else you'll need
 `pip install numpy` or `pip install torch` with respectively `from bhv.np import NumPyPacked64BHV as BHV` or `from bhv.np import TorchBoolBHV as BHV`. 

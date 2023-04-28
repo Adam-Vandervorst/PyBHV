@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field, fields
 from .abstract import *
-from .shared import stable_hashcode
-from bhv.poibin import PoiBin
+from .shared import stable_hashcode, bitconfigs
+from .slice import Slice
+from .poibin import PoiBin
 
 
 class Symbolic:
@@ -89,6 +90,15 @@ class Symbolic:
     def reduce(self, **kwargs):
         return self
 
+    def preorder(self, p=lambda x: True):
+        return [self]*p(self) + [v for c, _ in self.children() for v in c.preorder(p)]
+
+    def truth_assignments(self, vars):
+        configs = bitconfigs(len(vars))
+
+        return [self.execute(vars={v.name: Slice(b) for b, v in zip(config, vars)}, bhv=Slice).b
+                for config in configs]
+
 
 @dataclass
 class List(Symbolic):
@@ -114,6 +124,12 @@ class List(Symbolic):
         for c in self.xs:
             c.draw_edges(**kwargs)
             c.draw_children(**kwargs)
+
+    def instantiate(self, **kwargs):
+        return [x.instantiate(**kwargs) for x in self.xs]
+
+    def truth_table(self, vars):
+        return [x.truth_assignments(vars) for x in self.xs]
 
 
 class SymbolicPermutation(Symbolic, MemoizedPermutation):
@@ -286,9 +302,9 @@ class Var(SymbolicBHV):
     def instantiate(self, **kwargs):
         vars = kwargs.get("vars")
         if vars is None:
-            raise RuntimeError(f"No Perm vars supplied but tried to instantiate `{self.name}`")
+            raise RuntimeError(f"No vars supplied but tried to instantiate `{self.name}`")
         elif self.name not in vars:
-            raise RuntimeError(f"Perm var `{self.name}` not in permvars ({set(vars.keys())})")
+            raise RuntimeError(f"Var `{self.name}` not in vars ({set(vars.keys())})")
         else:
             return vars[self.name]
 

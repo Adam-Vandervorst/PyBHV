@@ -3,7 +3,8 @@ from itertools import product, groupby
 
 from bhv.abstract import AbstractBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
-# from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
+from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
+from bhv.vanilla import VanillaBHV
 
 
 def associative(m): return lambda x, y, z: m(m(x, y), z) == m(x, m(y, z))
@@ -173,7 +174,7 @@ def run_for(impl: AbstractBHV, ts):
 
 
 def run():
-    all_implementations = [NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV]
+    all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
 
     for impl in all_implementations:
         print(f"Testing {impl.__name__}...")
