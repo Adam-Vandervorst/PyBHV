@@ -9,16 +9,6 @@ def tomask(s): return [x == '1' for x in s]
 def frommask(m): return ''.join("01"[x] for x in m)
 def bitconfigs(n): return [tomask(tos(i, n)) for i in range(2**n)]
 
-
-def synth(vs, t):
-    if vs:
-        return vs[0].select(
-                synth(vs[1:], t[:len(t)//2]),
-                synth(vs[1:], t[len(t)//2:]))
-    else:
-        return BHV.ONE if t[0] else BHV.ZERO
-
-
 I = 8
 O = 4
 names = [Var(x) for x in ascii_lowercase[:I]]
@@ -28,7 +18,7 @@ for j in range(O):
     target = [i % 2 == 0 for i in range(2**I)]
     shuffle(target)
 
-    f = synth(names, target).simplify()
+    f = BHV.synth(names, target).simplify()
     fs.append(f)
 
 print([f.expected_active_fraction(vars={x: .5 for x in ascii_lowercase[:I]}) for f in fs])

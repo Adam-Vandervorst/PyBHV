@@ -195,6 +195,16 @@ class PermInvert(SymbolicPermutation):
 
 class SymbolicBHV(Symbolic, AbstractBHV):
     @classmethod
+    def synth(cls, vs, t):
+        assert 2**len(vs) == len(t)
+        if vs:
+            return vs[0].select(
+                    cls.synth(vs[1:], t[:len(t)//2]),
+                    cls.synth(vs[1:], t[len(t)//2:]))
+        else:
+            return cls.ONE if t[0] else cls.ZERO
+
+    @classmethod
     def rand(cls) -> Self:
         return Rand()
 
