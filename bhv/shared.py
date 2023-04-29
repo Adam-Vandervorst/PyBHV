@@ -57,3 +57,26 @@ def stable_hashcode(d, version=0) -> str:
     base64 = binascii.b2a_base64(padded, newline=False)
     url_safe = base64.translate(_urlsafe_encode_translation)
     return url_safe.decode()
+
+
+def nbs(i, w):
+    k = 1
+    for _ in range(w):
+        yield i ^ k
+        k <<= 1
+
+
+def binw(i, w):
+    return bin(i)[2:].rjust(w, '0')
+
+
+def to_bitmask(s):
+    return [x == '1' for x in s]
+
+
+def bin_bitmask(m):
+    return ''.join("01"[x] for x in m)
+
+
+def bitconfigs(n):
+    return [to_bitmask(binw(i, n)) for i in range(2**n)]

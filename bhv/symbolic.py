@@ -108,6 +108,9 @@ class List(Symbolic):
     def show(self, **kwargs):
         return self.name + " {\n" + '\n'.join("  " + x.show(**kwargs) + ";" for x in self.xs) + "\n}"
 
+    def children(self, **kwargs):
+        return [(x, str(i)) for i, x in enumerate(self.xs)]
+
     def graphviz(self, structural=False, done=None, **kwargs):
         noden = self.nodeid(structural, **kwargs)
         if done is None:

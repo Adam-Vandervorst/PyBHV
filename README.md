@@ -4,7 +4,7 @@ WIP repository for research into vector symbolic architectures like Multiply-Add
 Can be used dependency-free.
 
 ## Contains
-The fundamental research includes finding algebras with interesting properties on top of large boolean vectors. To this extend the library has [laws used for testing](tests/laws.py) and an expansive [set of operators](bhv/abstract.py) including:
+The fundamental research includes finding algebras with interesting properties on top of large boolean vectors. To this extent the library has [laws used for testing](tests/laws.py) and an expansive [set of operators](bhv/abstract.py) including:
 - Multiple types of random vector generation
 - Random and indexed select between vectors
 - Ability to slightly modify a vector, for example by flipping a fraction of its bits
@@ -23,6 +23,7 @@ Additionally, provided are
 - A minimal abstraction for permutations with caching and composition
 - Very basic embeddings for other datatypes (more to come)
 - Graph visualization of distances in hyperdimensional space ([see example](examples/viz_distances.py)).
+- Boolean expression and network synthesis
 
 ## Installation
 `pip install bhv`
