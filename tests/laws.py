@@ -35,6 +35,7 @@ def extensionality4(f, g): return lambda x, y, z, u: f(x, y, z, u) == g(x, y, z,
 def extensionality5(f, g): return lambda x, y, z, u, v: f(x, y, z, u, v) == g(x, y, z, u, v)
 def extensionality6(f, g): return lambda x, y, z, u, v, w: f(x, y, z, u, v, w) == g(x, y, z, u, v, w)
 def extensionality7(f, g): return lambda x, y, z, u, v, w, r: f(x, y, z, u, v, w, r) == g(x, y, z, u, v, w, r)
+def extensionalityN(f, g): return lambda xs: f(xs) == g(xs)
 def encode_decode(enc, dec): return lambda x: x == dec(enc(x))
 def invariant_under(f, p): return lambda x: f(x) == f(p(x))
 def invariant_under2(f, p): return lambda x, y: f(x, y) == f(p(x), p(y))
@@ -191,6 +192,14 @@ def run():
     run_for(NumPyBoolBHV, bhv_conv_ops(NumPyBoolBHV, NumPyPacked64BHV, NumPyBoolBHV.pack64, NumPyPacked64BHV.unpack))
     print("Testing metrics invariant under pack64")
     run_for(NumPyBoolBHV, bhv_conv_metrics(NumPyBoolBHV.pack64))
+    run_for(TorchBoolBHV, bhv_conv_metrics(TorchBoolBHV.pack))
+    print("Testing large unbalanced majority")
+    rs = [~v for v in NumPyPacked64BHV.nrand2(1001, 3)]
+    rs_ = [r.unpack() for r in rs]
+    assert NumPyPacked64BHV.majority(rs) == NumPyBoolBHV.majority(rs_).pack64()
+    rs = [~v for v in TorchPackedBHV.nrand2(1001, 3)]
+    rs_ = [r.unpack() for r in rs]
+    assert TorchPackedBHV.majority(rs) == TorchBoolBHV.majority(rs_).pack()
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [

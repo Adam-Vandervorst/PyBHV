@@ -61,7 +61,7 @@ class NumPyBoolBHV(AbstractBHV):
         extra = [cls.rand().data] if len(vs) % 2 == 0 else []
 
         tensor = np.stack(data + extra)
-        counts = tensor.sum(axis=-2, dtype=np.uint8)
+        counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
 
         threshold = (len(vs) + len(extra))//2
 

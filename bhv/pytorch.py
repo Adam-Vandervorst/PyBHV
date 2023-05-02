@@ -71,9 +71,9 @@ class TorchBoolBHV(AbstractBHV):
         extra = [cls.rand().data] if len(vs) % 2 == 0 else []
 
         tensor = torch.stack(data + extra)
-        counts = tensor.sum(dim=-2, dtype=torch.int8)
+        counts = tensor.sum(dim=-2, dtype=torch.uint8 if len(vs) < 256 else torch.int32)
 
-        threshold = (len(vs) + len(extra)) // 2
+        threshold = (len(vs) + len(extra))//2
 
         return TorchBoolBHV(torch.greater(counts,  threshold).to(torch.bool))
 
