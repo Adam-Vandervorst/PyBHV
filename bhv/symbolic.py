@@ -10,10 +10,14 @@ class Symbolic:
         return f"{type(self).__name__.upper()}"
 
     def nodeid(self, structural=False, **kwargs):
-        return f"{type(self).__name__}{stable_hashcode(self).replace('-', '') if structural else str(id(self))}"
+        return f"{type(self).__name__}{stable_hashcode(self, try_cache=True).replace('-', '') if structural else str(id(self))}"
 
     def children(self, **kwargs):
         return [(getattr(self, f.name), f.name) for f in fields(self) if type(f.type) is type and issubclass(f.type, Symbolic)]
+
+    def reconstruct(self, *cs):
+        assert not self.children()
+        return self
 
     def draw_node(self, **kwargs):
         print(f"{self.nodeid(**kwargs)} [label=\"{self.nodename(**kwargs)}\"];")
@@ -69,14 +73,35 @@ class Symbolic:
             calculated[id(self)] = result
             return result
 
+    def optimal_sharing(self, form=None, **kwargs):
+        if form is None: form = {}
+        kwargs |= dict(form=form)
+
+        sh = stable_hashcode(self, try_cache=True)
+        if sh in form:
+            return form[sh]
+        else:
+            r = self.reconstruct(*(c.optimal_sharing(**kwargs) for c, _ in self.children()))
+            shr = stable_hashcode(r, try_cache=True)
+            if shr in form:
+                raise RuntimeError("Includes check failed")
+            form[shr] = r
+            return r
+
     def internal_size(self):
         return 1
 
-    def size(self):
-        t = self.internal_size()
-        for c, _ in self.children():
-            t += c.size()
-        return t
+    def size(self, counted=None, recount=False, **kwargs):
+        if counted is None: counted = {}
+        kwargs |= dict(counted=counted)
+        if id(self) in counted:
+            return counted[id(self)] if recount else 0
+        else:
+            t = self.internal_size()
+            for c, _ in self.children():
+                t += c.size(**kwargs)
+            counted[id(self)] = t
+            return t
 
     def simplify(self, **kwargs):
         x = self
@@ -110,6 +135,9 @@ class List(Symbolic):
 
     def children(self, **kwargs):
         return [(x, str(i)) for i, x in enumerate(self.xs)]
+
+    def reconstruct(self, *cs):
+        return List(self.name, cs)
 
     def graphviz(self, structural=False, done=None, **kwargs):
         noden = self.nodeid(structural, **kwargs)
@@ -196,6 +224,9 @@ class PermCompose(SymbolicPermutation):
     l: SymbolicPermutation
     r: SymbolicPermutation
 
+    def reconstruct(self, l, r):
+        return PermCompose(l, r)
+
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} * {self.r.show(**kwargs)})"
 
@@ -204,6 +235,9 @@ class PermCompose(SymbolicPermutation):
 @dataclass
 class PermInvert(SymbolicPermutation):
     p: SymbolicPermutation
+
+    def reconstruct(self, p):
+        return PermInvert(p)
 
     def show(self, **kwargs):
         return f"(~{self.p.show(**kwargs)})"
@@ -284,6 +318,9 @@ class PermApply(SymbolicBHV):
     p: SymbolicPermutation
     v: SymbolicBHV
 
+    def reconstruct(self, p, v):
+        return PermApply(p, v)
+
     def show(self, **kwargs):
         return f"{self.p.show(**kwargs)}({self.v.show(**kwargs)})"
 
@@ -357,7 +394,7 @@ class Rand(SymbolicBHV):
             r = kwargs.get("bhv").rand()
             rand[self.id] = r
             return r
-    
+
     def expected_active_fraction(self, **kwargs):
         return .5
 @dataclass
@@ -393,7 +430,7 @@ class Random(SymbolicBHV):
             r = kwargs.get("bhv").random(self.frac)
             random[self.id] = r
             return r
-        
+
     def expected_active_fraction(self, **kwargs):
         return self.frac
 @dataclass
@@ -402,6 +439,9 @@ class Majority(SymbolicBHV):
 
     def children(self, **kwargs):
         return list(zip(self.vs, map(str, range(len(self.vs)))))
+
+    def reconstruct(self, *cs):
+        return Majority(cs)
 
     def show(self, **kwargs):
         return kwargs.get("impl", "") + f"majority({[v.show(**kwargs) for v in self.vs]})"
@@ -416,6 +456,9 @@ class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
     v: SymbolicBHV
 
+    def reconstruct(self, v):
+        return Permute(self.id, v)
+
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.permute({self.id})"
 
@@ -428,6 +471,9 @@ class Permute(SymbolicBHV):
 class SwapHalves(SymbolicBHV):
     v: SymbolicBHV
 
+    def reconstruct(self, v):
+        return SwapHalves(v)
+
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.swap_halves()"
 
@@ -439,6 +485,9 @@ class SwapHalves(SymbolicBHV):
 @dataclass
 class ReHash(SymbolicBHV):
     v: SymbolicBHV
+
+    def reconstruct(self, v):
+        return ReHash(v)
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.rehash()"
@@ -453,6 +502,9 @@ class Eq:
     l: SymbolicBHV
     r: SymbolicBHV
 
+    def reconstruct(self, l, r):
+        return Eq(l, r)
+
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} == {self.r.show(**kwargs)})"
 
@@ -462,6 +514,9 @@ class Eq:
 class Xor(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def reconstruct(self, l, r):
+        return Xor(l, r)
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} ^ {self.r.show(**kwargs)})"
@@ -474,7 +529,7 @@ class Xor(SymbolicBHV):
             return ~self.r.simplify(**kwargs)
         elif self.r == self.ONE:
             return ~self.l.simplify(**kwargs)
-        if self.l == self.ZERO:
+        elif self.l == self.ZERO:
             return self.r.simplify(**kwargs)
         elif self.r == self.ZERO:
             return self.l.simplify(**kwargs)
@@ -495,6 +550,9 @@ class Xor(SymbolicBHV):
 class And(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def reconstruct(self, l, r):
+        return And(l, r)
 
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} & {self.r.show(**kwargs)})"
@@ -523,6 +581,9 @@ class Or(SymbolicBHV):
     l: SymbolicBHV
     r: SymbolicBHV
 
+    def reconstruct(self, l, r):
+        return Or(l, r)
+
     def show(self, **kwargs):
         return f"({self.l.show(**kwargs)} | {self.r.show(**kwargs)})"
 
@@ -549,6 +610,9 @@ class Or(SymbolicBHV):
 class Invert(SymbolicBHV):
     v: SymbolicBHV
 
+    def reconstruct(self, v):
+        return Invert(v)
+
     def show(self, **kwargs):
         return f"(~{self.v.show(**kwargs)})"
 
@@ -572,9 +636,14 @@ class Select(SymbolicBHV):
     cond: SymbolicBHV
     when1: SymbolicBHV
     when0: SymbolicBHV
+
+    def reconstruct(self, c, w1, w0):
+        return Select(c, w1, w0)
+
     def nodename(self, compact_select=True, **kwargs):
         return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
-    def children(self, compact_select=True, **kwargs):
+
+    def children(self, compact_select=False, **kwargs):
         return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().children(**kwargs)
 
     def show(self, **kwargs):
@@ -587,6 +656,9 @@ class Select(SymbolicBHV):
         return 3
 
     def reduce(self, **kwargs):
+        expand_select_xor = kwargs.get("expand_select_xor", False)
+        expand_select_and_or = kwargs.get("expand_select_and_or", False)
+
         if self.when1 == self.ONE and self.when0 == self.ZERO:
             return self.cond.simplify(**kwargs)
         elif self.when1 == self.ZERO and self.when0 == self.ONE:
@@ -604,16 +676,21 @@ class Select(SymbolicBHV):
         else:
             when1_ = self.when1.simplify(**kwargs)
             when0_ = self.when0.simplify(**kwargs)
+            cond_ = self.cond.simplify(**kwargs)
 
             if when1_ == ~when0_:
-                return self.cond ^ when0_
+                return cond_ ^ when0_
             elif when0_ == ~when1_:
-                return self.cond ^ when0_
+                return cond_ ^ when0_
             elif isinstance(when0_, Invert) and isinstance(when1_, Invert):
-                return ~Select(self.cond.simplify(**kwargs), when1_.v, when0_.v)
+                return ~Select(cond_, when1_.v, when0_.v)
             else:
-                # return when0_ ^ (self.cond.simplify(**kwargs) & (when0_ ^ when1_))
-                return Select(self.cond.simplify(**kwargs), when1_, when0_)
+                if expand_select_xor:
+                    return when0_ ^ (cond_ & (when0_ ^ when1_))
+                elif expand_select_and_or:
+                    return (cond_ & when1_) | ((~cond_).simplify(**kwargs) & when0_)
+                else:
+                    return Select(cond_, when1_, when0_)
 
     def expected_active_fraction(self, **kwargs):
         afc = self.cond.expected_active_fraction(**kwargs)
@@ -623,6 +700,9 @@ class Select(SymbolicBHV):
 @dataclass
 class ActiveFraction(Symbolic):
     v: SymbolicBHV
+
+    def reconstruct(self, v):
+        return ActiveFraction(v)
 
     def show(self, **kwargs):
         return f"{self.v.show(**kwargs)}.active_fraction()"
@@ -635,6 +715,9 @@ class BiasRel(Symbolic):
     l: SymbolicBHV
     r: SymbolicBHV
 
+    def reconstruct(self, rel, l, r):
+        return BiasRel(rel, l, r)
+
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.bias_rel({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
 
@@ -646,6 +729,9 @@ class Related(Symbolic):
     r: SymbolicBHV
     stdvs: float
 
+    def reconstruct(self, l, r):
+        return Related(l, r, self.stdvs)
+
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.related({self.r.show(**kwargs)}, {self.stdvs})"
 
@@ -656,6 +742,9 @@ class Unrelated(Symbolic):
     l: SymbolicBHV
     r: SymbolicBHV
     stdvs: float
+
+    def reconstruct(self, l, r):
+        return Unrelated(l, r, self.stdvs)
 
     def show(self, **kwargs):
         return f"{self.l.show(**kwargs)}.unrelated({self.r.show(**kwargs)}, {self.stdvs})"
