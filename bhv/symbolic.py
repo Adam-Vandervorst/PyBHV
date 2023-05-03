@@ -2,7 +2,6 @@ from dataclasses import dataclass, field, fields
 from .abstract import *
 from .shared import stable_hashcode, bitconfigs
 from .slice import Slice
-from .poibin import PoiBin
 
 
 class Symbolic:
@@ -450,6 +449,7 @@ class Majority(SymbolicBHV):
         return kwargs.get("bhv").majority([v.execute(**kwargs) for v in self.vs])
 
     def expected_active_fraction(self, **kwargs):
+        from .poibin import PoiBin
         return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
 @dataclass
 class Permute(SymbolicBHV):
@@ -539,6 +539,11 @@ class Xor(SymbolicBHV):
             return self.ONE
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return ~Xor(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs))
+        elif isinstance(self.l, And) and isinstance(self.r, And):
+            if self.l.l == self.r.l: return And(self.l.l, Xor(self.l.r, self.r.r)).simplify(**kwargs)
+            elif self.l.l == self.r.r: return And(self.l.l, Xor(self.l.r, self.r.l)).simplify(**kwargs)
+            elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r)).simplify(**kwargs)
+            elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l)).simplify(**kwargs)
         else:
             return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
