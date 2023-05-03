@@ -662,15 +662,15 @@ class Select(SymbolicBHV):
         if self.when1 == self.ONE and self.when0 == self.ZERO:
             return self.cond.simplify(**kwargs)
         elif self.when1 == self.ZERO and self.when0 == self.ONE:
-            return ~self.cond.simplify(**kwargs)
+            return (~self.cond).simplify(**kwargs)
         elif self.when0 == self.when1:
             return self.when0.simplify(**kwargs)
         elif self.when1 == self.ONE:
             return self.cond.simplify(**kwargs) | self.when0.simplify(**kwargs)
         elif self.when1 == self.ZERO:
-            return ~self.cond.simplify(**kwargs) & self.when0.simplify(**kwargs)
+            return (~self.cond).simplify(**kwargs) & self.when0.simplify(**kwargs)
         elif self.when0 == self.ONE:
-            return ~self.cond.simplify(**kwargs) | self.when1.simplify(**kwargs)
+            return (~self.cond).simplify(**kwargs) | self.when1.simplify(**kwargs)
         elif self.when0 == self.ZERO:
             return self.cond.simplify(**kwargs) & self.when1.simplify(**kwargs)
         else:
