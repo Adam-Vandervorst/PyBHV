@@ -170,7 +170,7 @@ class NumPyPacked8BHV(AbstractBHV):
         return NumPyPacked8BHV(np.bitwise_not(self.data))
 
     def active(self) -> int:
-        return sum(x.bit_count() for x in self.data)
+        return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
 
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data))
