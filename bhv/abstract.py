@@ -60,6 +60,12 @@ class AbstractBHV:
     def flip_pow(self, pow_flip=1) -> Self:
         return self ^ self.rand2(pow_flip)
 
+    def flip_pow_on(self, flip_on_frac) -> Self:
+        return self | self.flip_pow(flip_on_frac + 1)
+
+    def flip_pow_off(self, flip_off_frac) -> Self:
+        return self & self.flip_pow(flip_off_frac + 1)
+
     def flip_frac(self, frac_flip=0.5) -> Self:
         return self ^ self.random(frac_flip)
 
