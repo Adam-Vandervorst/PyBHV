@@ -1,5 +1,6 @@
 from .abstract import *
 import numpy as np
+from sys import byteorder
 
 
 class NumPyBoolPermutation(MemoizedPermutation):
@@ -272,7 +273,7 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyPacked64BHV(np.bitwise_not(self.data))
 
     def active(self) -> int:
-        return sum(x.bit_count() for x in self.data)
+        return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
 
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data.view(np.uint8)))

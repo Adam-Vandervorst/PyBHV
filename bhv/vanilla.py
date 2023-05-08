@@ -1,5 +1,6 @@
 from .abstract import *
 import random
+from sys import byteorder
 
 
 class VanillaPermutation(MemoizedPermutation):
@@ -77,11 +78,11 @@ class VanillaBHV(AbstractBHV):
         return self.to_int().bit_count()
 
     def to_int(self) -> int:
-        return int.from_bytes(self.data, "big", signed=True)
+        return int.from_bytes(self.data, byteorder, signed=True)
 
     @classmethod
     def from_int(cls, i: int):
-        return VanillaBHV(i.to_bytes(DIMENSION//8, "big", signed=True))
+        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=True))
 
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
