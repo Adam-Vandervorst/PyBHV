@@ -1,6 +1,6 @@
 from .abstract import *
 import numpy as np
-from sys import byteorder
+from sys import byteorder, version_info
 
 
 class NumPyBoolPermutation(MemoizedPermutation):
@@ -169,8 +169,14 @@ class NumPyPacked8BHV(AbstractBHV):
     def __invert__(self) -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(np.bitwise_not(self.data))
 
-    def active(self) -> int:
-        return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
+    if version_info[2] >= 10:
+        def active(self) -> int:
+            return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
+    else:
+        lookup = np.array([bin(i).count("1") for i in range(256)])
+
+        def active(self) -> int:
+            return self.lookup[self.data].sum()
 
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data))
@@ -272,8 +278,12 @@ class NumPyPacked64BHV(AbstractBHV):
     def __invert__(self) -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(np.bitwise_not(self.data))
 
-    def active(self) -> int:
-        return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
+    if version_info[2] >= 10:
+        def active(self) -> int:
+            return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
+    else:
+        def active(self) -> int:
+            return self.repack8().active()
 
     def unpack(self) -> 'NumPyBoolBHV':
         return NumPyBoolBHV(np.unpackbits(self.data.view(np.uint8)))

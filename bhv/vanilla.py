@@ -1,6 +1,6 @@
 from .abstract import *
 import random
-from sys import byteorder
+from sys import byteorder, version_info
 
 
 class VanillaPermutation(MemoizedPermutation):
@@ -74,8 +74,12 @@ class VanillaBHV(AbstractBHV):
     def __invert__(self) -> 'VanillaBHV':
         return self.from_int(~self.to_int())
 
-    def active(self) -> int:
-        return self.to_int().bit_count()
+    if version_info[2] >= 10:
+        def active(self) -> int:
+            return self.to_int().bit_count()
+    else:
+        def active(self) -> int:
+            return bin(self.to_int()).count("1")
 
     def to_int(self) -> int:
         return int.from_bytes(self.data, byteorder, signed=True)
