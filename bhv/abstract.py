@@ -174,18 +174,38 @@ class AbstractBHV:
     def bit_error_rate(self, other: Self) -> float:
         return (self ^ other).active_fraction()
 
-    def jaccard(self, other: Self) -> float:
-        return 1. - float((self & other).active()) / float((self | other).active() + 1E-7)
+    def jaccard(self, other: Self, distance=False) -> float:
+        union_active = (self | other).active()
+        if union_active == 0:
+            raise RuntimeError("Jaccard index where both vectors are zero")
+        res = (self & other).active() / union_active
+        return 1. - res if distance else res
 
-    def cosine(self, other: Self) -> float:
-        return 1 - float((self & other).active()) / float(self.active() * other.active() + 1E-7)**.5
+    def cosine(self, other: Self, distance=False) -> float:
+        s_active = self.active()
+        o_active = other.active()
+        if not s_active or not o_active:
+            raise RuntimeError("Cosine similarity where one of the two vectors is zero")
+        res = (self & other).active() / (s_active*o_active)**.5
+        return 1. - res if distance else res
 
     def std_apart(self, other: Self, invert=False) -> float:
+        return self.frac_to_std(self.bit_error_rate(other), invert)
+
+    @staticmethod
+    def frac_to_std(frac, invert=False):
         p = 0.5
         n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
         estdvs = n.zscore(p*DIMENSION)
-        stdvs = n.zscore(self.hamming(other))
+        stdvs = n.zscore(frac*DIMENSION)
         return estdvs - stdvs if invert else stdvs
+
+    @staticmethod
+    def std_to_frac(std, invert=False):
+        p = 0.5
+        n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
+        frac = (std*n.stdev + n.mean)/DIMENSION
+        return 1. - frac if invert else frac
 
     def zscore(self) -> float:
         p = 0.5

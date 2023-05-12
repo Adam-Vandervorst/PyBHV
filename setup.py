@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.2.9'
+VERSION = '0.3.0'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
@@ -15,7 +15,6 @@ setup(
     install_requires=[],
     extras_require={
         "torch": ["torch>=2.0.0"],
-        "torch-hd": ["torch-hd~=5.0.1"],
         "numpy": ["numpy>=1.24.2"],
     },
     keywords='ai binary hypervector hdc bsc',
