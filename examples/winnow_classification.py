@@ -1,3 +1,4 @@
+# require NumPy
 from bhv.np import NumPyBoolBHV as BHV, DIMENSION
 import numpy as np
 

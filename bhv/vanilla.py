@@ -19,7 +19,7 @@ class VanillaPermutation(MemoizedPermutation):
         return VanillaPermutation([self.data[other.data[i]] for i in range(DIMENSION//8)])
 
     def __invert__(self) -> 'VanillaPermutation':
-        p = [None]*DIMENSION//8
+        p = [None]*(DIMENSION//8)
         for i, j in enumerate(self.data):
             p[j] = i
         return VanillaPermutation(p)
@@ -72,7 +72,7 @@ class VanillaBHV(AbstractBHV):
         return self.from_int(self.to_int() | other.to_int())
 
     def __invert__(self) -> 'VanillaBHV':
-        return self.from_int(~self.to_int())
+        return self.from_int(-(~self.to_int()))
 
     if version_info[2] >= 10:
         def active(self) -> int:
@@ -82,11 +82,11 @@ class VanillaBHV(AbstractBHV):
             return bin(self.to_int()).count("1")
 
     def to_int(self) -> int:
-        return int.from_bytes(self.data, byteorder, signed=True)
+        return int.from_bytes(self.data, byteorder, signed=False)
 
     @classmethod
     def from_int(cls, i: int):
-        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=True))
+        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=False))
 
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))

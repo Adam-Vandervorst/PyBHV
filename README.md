@@ -26,6 +26,8 @@ Additionally, provided are
 - Boolean expression and network synthesis
 
 ## Installation
+Make sure you have an up-to-date Python version, 3.10 recommended.
+
 `pip install bhv`
 
 If you only want to work with plain Python, you're good to go with `from bhv.vanilla VanillaBHV as BHV`.
@@ -54,3 +56,5 @@ If you're comming at this from a Machine Learning angle, you may enjoy:
 ## Note
 This repository is highly active, and a work-in-progress.
 Do expect changes to the naming, and even features to be swapped for more elegant alternatives.
+
+Also works with PyPy. Use the vanilla Python implementation. The numeric operations are slower than on CPython, but the symbolic ones are way faster.

@@ -6,13 +6,13 @@ Also the booleans {0, 1} are used instead of {-1, 1}.
 """
 
 # Let's install the package
-# pip install bhv==0.2.1
+# pip install bhv==0.3.0
 
 # Hypervectors here are called Boolean-Hyper-Vectors or BHVs for short.
-# Import our favorite BHV implementation (where 64 bits are packed into words), NumpPy!
-from bhv.np import NumPyPacked64BHV as BHV
-# Import the correspondings permutation datastructure, we'll get to this
-from bhv.np import NumPyWordPermutation as Perm
+# Import a BHV implementation
+from bhv.vanilla import VanillaBHV as BHV
+# Import the corresponding permutation datastructure, we'll get to this
+from bhv.vanilla import VanillaPermutation as Perm
 
 """> We can measure distances between points in Euclidean
 or Hamming metric. For binary spaces the Hamming distance is the simplest: it is the number of places at which

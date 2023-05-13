@@ -2,7 +2,7 @@
 # Implementing the Turnstile state machine with Hypervectors
 # The state machine: https://en.wikipedia.org/wiki/Finite-state_machine#Example:_coin-operated_turnstile
 
-from bhv.np import NumPyPacked64BHV as BHV, NumPyWordPermutation as Perm
+from bhv.vanilla import VanillaBHV as BHV, VanillaPermutation as Perm
 
 
 # states

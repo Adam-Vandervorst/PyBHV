@@ -1,4 +1,4 @@
-from bhv.np import NumPyPacked64BHV as BHV
+from bhv.vanilla import VanillaBHV as BHV
 
 N = 199*2
 
