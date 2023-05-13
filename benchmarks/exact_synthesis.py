@@ -1,4 +1,4 @@
-# execution of randomly generated 8-input 16-output programs
+# execution of generated N-input M-output boolean functions
 # currently the synthesis and reduction rules make the program consist of
 # XOR, NOT, AND, OR
 from bhv.np import NumPyPacked64BHV as BHV
@@ -6,7 +6,7 @@ from bhv.symbolic import SymbolicBHV, Var, List
 
 from time import monotonic
 from string import ascii_lowercase
-from random import shuffle, sample, random, randrange
+from random import shuffle
 from statistics import pstdev, fmean
 
 
