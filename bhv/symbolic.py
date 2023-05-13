@@ -106,13 +106,15 @@ class Symbolic:
         x = self
         while True:
             x_ = x.reduce(**kwargs)
+            if x_ is None:
+                raise RuntimeError(f"{x} reduced to non (under {kwargs})")
             if x == x_:
                 return x
             else:
                 x = x_
 
     def reduce(self, **kwargs):
-        return self
+        return self.reconstruct(*[c.simplify(**kwargs) for c, _ in self.children()])
 
     def preorder(self, p=lambda x: True):
         return [self]*p(self) + [v for c, _ in self.children() for v in c.preorder(p)]
@@ -544,6 +546,7 @@ class Xor(SymbolicBHV):
             elif self.l.l == self.r.r: return And(self.l.l, Xor(self.l.r, self.r.l)).simplify(**kwargs)
             elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r)).simplify(**kwargs)
             elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l)).simplify(**kwargs)
+            else: return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
         else:
             return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
@@ -645,7 +648,7 @@ class Select(SymbolicBHV):
     def reconstruct(self, c, w1, w0):
         return Select(c, w1, w0)
 
-    def nodename(self, compact_select=True, **kwargs):
+    def nodename(self, compact_select=False, **kwargs):
         return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
 
     def children(self, compact_select=False, **kwargs):
