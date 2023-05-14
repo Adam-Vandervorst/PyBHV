@@ -1,6 +1,7 @@
 # execution of generated N-input M-output boolean functions
 # currently the synthesis and reduction rules make the program consist of
 # XOR, NOT, AND, OR
+# NOTE: takes about a minute and doesn't show intermediate results
 from bhv.np import NumPyPacked64BHV as BHV
 from bhv.symbolic import SymbolicBHV, Var, List
 

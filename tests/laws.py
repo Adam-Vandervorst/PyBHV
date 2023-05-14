@@ -48,6 +48,7 @@ def complement(m, f, z): return lambda x: m(x, f(x)) == z
 def transport(law, l, r): return lambda f, g: law(f, lambda x: r(g(l(x))))
 def transport2(law, l, r): return lambda f, g: law(f, lambda x, y: r(g(l(x), l(y))))
 def transport3(law, l, r): return lambda f, g: law(f, lambda x, y, z: r(g(l(x), l(y), l(z))))
+def assume2(law, p): return lambda f: lambda x, y: True if p(x, y) else law(f)(x, y)
 def assume3(law, p): return lambda f: lambda x, y, z: True if p(x, y, z) else law(f)(x, y, z)
 
 def lattice(join): return [associative(join), commutative(join), idempotent(join)]
@@ -148,8 +149,8 @@ def bhv_conv_metrics(under):
         invariant_under(lambda x: x.active_fraction(), under),
 
         invariant_under2(lambda x, y: x.hamming(y), under),
-        invariant_under2(lambda x, y: x.cosine(y), under),
-        invariant_under2(lambda x, y: x.jaccard(y), under),
+        assume2(invariant_under2(lambda x, y: x.cosine(y), under), lambda x, y: x.active() != 0 and y.active() != 0),
+        assume2(invariant_under2(lambda x, y: x.jaccard(y), under), lambda x, y: x.active() != 0 or y.active() != 0),
         invariant_under2(lambda x, y: x.std_apart(y), under),
         invariant_under2(lambda x, y: x.related(y), under),
         invariant_under2(lambda x, y: x.bit_error_rate(y), under),

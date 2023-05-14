@@ -1,4 +1,5 @@
 # N-input M-output computational vat implementations using different primitives
+# NOTE: can fail due to tight bounds on the probabilistic properties, run multiple times
 from bhv.np import NumPyPacked64BHV as BHV
 from bhv.symbolic import SymbolicBHV, Var, List
 

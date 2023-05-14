@@ -19,6 +19,7 @@ class TestFeistal(unittest.TestCase):
         x_dec_k = [x_enc.feistal(k, inv=True) for x_enc, k in zip(x_enc_k, ks)]
 
         for k, x_enc, x_dec in zip(ks, x_enc_k, x_dec_k):
+            print(x.bit_error_rate(x_dec))
             self.assertEqual(x, x_dec, msg="inverse")
             self.assertNotEqual(x_enc, x_dec, msg="variant")
             self.assertNotEqual(x_enc, ~x_dec, msg="not opposite")

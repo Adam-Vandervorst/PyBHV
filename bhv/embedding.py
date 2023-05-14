@@ -51,3 +51,25 @@ class InterpolateBetween(Embedding):
         totalh = endh + beginh
         if abs(totalh - .5) < threshold:
             return beginh/totalh
+
+
+
+def make_mask(on, n):
+    ar = torch.zeros(n, dtype=torch.bool)
+    ar[:on] = True
+    perm = torch.randperm(n)
+    return ar[perm]
+
+def binarize_3(x, n):
+    on = int(float(x)*(n+1))
+    if x == 1.0:
+        return torch.ones(n, dtype=torch.bool)
+    ar = torch.zeros(n, dtype=torch.bool)
+    ar[:on] = True
+    return ar
+
+def filln(xs, n):
+    ar = torch.empty(len(xs)*n, dtype=torch.bool)
+    for i, x in enumerate(xs):
+        ar[i*n:(i + 1)*n] = binarize_3(x, n)
+    return ar
