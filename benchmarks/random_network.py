@@ -54,7 +54,7 @@ for _ in range(repeat_pipeline):
                     layer.append(~(i ^ j))
         layers.append(layer)
 
-    cf = List("O", layers[-1])
+    cf = List(layers[-1])
 
     t_exec = monotonic()
     construct_times.append(t_exec - t_constr)

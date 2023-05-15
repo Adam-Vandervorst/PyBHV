@@ -63,7 +63,7 @@ sizes = [1]*30 + [O]
 #     layers.append(layer)
 
 print([f.expected_active_fraction(vars={x: .5 for x in ascii_lowercase[:I]}) for f in layers[-1]])
-print(List("O", layers[-1]).size())
+print(List(layers[-1]).size())
 # List("O", layers[-1]).graphviz(compact_select=False)
 
 for fk in [fs, layers[-1]]:

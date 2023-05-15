@@ -5,8 +5,14 @@ from .slice import Slice
 
 
 class Symbolic:
+    name = None
+
+    def named(self, name):
+        if name is not None: self.name = name
+        return self
+
     def nodename(self, **kwargs):
-        return f"{type(self).__name__.upper()}"
+        return self.name or f"{type(self).__name__.upper()}"
 
     def nodeid(self, structural=False, **kwargs):
         return f"{type(self).__name__}{stable_hashcode(self, try_cache=True).replace('-', '') if structural else str(id(self))}"
@@ -19,7 +25,7 @@ class Symbolic:
         return self
 
     def map(self, f):
-        return self.reconstruct(*(f(c) for c, _ in self.children()))
+        return self.reconstruct(*(f(c) for c, _ in self.children())).named(self.name)
 
     def draw_node(self, **kwargs):
         print(f"{self.nodeid(**kwargs)} [label=\"{self.nodename(**kwargs)}\"];")
@@ -54,7 +60,7 @@ class Symbolic:
         subexpressions.reverse()
         free_vars = unique_by_id(self.preorder(lambda x: isinstance(x, Var)))
         arguments = [fv.show(**kwargs) for fv in free_vars]
-        lines = [f"_{i} = {extracted(x).show(**kwargs)}" for i, x in enumerate(subexpressions)]
+        lines = [(x.name or f"_{i}") + " = " + extracted(x).show(**kwargs) for i, x in enumerate(subexpressions)]
         last = f"return {extracted(self).show(**kwargs)}"
         code = format_multiple([*lines, last], start=f"def {name}({format_multiple(arguments, sep=', ')}):", indent=indent, newline_threshold=0)
         return code
@@ -145,7 +151,6 @@ class Symbolic:
 
 @dataclass
 class List(Symbolic):
-    name: str
     xs: list[Symbolic]
 
     def show(self, **kwargs):
@@ -156,7 +161,7 @@ class List(Symbolic):
         return [(x, str(i)) for i, x in enumerate(self.xs)]
 
     def reconstruct(self, *cs):
-        return List(self.name, cs)
+        return List(cs)
 
     def graphviz(self, structural=False, done=None, **kwargs):
         noden = self.nodeid(structural, **kwargs)
@@ -166,8 +171,8 @@ class List(Symbolic):
             return
         done.add(noden)
         kwargs |= dict(done=done, structural=structural)
-        print(f"subgraph cluster_{self.name} " + "{")
-        print(f"label = \"{self.name}\";")
+        print(f"subgraph cluster_{self.nodename()} " + "{")
+        print(f"label = \"{self.nodename()}\";")
         for c in self.xs:
             c.draw_node(**kwargs)
         print("}")

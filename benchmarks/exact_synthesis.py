@@ -35,7 +35,7 @@ for _ in range(repeat_pipeline):
 
     t_opt = monotonic()
     synthesis_times.append(t_opt - t_synth)
-    cf = List("O", fs)
+    cf = List(fs)
     # could be commented out for more load on execution
     cf = cf.simplify(expand_select_and_or=True)
     # could be commented out for more load on execution
