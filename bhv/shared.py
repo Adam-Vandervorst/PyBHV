@@ -5,6 +5,7 @@ except ImportError:
 
 DIMENSION = 8192
 
+from itertools import groupby
 from functools import partial
 from dataclasses import fields, is_dataclass
 from base64 import _urlsafe_encode_translation
@@ -93,3 +94,20 @@ def bin_bitmask(m):
 
 def bitconfigs(n):
     return [to_bitmask(binw(i, n)) for i in range(2**n)]
+
+
+def unique_by_id(xs):
+    return list(reversed({id(x): x for x in reversed(xs)}.values()))
+
+
+def format_multiple(xs, start="", sep="", end="", indent="", aindent="", newline_threshold=40):
+    ss = list(map(str, xs))
+    maxlen = max(map(len, ss))
+    if maxlen >= newline_threshold:
+        return start + sep.rstrip(" ").join("\n" + aindent + indent + s for s in ss) + "\n" + aindent + end
+    else:
+        return start + sep.join(s for s in ss) + end
+
+
+def format_list(xs, **kwargs):
+    return format_multiple(xs, start="[", sep=", ", end="]", **kwargs)

@@ -32,7 +32,7 @@ for _ in range(repeat_pipeline):
         for elem in range(size):
             if vat_type == "MAJ3":
                 i, j, k = sample(layers[-1], k=3)
-                layer.append(BHV.majority3(
+                layer.append(SymbolicBHV.majority3(
                         i if random() < 2/3 else ~i,
                         j if random() < 2/3 else ~j,
                         k if random() < 2/3 else ~k))
@@ -48,7 +48,7 @@ for _ in range(repeat_pipeline):
                 r = random()
                 if r < 1/3:
                     i, j, k = sample(layers[-1], k=3)
-                    layer.append(BHV.select(i, j, k))
+                    layer.append(SymbolicBHV.select(i, j, k))
                 else:
                     i, j = sample(layers[-1], k=2)
                     layer.append(~(i ^ j))

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, fields
 from .abstract import *
-from .shared import stable_hashcode, bitconfigs
+from .shared import stable_hashcode, bitconfigs, unique_by_id, format_multiple, format_list
 from .slice import Slice
 
 
@@ -17,6 +17,9 @@ class Symbolic:
     def reconstruct(self, *cs):
         assert not self.children()
         return self
+
+    def map(self, f):
+        return self.reconstruct(*(f(c) for c, _ in self.children()))
 
     def draw_node(self, **kwargs):
         print(f"{self.nodeid(**kwargs)} [label=\"{self.nodename(**kwargs)}\"];")
@@ -41,6 +44,20 @@ class Symbolic:
         self.draw_edges(**kwargs)
         self.draw_children(**kwargs)
 
+    def show_program(self, name="f", indent="    ", **kwargs):
+        kwargs["indent"] = indent
+        kwargs["aindent"] = indent
+        kwargs["toplevel"] = True
+        def extracted(x: Symbolic):
+            return x.map(lambda x: x if isinstance(x, Var) else Var(f"_{subexpressions.index(x)}"))
+        subexpressions = unique_by_id(self.preorder(lambda x: not isinstance(x, Var))[1:])
+        subexpressions.reverse()
+        free_vars = unique_by_id(self.preorder(lambda x: isinstance(x, Var)))
+        arguments = [fv.show(**kwargs) for fv in free_vars]
+        lines = [f"_{i} = {extracted(x).show(**kwargs)}" for i, x in enumerate(subexpressions)]
+        last = f"return {extracted(self).show(**kwargs)}"
+        code = format_multiple([*lines, last], start=f"def {name}({format_multiple(arguments, sep=', ')}):", indent=indent, newline_threshold=0)
+        return code
 
     def show(self, **kwargs):
         """
@@ -132,7 +149,8 @@ class List(Symbolic):
     xs: list[Symbolic]
 
     def show(self, **kwargs):
-        return self.name + " {\n" + '\n'.join("  " + x.show(**kwargs) + ";" for x in self.xs) + "\n}"
+        return format_list((x.show(**kwargs) for x in self.xs),
+                           **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
 
     def children(self, **kwargs):
         return [(x, str(i)) for i, x in enumerate(self.xs)]
@@ -229,7 +247,8 @@ class PermCompose(SymbolicPermutation):
         return PermCompose(l, r)
 
     def show(self, **kwargs):
-        return f"({self.l.show(**kwargs)} * {self.r.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"{self.l.show(**kwargs)} * {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) * self.r.execute(**kwargs)
@@ -241,7 +260,8 @@ class PermInvert(SymbolicPermutation):
         return PermInvert(p)
 
     def show(self, **kwargs):
-        return f"(~{self.p.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"~{self.p.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return ~self.p.execute(**kwargs)
@@ -445,7 +465,8 @@ class Majority(SymbolicBHV):
         return Majority(cs)
 
     def show(self, **kwargs):
-        return kwargs.get("impl", "") + f"majority({[v.show(**kwargs) for v in self.vs]})"
+        args = format_list((v.show(**kwargs) for v in self.vs), **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
+        return kwargs.get("impl", "") + f"majority({args})"
 
     def instantiate(self, **kwargs):
         return kwargs.get("bhv").majority([v.execute(**kwargs) for v in self.vs])
@@ -508,7 +529,8 @@ class Eq:
         return Eq(l, r)
 
     def show(self, **kwargs):
-        return f"({self.l.show(**kwargs)} == {self.r.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"{self.l.show(**kwargs)} == {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) == self.r.execute(**kwargs)
@@ -521,7 +543,8 @@ class Xor(SymbolicBHV):
         return Xor(l, r)
 
     def show(self, **kwargs):
-        return f"({self.l.show(**kwargs)} ^ {self.r.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"{self.l.show(**kwargs)} ^ {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) ^ self.r.execute(**kwargs)
@@ -563,7 +586,8 @@ class And(SymbolicBHV):
         return And(l, r)
 
     def show(self, **kwargs):
-        return f"({self.l.show(**kwargs)} & {self.r.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"{self.l.show(**kwargs)} & {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) & self.r.execute(**kwargs)
@@ -593,7 +617,8 @@ class Or(SymbolicBHV):
         return Or(l, r)
 
     def show(self, **kwargs):
-        return f"({self.l.show(**kwargs)} | {self.r.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"{self.l.show(**kwargs)} | {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) | self.r.execute(**kwargs)
@@ -622,7 +647,8 @@ class Invert(SymbolicBHV):
         return Invert(v)
 
     def show(self, **kwargs):
-        return f"(~{self.v.show(**kwargs)})"
+        brackets = not kwargs.get("toplevel", False)
+        return "("*brackets + f"~{self.v.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
         return ~self.v.execute(**kwargs)
