@@ -103,7 +103,7 @@ class Symbolic:
         if sh in form:
             return form[sh]
         else:
-            r = self.reconstruct(*(c.optimal_sharing(**kwargs) for c, _ in self.children()))
+            r = self.map(lambda c: c.optimal_sharing(**kwargs))
             shr = stable_hashcode(r, try_cache=True)
             if shr in form:
                 raise RuntimeError("Includes check failed")
@@ -128,7 +128,7 @@ class Symbolic:
     def simplify(self, **kwargs):
         x = self
         while True:
-            x_ = x.reduce(**kwargs)
+            x_ = x.map(lambda x: x.simplify(**kwargs)).reduce(**kwargs)
             if x_ is None:
                 raise RuntimeError(f"{x} reduced to non (under {kwargs})")
             if x == x_:
@@ -137,7 +137,7 @@ class Symbolic:
                 x = x_
 
     def reduce(self, **kwargs):
-        return self.reconstruct(*[c.simplify(**kwargs) for c, _ in self.children()])
+        return self.map(lambda c: c.simplify(**kwargs))
 
     def preorder(self, p=lambda x: True):
         return [self]*p(self) + [v for c, _ in self.children() for v in c.preorder(p)]
@@ -601,13 +601,17 @@ class And(SymbolicBHV):
         if self.l == self.ZERO or self.r == self.ZERO:
             return self.ZERO
         elif self.l == self.ONE:
-            return self.r.simplify(**kwargs)
+            return self.r
         elif self.r == self.ONE:
-            return self.l.simplify(**kwargs)
+            return self.l
+        elif isinstance(self.l, Invert) and self.l.v == self.r:
+            return self.ZERO
+        elif isinstance(self.r, Invert) and self.r.v == self.l:
+            return self.ZERO
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
-            return Invert(Or(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
+            return Invert(Or(self.l.v, self.r.v))
         else:
-            return And(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
+            return And(self.l, self.r)
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -632,13 +636,17 @@ class Or(SymbolicBHV):
         if self.l == self.ONE or self.r == self.ONE:
             return self.ONE
         elif self.l == self.ZERO:
-            return self.r.simplify(**kwargs)
+            return self.r
         elif self.r == self.ZERO:
-            return self.l.simplify(**kwargs)
+            return self.l
+        elif isinstance(self.l, Invert) and self.l.v == self.r:
+            return self.ONE
+        elif isinstance(self.r, Invert) and self.r.v == self.l:
+            return self.ONE
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
-            return Invert(And(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs)))
+            return Invert(And(self.l.v, self.r.v))
         else:
-            return Or(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
+            return Or(self.l, self.r)
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -664,9 +672,9 @@ class Invert(SymbolicBHV):
         elif self.v == self.ZERO:
             return self.ONE
         elif isinstance(self.v, Invert):
-            return self.v.v.simplify(**kwargs)
+            return self.v.v
         else:
-            return Invert(self.v.simplify(**kwargs))
+            return Invert(self.v)
 
     def expected_active_fraction(self, **kwargs):
         return 1. - self.v.expected_active_fraction(**kwargs)
@@ -699,37 +707,33 @@ class Select(SymbolicBHV):
         expand_select_and_or = kwargs.get("expand_select_and_or", False)
 
         if self.when1 == self.ONE and self.when0 == self.ZERO:
-            return self.cond.simplify(**kwargs)
+            return self.cond
         elif self.when1 == self.ZERO and self.when0 == self.ONE:
-            return (~self.cond).simplify(**kwargs)
+            return ~self.cond
         elif self.when0 == self.when1:
-            return self.when0.simplify(**kwargs)
+            return self.when0
         elif self.when1 == self.ONE:
-            return self.cond.simplify(**kwargs) | self.when0.simplify(**kwargs)
+            return self.cond | self.when0
         elif self.when1 == self.ZERO:
-            return (~self.cond).simplify(**kwargs) & self.when0.simplify(**kwargs)
+            return ~self.cond & self.when0
         elif self.when0 == self.ONE:
-            return (~self.cond).simplify(**kwargs) | self.when1.simplify(**kwargs)
+            return ~self.cond | self.when1
         elif self.when0 == self.ZERO:
-            return self.cond.simplify(**kwargs) & self.when1.simplify(**kwargs)
+            return self.cond & self.when1
         else:
-            when1_ = self.when1.simplify(**kwargs)
-            when0_ = self.when0.simplify(**kwargs)
-            cond_ = self.cond.simplify(**kwargs)
-
-            if when1_ == ~when0_:
-                return cond_ ^ when0_
-            elif when0_ == ~when1_:
-                return cond_ ^ when0_
-            elif isinstance(when0_, Invert) and isinstance(when1_, Invert):
-                return ~Select(cond_, when1_.v, when0_.v)
+            if self.when1 == ~self.when0:
+                return self.cond ^ self.when0
+            elif self.when0 == ~self.when1:
+                return self.cond ^ self.when0
+            elif isinstance(self.when0, Invert) and isinstance(self.when1, Invert):
+                return ~Select(self.cond, self.when1.v, self.when0.v)
             else:
                 if expand_select_xor:
-                    return when0_ ^ (cond_ & (when0_ ^ when1_))
+                    return self.when0 ^ (self.cond & (self.when0 ^ self.when1))
                 elif expand_select_and_or:
-                    return (cond_ & when1_) | ((~cond_).simplify(**kwargs) & when0_)
+                    return (self.cond & self.when1) | (~self.cond & self.when0)
                 else:
-                    return Select(cond_, when1_, when0_)
+                    return Select(self.cond, self.when1, self.when0)
 
     def expected_active_fraction(self, **kwargs):
         afc = self.cond.expected_active_fraction(**kwargs)
