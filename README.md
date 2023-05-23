@@ -12,14 +12,18 @@ The fundamental research includes finding algebras with interesting properties o
 - Hashing and encoding
 - Majority with multiple implementation
 - AND, OR, and XOR operators
+- Composite operations like SELECT (or MUX) and FLIP-FRAC (flipping a fraction of the bits)
 - Hamming, jaccard, cosine, and bit-error-rate "metrics"
 - A system for relatedness, unrelatedness, and standard deviations apart
 - zscore and pvalue
 
 Additionally, provided are
 - A symbolic implementation with analysis, plotting and pretty printing
+- Law and unification backed expression simplification
+- Compilation to operation sequences
 - Efficient bit-packed representation
 - Three redundant implementations on NumPy for performance and correctness
+- A (performant) plain Python reference implementation
 - A minimal abstraction for permutations with caching and composition
 - Very basic embeddings for other datatypes (more to come)
 - Graph visualization of distances in hyperdimensional space ([see example](examples/viz_distances.py)).

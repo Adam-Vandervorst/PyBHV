@@ -38,18 +38,11 @@ for _ in range(repeat_pipeline):
     synthesis_times.append(t_opt - t_synth)
     cf = List(fs)
     print(cf.size())
-
-    cf_ = greedy(cf, 10)
-    print(cf_.size())
-
-
     # could be commented out for more load on execution
     cf = cf.simplify(expand_select_and_or=True)
     print(cf.size())
     # could be commented out for more load on execution
     cf = cf.optimal_sharing()
-    print(cf.size())
-    cf = greedy(cf, 10)
     print(cf.size())
 
     t_exec = monotonic()

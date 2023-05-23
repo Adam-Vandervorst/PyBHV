@@ -17,25 +17,47 @@ class Symbolic:
     def nodeid(self, structural=False, **kwargs):
         return f"{type(self).__name__}{stable_hashcode(self, try_cache=True).replace('-', '') if structural else str(id(self))}"
 
-    def children(self, **kwargs):
+    def labeled_children(self, **kwargs):
         return [(getattr(self, f.name), f.name) for f in fields(self) if type(f.type) is type and issubclass(f.type, Symbolic)]
 
+    def children(self, **kwargs):
+        return [c for c, _ in self.labeled_children(**kwargs)]
+
+    def vars(self) -> list[str]:
+        return [v.name for v in self.preorder(lambda x: isinstance(x, Var))]
+
+    def substitute(self, vars):
+        if isinstance(self, Var) and self.name in vars:
+            return vars[self.name]
+        else:
+            return self.map(lambda x: x.substitute(vars))
+
+    def substitute_term(self, f):
+        res = f(self)
+        if res:
+            return res
+        else:
+            return self.map(lambda x: x.substitute_term(f))
+
     def reconstruct(self, *cs):
-        assert not self.children()
+        assert not self.labeled_children()
         return self
 
     def map(self, f):
-        return self.reconstruct(*(f(c) for c, _ in self.children())).named(self.name)
+        return self.reconstruct(*map(f, self.children())).named(self.name)
+
+    def constant(self):
+        return self.map(lambda x: None)
 
     def draw_node(self, **kwargs):
         print(f"{self.nodeid(**kwargs)} [label=\"{self.nodename(**kwargs)}\"];")
 
     def draw_edges(self, **kwargs):
-        for c, label in self.children(**kwargs):
+        for c, label in self.labeled_children(**kwargs):
             print(f"{c.nodeid(**kwargs)} -> {self.nodeid(**kwargs)} [label=\"{label}\"];")
 
     def draw_children(self, **kwargs):
-        for c, label in self.children(**kwargs):
+        for c, label in self.labeled_children(**kwargs):
             c.graphviz(**kwargs)
 
     def graphviz(self, structural=False, done=None, **kwargs):
@@ -120,7 +142,7 @@ class Symbolic:
             return counted[id(self)] if recount else 0
         else:
             t = self.internal_size()
-            for c, _ in self.children():
+            for c in self.children():
                 t += c.size(**kwargs)
             counted[id(self)] = t
             return t
@@ -140,7 +162,7 @@ class Symbolic:
         return self.map(lambda c: c.simplify(**kwargs))
 
     def preorder(self, p=lambda x: True):
-        return [self]*p(self) + [v for c, _ in self.children() for v in c.preorder(p)]
+        return [self]*p(self) + [v for c in self.children() for v in c.preorder(p)]
 
     def truth_assignments(self, vars):
         configs = bitconfigs(len(vars))
@@ -157,7 +179,7 @@ class List(Symbolic):
         return format_list((x.show(**kwargs) for x in self.xs),
                            **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
 
-    def children(self, **kwargs):
+    def labeled_children(self, **kwargs):
         return [(x, str(i)) for i, x in enumerate(self.xs)]
 
     def reconstruct(self, *cs):
@@ -309,9 +331,6 @@ class SymbolicBHV(Symbolic, AbstractBHV):
 
     def rehash(self) -> Self:
         return ReHash(self)
-
-    def __eq__(self, other: Self) -> bool:
-        return Eq(self, other)
 
     def __xor__(self, other: Self) -> Self:
         return Xor(self, other)
@@ -465,7 +484,7 @@ class Random(SymbolicBHV):
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
 
-    def children(self, **kwargs):
+    def labeled_children(self, **kwargs):
         return list(zip(self.vs, map(str, range(len(self.vs)))))
 
     def reconstruct(self, *cs):
@@ -528,15 +547,19 @@ class ReHash(SymbolicBHV):
     def expected_active_fraction(self, **kwargs):
         return .5
 @dataclass
-class Eq:
+class Eq(Symbolic):
     l: SymbolicBHV
     r: SymbolicBHV
+
+    def swap(self):
+        return Eq(self.r, self.l)
 
     def reconstruct(self, l, r):
         return Eq(l, r)
 
-    def show(self, **kwargs):
-        brackets = not kwargs.get("toplevel", False)
+    def show(self, toplevel=True, **kwargs):
+        brackets = not toplevel
+        kwargs["toplevel"] = False
         return "("*brackets + f"{self.l.show(**kwargs)} == {self.r.show(**kwargs)}" + ")"*brackets
 
     def instantiate(self, **kwargs):
@@ -558,24 +581,24 @@ class Xor(SymbolicBHV):
 
     def reduce(self, **kwargs):
         if self.l == self.ONE:
-            return ~self.r.simplify(**kwargs)
+            return ~self.r
         elif self.r == self.ONE:
-            return ~self.l.simplify(**kwargs)
+            return ~self.l
         elif self.l == self.ZERO:
-            return self.r.simplify(**kwargs)
+            return self.r
         elif self.r == self.ZERO:
-            return self.l.simplify(**kwargs)
+            return self.l
         elif self.l == self.r:
             return self.ZERO
         elif self.l == ~self.r or ~self.l == self.r:
             return self.ONE
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
-            return ~Xor(self.l.v.simplify(**kwargs), self.r.v.simplify(**kwargs))
+            return Xor(self.l.v, self.r.v)
         elif isinstance(self.l, And) and isinstance(self.r, And):
-            if self.l.l == self.r.l: return And(self.l.l, Xor(self.l.r, self.r.r)).simplify(**kwargs)
-            elif self.l.l == self.r.r: return And(self.l.l, Xor(self.l.r, self.r.l)).simplify(**kwargs)
-            elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r)).simplify(**kwargs)
-            elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l)).simplify(**kwargs)
+            if self.l.l == self.r.l: return And(self.l.l, Xor(self.l.r, self.r.r))
+            elif self.l.l == self.r.r: return And(self.l.l, Xor(self.l.r, self.r.l))
+            elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r))
+            elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l))
             else: return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
         else:
             return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
@@ -613,7 +636,7 @@ class And(SymbolicBHV):
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return Invert(Or(self.l.v, self.r.v))
         else:
-            return And(self.l, self.r)
+            return And(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -648,7 +671,7 @@ class Or(SymbolicBHV):
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return Invert(And(self.l.v, self.r.v))
         else:
-            return Or(self.l, self.r)
+            return Or(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -676,7 +699,7 @@ class Invert(SymbolicBHV):
         elif isinstance(self.v, Invert):
             return self.v.v
         else:
-            return Invert(self.v)
+            return Invert(self.v.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         return 1. - self.v.expected_active_fraction(**kwargs)
@@ -692,8 +715,8 @@ class Select(SymbolicBHV):
     def nodename(self, compact_select=False, **kwargs):
         return f"ON {self.cond.nodename()}" if compact_select else super().nodename(**kwargs)
 
-    def children(self, compact_select=False, **kwargs):
-        return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().children(**kwargs)
+    def labeled_children(self, compact_select=False, **kwargs):
+        return [(self.when1, "1"), (self.when0, "0")] if compact_select else super().labeled_children(**kwargs)
 
     def show(self, **kwargs):
         return f"{self.cond.show(**kwargs)}.select({self.when1.show(**kwargs)}, {self.when0.show(**kwargs)})"
@@ -735,7 +758,7 @@ class Select(SymbolicBHV):
                 elif expand_select_and_or:
                     return (self.cond & self.when1) | (~self.cond & self.when0)
                 else:
-                    return Select(self.cond, self.when1, self.when0)
+                    return Select(self.cond.simplify(**kwargs), self.when1.simplify(**kwargs), self.when0.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afc = self.cond.expected_active_fraction(**kwargs)
