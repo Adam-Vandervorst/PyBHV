@@ -288,11 +288,13 @@ class SymbolicBHV(Symbolic, AbstractBHV):
         return Rand()
 
     @classmethod
-    def rand2(cls, power=1) -> Self:
+    def rand2(cls, power: int) -> Self:
+        assert power >= 0
         return Rand2(power)
 
     @classmethod
-    def random(cls, active=0.5) -> Self:
+    def random(cls, active: float) -> Self:
+        assert 0. <= active <= 1.
         return Random(active)
 
     @classmethod

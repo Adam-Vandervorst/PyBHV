@@ -8,11 +8,12 @@ class Slice(AbstractBHV):
 
     @classmethod
     def rand(cls) -> Self:
-        return cls.random()
+        return cls.random(.5)
 
     @classmethod
-    def random(cls, active=0.5) -> Self:
-        return Slice(random.random() > .5)
+    def random(cls, active: float) -> Self:
+        assert 0. <= active <= 1.
+        return Slice(random.random() > active)
 
     def permute(self, permutation_id: int) -> Self:
         raise NotImplementedError()

@@ -9,6 +9,7 @@ from time import monotonic
 from string import ascii_lowercase
 from random import shuffle
 from statistics import pstdev, fmean
+from sym_laws import greedy
 
 
 repeat_pipeline = 3
@@ -36,10 +37,20 @@ for _ in range(repeat_pipeline):
     t_opt = monotonic()
     synthesis_times.append(t_opt - t_synth)
     cf = List(fs)
+    print(cf.size())
+
+    cf_ = greedy(cf, 10)
+    print(cf_.size())
+
+
     # could be commented out for more load on execution
     cf = cf.simplify(expand_select_and_or=True)
+    print(cf.size())
     # could be commented out for more load on execution
     cf = cf.optimal_sharing()
+    print(cf.size())
+    cf = greedy(cf, 10)
+    print(cf.size())
 
     t_exec = monotonic()
     optimization_times.append(t_exec - t_opt)

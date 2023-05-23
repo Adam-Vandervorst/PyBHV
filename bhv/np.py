@@ -35,7 +35,8 @@ class NumPyBoolBHV(AbstractBHV):
         return NumPyBoolBHV(np.random.randint(0, high=2, size=DIMENSION, dtype=np.bool_))
 
     @classmethod
-    def random(cls, active=0.5) -> 'NumPyBoolBHV':
+    def random(cls, active: float) -> 'NumPyBoolBHV':
+        assert 0. <= active <= 1.
         return NumPyBoolBHV(np.random.binomial(1, active, DIMENSION))
 
     def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
@@ -132,7 +133,8 @@ class NumPyPacked8BHV(AbstractBHV):
         return NumPyPacked8BHV(np.random.randint(0, 255, DIMENSION//8, dtype=np.uint8))
 
     @classmethod
-    def random(cls, active=0.5) -> 'NumPyPacked8BHV':
+    def random(cls, active: float) -> 'NumPyPacked8BHV':
+        assert 0. <= active <= 1.
         return NumPyBoolBHV.random(active).pack8()
 
     def roll_bytes(self, n: int) -> 'NumPyPacked8BHV':
@@ -226,7 +228,8 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyPacked64BHV(cls.rng.random_raw(DIMENSION//64))
 
     @classmethod
-    def random(cls, active=0.5) -> 'NumPyPacked64BHV':
+    def random(cls, active: float) -> 'NumPyPacked64BHV':
+        assert 0. <= active <= 1.
         return NumPyBoolBHV.random(active).pack64()
 
     @classmethod

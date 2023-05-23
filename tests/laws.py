@@ -117,6 +117,11 @@ def bhv_props(impl: AbstractBHV):
         propagate2(Π, impl.__and__),
         propagate2(Π, impl.__or__),
         propagate3(Π, impl.majority3),
+
+        complement(impl.__xor__, impl.__invert__, impl.ONE),
+        invariant_under2(impl.__xor__, impl.__invert__),
+        lambda a, b: a ^ (a & b) == a & ~b,
+        lambda a, b: a ^ (~a & b) == a | b
     ]
 
     return (

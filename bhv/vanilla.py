@@ -37,7 +37,8 @@ class VanillaBHV(AbstractBHV):
         return VanillaBHV(random.randbytes(DIMENSION//8))
 
     @classmethod
-    def random(cls, active=0.5) -> 'VanillaBHV':
+    def random(cls, active: float) -> 'VanillaBHV':
+        assert 0. <= active <= 1.
         return VanillaBHV(bytes([
             (random.random() < active) | (random.random() < active) << 1 | (random.random() < active) << 2 | (random.random() < active) << 3 |
             (random.random() < active) << 4 | (random.random() < active) << 5 | (random.random() < active) << 6 | (random.random() < active) << 7

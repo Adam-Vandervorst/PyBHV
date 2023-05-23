@@ -16,64 +16,67 @@ class AbstractBHV:
         raise NotImplementedError()
 
     @classmethod
-    def nrand(cls, n) -> list[Self]:
+    def nrand(cls, n: int) -> list[Self]:
         return [cls.rand() for _ in range(n)]
 
     @classmethod
-    def rand2(cls, power=1) -> Self:
+    def rand2(cls, power: int) -> Self:
+        assert power >= 0
         r = cls.rand()
-        return r if power == 1 else r & cls.rand2(power - 1)
+        return r if power == 0 else r & cls.rand2(power - 1)
 
     @classmethod
-    def nrand2(cls, n, power=1) -> list[Self]:
+    def nrand2(cls, n: int, power: int) -> list[Self]:
+        assert power >= 0
         return [cls.rand2(power) for _ in range(n)]
 
     @classmethod
-    def random(cls, active=0.5) -> Self:
+    def random(cls, active: float) -> Self:
         raise NotImplementedError()
 
     @classmethod
-    def nrandom(cls, n, active=0.5) -> list[Self]:
+    def nrandom(cls, n: int, active: float) -> list[Self]:
+        assert 0. <= active <= 1.
         return [cls.random(active) for _ in range(n)]
 
-    def select_rand(self, other) -> Self:
+    def select_rand(self, other: Self) -> Self:
         return self.rand().select(self, other)
 
-    def select_rand2(self, other, power_left=1) -> Self:
+    def select_rand2(self, other: Self, power_left: int) -> Self:
         return self.rand2(power_left).select(self, other)
 
-    def select_random(self, other, frac_left=0.5) -> Self:
+    def select_random(self, other: Self, frac_left: float) -> Self:
         return self.random(frac_left).select(self, other)
 
     def randomize_half(self) -> Self:
-        return self.select_rand(self.rand())
+        return self.rand().select_rand(self)
 
-    def randomize_pow(self, pow_randomize=1) -> Self:
+    def randomize_pow(self, pow_randomize: int) -> Self:
         return self.rand().select_rand2(self, pow_randomize)
 
-    def randomize_frac(self, frac_randomize=0.5) -> Self:
+    def randomize_frac(self, frac_randomize: float) -> Self:
         return self.rand().select_random(self, frac_randomize)
 
     def flip_half(self) -> Self:
         return self ^ self.rand()
 
-    def flip_pow(self, pow_flip=1) -> Self:
+    def flip_pow(self, pow_flip: int) -> Self:
         return self ^ self.rand2(pow_flip)
 
-    def flip_pow_on(self, flip_on_frac) -> Self:
-        return self | self.flip_pow(flip_on_frac + 1)
+    def flip_pow_on(self, pow_flip_on: int) -> Self:
+        return self | ~self.rand2(pow_flip_on)
 
-    def flip_pow_off(self, flip_off_frac) -> Self:
-        return self & self.flip_pow(flip_off_frac + 1)
+    def flip_pow_off(self, pow_flip_off: int) -> Self:
+        return self & self.rand2(pow_flip_off)
 
-    def flip_frac(self, frac_flip=0.5) -> Self:
+    def flip_frac(self, frac_flip: float) -> Self:
         return self ^ self.random(frac_flip)
 
-    def flip_frac_on(self, flip_on_frac) -> Self:
-        return self | self.flip_frac(2*flip_on_frac)
+    def flip_frac_on(self, frac_flip_on: float) -> Self:
+        return self | self.random(frac_flip_on)
 
-    def flip_frac_off(self, flip_off_frac) -> Self:
-        return self & self.flip_frac(2*flip_off_frac)
+    def flip_frac_off(self, frac_flip_off: float) -> Self:
+        return self & self.flip_frac(1. - frac_flip_off)
 
     def permute(self, permutation_id: int) -> Self:
         raise NotImplementedError()
@@ -160,11 +163,6 @@ class AbstractBHV:
     def active(self) -> int:
         raise NotImplementedError()
 
-    def bias_rel(self, other: Self, rel: Self) -> float:
-        rel_l = rel.select(self, self.ZERO).active()
-        rel_r = rel.select(other, self.ZERO).active()
-        return rel_l / (rel_l + rel_r)
-
     def active_fraction(self) -> float:
         return self.active()/DIMENSION
 
@@ -223,6 +221,11 @@ class AbstractBHV:
 
     def unrelated(self, other: Self, stdvs=6) -> bool:
         return abs(self.std_apart(other, invert=True)) < stdvs
+
+    def bias_rel(self, other: Self, rel: Self) -> float:
+        rel_l = rel.hamming(self)
+        rel_r = rel.hamming(other)
+        return rel_l/(rel_l + rel_r)
 
     # Alternative implementations
 

@@ -16,7 +16,7 @@ abc_d = abc ^ d
 
 code = List([cq, b_d, abc_d]).named("O").graphviz()#.show_program(name="run", impl="VanillaBHV.")
 # .simplify(expand_select_and_or=True)
-print(code)
+# print(code)
 
 # assert code == """
 # def run(a, b, c, d):

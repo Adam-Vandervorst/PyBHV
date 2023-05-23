@@ -59,7 +59,8 @@ class TorchBoolBHV(AbstractBHV):
         return TorchBoolBHV(torch.empty(DIMENSION, dtype=torch.bool).random_())
 
     @classmethod
-    def random(cls, active=0.5) -> 'TorchBoolBHV':
+    def random(cls, active: float) -> 'TorchBoolBHV':
+        assert 0. <= active <= 1.
         return TorchBoolBHV(torch.empty(DIMENSION, dtype=torch.bool).bernoulli_(active))
 
     def select(self, when1: 'TorchBoolBHV', when0: 'TorchBoolBHV') -> 'TorchBoolBHV':
@@ -160,7 +161,8 @@ class TorchPackedBHV(AbstractBHV):
         return TorchPackedBHV(torch.randint(-9223372036854775808, 9223372036854775807, size=(DIMENSION//64,), dtype=torch.long))
 
     @classmethod
-    def random(cls, active=0.5) -> Self:
+    def random(cls, active) -> Self:
+        assert 0. <= active <= 1.
         return TorchBoolBHV.random(active).pack()
 
     def roll_words(self, n: int) -> 'TorchPackedBHV':
