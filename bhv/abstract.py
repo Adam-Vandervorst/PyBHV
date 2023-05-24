@@ -76,7 +76,7 @@ class AbstractBHV:
         return self | self.random(frac_flip_on)
 
     def flip_frac_off(self, frac_flip_off: float) -> Self:
-        return self & self.flip_frac(1. - frac_flip_off)
+        return self & self.random(1. - frac_flip_off)
 
     def permute(self, permutation_id: int) -> Self:
         raise NotImplementedError()
@@ -155,7 +155,7 @@ class AbstractBHV:
         raise NotImplementedError()
 
     def __invert__(self) -> Self:
-        raise NotImplementedError()
+        return self ^ self.ONE
 
     def select(self, when1: Self, when0: Self) -> Self:
         return when0 ^ (self & (when0 ^ when1))
@@ -191,28 +191,28 @@ class AbstractBHV:
         return self.frac_to_std(self.bit_error_rate(other), invert)
 
     @staticmethod
+    def normal(mean=0., p=.5):
+        return NormalDist(mean, (DIMENSION*p*(1 - p))**.5)
+
+    @staticmethod
     def frac_to_std(frac, invert=False):
-        p = 0.5
-        n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
-        estdvs = n.zscore(p*DIMENSION)
+        n = AbstractBHV.normal(0.0)
+        estdvs = n.zscore(0.5*DIMENSION)
         stdvs = n.zscore(frac*DIMENSION)
         return estdvs - stdvs if invert else stdvs
 
     @staticmethod
     def std_to_frac(std, invert=False):
-        p = 0.5
-        n = NormalDist(0, (DIMENSION*p*(1 - p))**.5)
+        n = AbstractBHV.normal(0.0)
         frac = (std*n.stdev + n.mean)/DIMENSION
         return 1. - frac if invert else frac
 
     def zscore(self) -> float:
-        p = 0.5
-        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        n = AbstractBHV.normal(0.5*DIMENSION)
         return n.zscore(self.active())
 
     def pvalue(self) -> float:
-        p = 0.5
-        n = NormalDist(DIMENSION*p, (DIMENSION*p*(1 - p))**.5)
+        n = AbstractBHV.normal(0.5*DIMENSION)
         s = n.cdf(self.active())
         return 2.*min(s, 1. - s)
 

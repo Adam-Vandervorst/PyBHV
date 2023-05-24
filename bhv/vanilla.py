@@ -72,9 +72,6 @@ class VanillaBHV(AbstractBHV):
     def __or__(self, other: 'VanillaBHV') -> 'VanillaBHV':
         return self.from_int(self.to_int() | other.to_int())
 
-    def __invert__(self) -> 'VanillaBHV':
-        return self.from_int(~self.to_int())
-
     if version_info[2] >= 10:
         def active(self) -> int:
             return self.to_int().bit_count()
@@ -83,11 +80,11 @@ class VanillaBHV(AbstractBHV):
             return bin(self.to_int()).count("1")
 
     def to_int(self) -> int:
-        return int.from_bytes(self.data, byteorder, signed=True)
+        return int.from_bytes(self.data, byteorder, signed=False)
 
     @classmethod
     def from_int(cls, i: int):
-        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=True))
+        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=False))
 
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
