@@ -11,6 +11,7 @@ setup(
     author_email="contact@adamv.be",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
+    url="https://github.com/Adam-Vandervorst/PyBHV",
     packages=find_packages(),
     install_requires=[],
     extras_require={
