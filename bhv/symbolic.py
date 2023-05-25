@@ -150,16 +150,17 @@ class Symbolic:
     def simplify(self, **kwargs):
         x = self
         while True:
-            x_ = x.map(lambda x: x.simplify(**kwargs)).reduce(**kwargs)
-            if x_ is None:
-                raise RuntimeError(f"{x} reduced to non (under {kwargs})")
+            x_ = x.map(lambda c: c.simplify(**kwargs))
+            x_r = x_.reduce(**kwargs)
+            if x_r is not None:
+                x_ = x_r
             if x == x_:
                 return x
             else:
                 x = x_
 
     def reduce(self, **kwargs):
-        return self.map(lambda c: c.simplify(**kwargs))
+        return None
 
     def preorder(self, p=lambda x: True):
         return [self]*p(self) + [v for c in self.children() for v in c.preorder(p)]
@@ -599,9 +600,6 @@ class Xor(SymbolicBHV):
             elif self.l.l == self.r.r: return And(self.l.l, Xor(self.l.r, self.r.l))
             elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r))
             elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l))
-            else: return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
-        else:
-            return Xor(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -635,8 +633,6 @@ class And(SymbolicBHV):
             return self.ZERO
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return Invert(Or(self.l.v, self.r.v))
-        else:
-            return And(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -670,8 +666,6 @@ class Or(SymbolicBHV):
             return self.ONE
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return Invert(And(self.l.v, self.r.v))
-        else:
-            return Or(self.l.simplify(**kwargs), self.r.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
@@ -698,8 +692,6 @@ class Invert(SymbolicBHV):
             return self.ONE
         elif isinstance(self.v, Invert):
             return self.v.v
-        else:
-            return Invert(self.v.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         return 1. - self.v.expected_active_fraction(**kwargs)
@@ -757,8 +749,6 @@ class Select(SymbolicBHV):
                     return self.when0 ^ (self.cond & (self.when0 ^ self.when1))
                 elif expand_select_and_or:
                     return (self.cond & self.when1) | (~self.cond & self.when0)
-                else:
-                    return Select(self.cond.simplify(**kwargs), self.when1.simplify(**kwargs), self.when0.simplify(**kwargs))
 
     def expected_active_fraction(self, **kwargs):
         afc = self.cond.expected_active_fraction(**kwargs)

@@ -9,7 +9,6 @@ from time import monotonic
 from string import ascii_lowercase
 from random import shuffle
 from statistics import pstdev, fmean
-from sym_laws import greedy
 
 
 repeat_pipeline = 3

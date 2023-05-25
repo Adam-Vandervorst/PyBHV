@@ -35,6 +35,7 @@ def extensionality4(f, g): return lambda x, y, z, u: f(x, y, z, u) == g(x, y, z,
 def extensionality5(f, g): return lambda x, y, z, u, v: f(x, y, z, u, v) == g(x, y, z, u, v)
 def extensionality6(f, g): return lambda x, y, z, u, v, w: f(x, y, z, u, v, w) == g(x, y, z, u, v, w)
 def extensionality7(f, g): return lambda x, y, z, u, v, w, r: f(x, y, z, u, v, w, r) == g(x, y, z, u, v, w, r)
+def extensionality9(f, g): return lambda x, y, z, u, v, w, r, i, j: f(x, y, z, u, v, w, r, i, j) == g(x, y, z, u, v, w, r, i, j)
 def extensionalityN(f, g): return lambda xs: f(xs) == g(xs)
 def encode_decode(enc, dec): return lambda x: x == dec(enc(x))
 def invariant_under(f, p): return lambda x: f(x) == f(p(x))
@@ -215,7 +216,8 @@ def run():
         # this is slow, obviously
         # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
         # extensionality7(NumPyPacked64BHV._majority7_via_ite, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
-        # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_ite([x, y, z, u, v, w, r])),
+        # extensionality7(NumPyPacked64BHV._majority7_via_3, lambda x, y, z, u, v, w, r: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r])),
+        # extensionality9(NumPyPacked64BHV._majority9_via_3, lambda x, y, z, u, v, w, r, i, j: NumPyPacked64BHV._majority_via_unpacked([x, y, z, u, v, w, r, i, j])),
     ])
 
     t0 = monotonic()

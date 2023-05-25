@@ -353,6 +353,47 @@ class AbstractBHV:
         mabc = cls._majority3(a, b, c)
         return cls._majority3(g, cls._majority3(c, mdef, cls._majority3(a, b, mdef)), cls._majority3(f, mabc, cls._majority3(d, e, mabc)))
 
+    @classmethod
+    def _majority9_via_3(cls, a: Self, b: Self, c: Self, d: Self, e: Self, f: Self, g: Self, h: Self, i: Self) -> Self:
+        mabc = cls._majority3(a, b, c)
+        mdef = cls._majority3(d, e, f)
+        mghi = cls._majority3(g, h, i)
+
+        l_ = cls._majority3(cls._majority3(c, mdef, b), mdef, a)
+        l = cls._majority3(cls._majority3(i, l_, h), l_, g)
+
+        r_ = cls._majority3(cls._majority3(c, mghi, b), mghi, a)
+        r = cls._majority3(cls._majority3(f, r_, e), r_, d)
+
+        m = cls._majority3(mabc, mdef, mghi)
+        return cls._majority3(l, m, r)
+
+    @classmethod
+    def _majority_via_custom(cls, vs: list[Self]):
+        n = len(vs)
+        if n == 0:
+            return cls.rand()
+        elif n == 1:
+            return vs[0]
+        elif n == 2:
+            return vs[0].select_rand(vs[1])
+        elif n == 3:
+            return cls._majority3(vs[0], vs[1], vs[2])
+        elif n == 4:
+            return cls._majority5_via_3(vs[0], vs[1], vs[2], vs[3], cls.rand())
+        elif n == 5:
+            return cls._majority5_via_3(vs[0], vs[1], vs[2], vs[3], vs[4])
+        elif n == 6:
+            return cls._majority7_via_3(vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], cls.rand())
+        elif n == 7:
+            return cls._majority7_via_3(vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6])
+        elif n == 8:
+            return cls._majority9_via_3(vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6], vs[7], cls.rand())
+        elif n == 9:
+            return cls._majority9_via_3(vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6], vs[7], vs[8])
+        else:
+            raise RuntimeError(f"No optimal implementations beyond MAJORITY-9 (tried to take MAJORITY-{n})")
+
     ZERO: Self
     ONE: Self
     HALF: Self

@@ -233,6 +233,13 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyBoolBHV.random(active).pack64()
 
     @classmethod
+    def majority(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
+        if len(vs) <= 9:
+            return cls._majority_via_custom(vs)
+        else:
+            return cls._majority_via_unpacked(vs)
+
+    @classmethod
     def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
 
