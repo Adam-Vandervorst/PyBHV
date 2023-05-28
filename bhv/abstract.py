@@ -217,14 +217,14 @@ class AbstractBHV:
         return 2.*min(s, 1. - s)
 
     def related(self, other: Self, stdvs=6) -> bool:
-        return abs(self.std_apart(other)) < stdvs
+        return abs(self.std_apart(other)) <= stdvs
 
     def unrelated(self, other: Self, stdvs=6) -> bool:
-        return abs(self.std_apart(other, invert=True)) < stdvs
+        return abs(self.std_apart(other, invert=True)) <= stdvs
 
     def bias_rel(self, other: Self, rel: Self) -> float:
-        rel_l = rel.hamming(self)
-        rel_r = rel.hamming(other)
+        rel_l = (rel & self).active()
+        rel_r = (rel & other).active()
         return rel_l/(rel_l + rel_r)
 
     # Alternative implementations
