@@ -2,6 +2,7 @@ from statistics import NormalDist
 from itertools import accumulate
 from functools import cache
 from operator import or_, and_
+from math import comb
 
 from .shared import *
 
@@ -193,6 +194,10 @@ class AbstractBHV:
     @staticmethod
     def normal(mean=0., p=.5):
         return NormalDist(mean, (DIMENSION*p*(1 - p))**.5)
+
+    @staticmethod
+    def maj_ber(n):
+        return comb(n - 1, (n - 1)//2)/2**n
 
     @staticmethod
     def frac_to_std(frac, invert=False):
