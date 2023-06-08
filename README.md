@@ -11,6 +11,7 @@ The fundamental research includes finding algebras with interesting properties o
 - Permutation, roll, and swapping with multiple interfaces
 - Hashing and encoding
 - Majority with multiple implementation
+- Sample, a cheap alternative to Majority
 - AND, OR, and XOR operators
 - Composite operations like SELECT (or MUX) and FLIP-FRAC (flipping a fraction of the bits)
 - Hamming, jaccard, cosine, and bit-error-rate "metrics"
@@ -19,6 +20,7 @@ The fundamental research includes finding algebras with interesting properties o
 
 Additionally, provided are
 - A symbolic implementation with analysis, plotting and pretty printing
+- A native C++ implementation
 - Law and unification backed expression simplification
 - Compilation to operation sequences
 - Efficient bit-packed representation
@@ -36,7 +38,9 @@ Make sure you have an up-to-date Python version, 3.10 recommended.
 
 If you only want to work with plain Python, you're good to go with `from bhv.vanilla VanillaBHV as BHV`.
 
-Else you'll need
+For the native vector option, you need a modern C++ compiler.
+
+For interop, you'll need
 `pip install numpy` or `pip install torch` with respectively `from bhv.np import NumPyPacked64BHV as BHV` or `from bhv.np import TorchBoolBHV as BHV`. 
 
 ## Getting started

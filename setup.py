@@ -1,9 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
-VERSION = '0.4.4'
+VERSION = '0.5.0'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
+native = Extension("bhv.native", sources=['bhv/native/bindings.cpp'],
+                   extra_compile_args=['-std=c++20', '-O3', '-march=native'],
+                   language='c++')
 setup(
     name="bhv",
     version=VERSION,
@@ -41,5 +44,6 @@ setup(
         'Programming Language :: Python :: 3.11',
 
         'Typing :: Typed',
-    ]
+    ],
+    ext_modules=[native]
 )
