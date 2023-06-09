@@ -74,6 +74,11 @@ namespace bhv {
         }
     }
 
+    void invert_into(word_t * x, word_t * target) {
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            target[i] = ~x[i];
+        }
+    }
 
     template <typename N>
     N* generic_counts(word_t ** xs, N size) {

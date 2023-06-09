@@ -44,6 +44,9 @@ static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
 }
 
 static PyObject *BHV_xor(PyObject *v1, PyObject *v2);
+static PyObject *BHV_and(PyObject *v1, PyObject *v2);
+static PyObject *BHV_or(PyObject *v1, PyObject *v2);
+static PyObject *BHV_invert(PyObject *v);
 
 static PyObject *BHV_hamming(BHV *v1, PyObject *args);
 
@@ -72,7 +75,10 @@ static PyMethodDef BHV_methods[] = {
 };
 
 static PyNumberMethods BHV_nb_methods = {
-    .nb_xor = (binaryfunc)BHV_xor
+    .nb_invert = (unaryfunc)BHV_invert,
+    .nb_and = (binaryfunc)BHV_and,
+    .nb_xor = (binaryfunc)BHV_xor,
+    .nb_or = (binaryfunc)BHV_or,
 };
 
 static PyTypeObject BHVType = {
@@ -159,6 +165,40 @@ static PyObject *BHV_xor(PyObject *v1, PyObject *v2) {
     return ret;
 }
 
+static PyObject *BHV_and(PyObject *v1, PyObject *v2) {
+    if (not PyObject_IsInstance(v1, (PyObject *)&BHVType) or
+        not PyObject_IsInstance(v2, (PyObject *)&BHVType)) {
+        PyErr_SetString(PyExc_TypeError, "Only BHV argument(s) supported");
+        return nullptr;
+    }
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::and_into(((BHV*)v1)->data, ((BHV*)v2)->data, ((BHV *) ret)->data);
+    return ret;
+}
+
+static PyObject *BHV_or(PyObject *v1, PyObject *v2) {
+    if (not PyObject_IsInstance(v1, (PyObject *)&BHVType) or
+        not PyObject_IsInstance(v2, (PyObject *)&BHVType)) {
+        PyErr_SetString(PyExc_TypeError, "Only BHV argument(s) supported");
+        return nullptr;
+    }
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::or_into(((BHV*)v1)->data, ((BHV*)v2)->data, ((BHV *) ret)->data);
+    return ret;
+}
+
+static PyObject *BHV_invert(PyObject *v) {
+    if (not PyObject_IsInstance(v, (PyObject *)&BHVType)) {
+        PyErr_SetString(PyExc_TypeError, "Only BHV argument(s) supported");
+        return nullptr;
+    }
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::invert_into(((BHV*)v)->data, ((BHV *) ret)->data);
+    return ret;
+}
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args) {
     BHV *v2;

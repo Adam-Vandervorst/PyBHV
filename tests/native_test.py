@@ -18,8 +18,8 @@ m = BHV._true_majority(rs)
 t2 = monotonic_ns()
 print("majority", t2 - t1)
 
-if False:
-    ds = [BHV.__xor__(r, m) for r in rs]
+if True:
+    ds = [r ^ m for r in rs]
 
     t3 = monotonic_ns()
     print("xor", t3 - t2)
