@@ -37,11 +37,13 @@ static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
     switch (op) {
         case Py_EQ: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_TRUE; else Py_RETURN_FALSE;
         case Py_NE: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_FALSE; else Py_RETURN_TRUE;
-        default: return Py_NotImplemented;
+        default:
+            PyErr_SetString(PyExc_NotImplementedError, "Can only compare BHVs with == and !=");
+            return nullptr;
     }
 }
 
-static PyObject *BHV_xor(BHV *v1, PyObject *args);
+static PyObject *BHV_xor(PyObject *v1, PyObject *v2);
 
 static PyObject *BHV_hamming(BHV *v1, PyObject *args);
 
@@ -66,11 +68,12 @@ static PyMethodDef BHV_methods[] = {
                 "Hamming distance between two BHVs"},
         {"active",         (PyCFunction) BHV_active,     METH_NOARGS,
                 "Count the number of active bits"},
-        {"__xor__",        (PyCFunction) BHV_xor,        METH_VARARGS,
-                "XOR of two BHVs"},
         {nullptr}
 };
 
+static PyNumberMethods BHV_nb_methods = {
+    .nb_xor = (binaryfunc)BHV_xor
+};
 
 static PyTypeObject BHVType = {
         .ob_base = PyVarObject_HEAD_INIT(nullptr, 0)
@@ -78,6 +81,7 @@ static PyTypeObject BHVType = {
         .tp_basicsize = sizeof(BHV),
         .tp_itemsize = 0,
         .tp_dealloc = (destructor) BHV_dealloc,
+        .tp_as_number = &BHV_nb_methods,
         .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
         .tp_doc = "Packed, native implementation of Boolean Hypervectors",
         .tp_richcompare = BHV_richcompare,
@@ -143,13 +147,15 @@ static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {
     return ret;
 }
 
-static PyObject *BHV_xor(BHV *v1, PyObject *args) {
-    BHV *v2;
-    if (!PyArg_ParseTuple(args, "O!", &BHVType, &v2))
+static PyObject *BHV_xor(PyObject *v1, PyObject *v2) {
+    if (not PyObject_IsInstance(v1, (PyObject *)&BHVType) or
+        not PyObject_IsInstance(v2, (PyObject *)&BHVType)) {
+        PyErr_SetString(PyExc_TypeError, "Only BHV argument(s) supported");
         return nullptr;
+    }
 
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
-    bhv::xor_into(v1->data, v2->data, ((BHV *) ret)->data);
+    bhv::xor_into(((BHV*)v1)->data, ((BHV*)v2)->data, ((BHV *) ret)->data);
     return ret;
 }
 
