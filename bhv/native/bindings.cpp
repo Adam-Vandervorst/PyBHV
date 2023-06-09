@@ -33,6 +33,13 @@ static PyObject *BHV_true_majority(PyTypeObject *type, PyObject *args);
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
+static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
+    switch (op) {
+        case Py_EQ: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+        case Py_NE: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_FALSE; else Py_RETURN_TRUE;
+        default: return Py_NotImplemented;
+    }
+}
 
 static PyObject *BHV_xor(BHV *v1, PyObject *args);
 
@@ -53,7 +60,7 @@ static PyMethodDef BHV_methods[] = {
                 "The majority of a list of BHVs"},
         {"representative", (PyCFunction) BHV_representative, METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
-        {"__eq__",         (PyCFunction) BHV_eq,         METH_VARARGS,
+        {"eq",         (PyCFunction) BHV_eq,         METH_VARARGS,
                 "Check equality"},
         {"hamming",         (PyCFunction) BHV_hamming,         METH_VARARGS,
                 "Hamming distance between two BHVs"},
@@ -66,46 +73,18 @@ static PyMethodDef BHV_methods[] = {
 
 
 static PyTypeObject BHVType = {
-        PyVarObject_HEAD_INIT(nullptr, 0)
-        "bhv.NativePackedBHV",
-        sizeof(BHV),
-        0,
-        (destructor) BHV_dealloc,
-        0,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-//        (reprfunc)BHV_repr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        Py_TPFLAGS_DEFAULT |
-        Py_TPFLAGS_BASETYPE,
-        "Packed, native implementation of Boolean Hypervectors",
-        nullptr,
-        nullptr,
-        nullptr,
-        0,
-        nullptr,
-        nullptr,
-        BHV_methods,
-        BHV_members,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        0,
-        (initproc) BHV_init,
-        nullptr,
-        BHV_new,
+        .ob_base = PyVarObject_HEAD_INIT(nullptr, 0)
+        .tp_name = "bhv.NativePackedBHV",
+        .tp_basicsize = sizeof(BHV),
+        .tp_itemsize = 0,
+        .tp_dealloc = (destructor) BHV_dealloc,
+        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+        .tp_doc = "Packed, native implementation of Boolean Hypervectors",
+        .tp_richcompare = BHV_richcompare,
+        .tp_methods = BHV_methods,
+        .tp_members = BHV_members,
+        .tp_init = (initproc) BHV_init,
+        .tp_new = BHV_new,
 };
 
 
@@ -203,11 +182,11 @@ static PyMethodDef module_methods[] = {
 
 
 static struct PyModuleDef cModPyDem = {
-        PyModuleDef_HEAD_INIT,
-        "native",
-        "",
-        -1,
-        module_methods
+        .m_base = PyModuleDef_HEAD_INIT,
+        .m_name = "native",
+        .m_doc = "",
+        .m_size = -1,
+        .m_methods = module_methods
 };
 
 
