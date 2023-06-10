@@ -90,7 +90,7 @@ static PyNumberMethods BHV_nb_methods = {
 
 static PyTypeObject BHVType = {
         .ob_base = PyVarObject_HEAD_INIT(nullptr, 0)
-        .tp_name = "bhv.NativePackedBHV",
+        .tp_name = "bhv.CNativePackedBHV",
         .tp_basicsize = sizeof(BHV),
         .tp_itemsize = 0,
         .tp_dealloc = (destructor) BHV_dealloc,
@@ -260,14 +260,14 @@ static PyMethodDef module_methods[] = {
 
 static struct PyModuleDef cModPyDem = {
         .m_base = PyModuleDef_HEAD_INIT,
-        .m_name = "native",
+        .m_name = "cnative",
         .m_doc = "",
         .m_size = -1,
         .m_methods = module_methods
 };
 
 
-PyMODINIT_FUNC PyInit_native(void) {
+PyMODINIT_FUNC PyInit_cnative(void) {
     PyObject * m;
     if (PyType_Ready(&BHVType) < 0)
         return nullptr;
@@ -277,7 +277,7 @@ PyMODINIT_FUNC PyInit_native(void) {
         return nullptr;
 
     Py_INCREF(&BHVType);
-    PyModule_AddObject(m, "NativePackedBHV", (PyObject *) &BHVType);
+    PyModule_AddObject(m, "CNativePackedBHV", (PyObject *) &BHVType);
 
     return m;
 };

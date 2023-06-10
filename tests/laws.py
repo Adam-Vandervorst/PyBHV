@@ -5,7 +5,7 @@ from bhv.abstract import AbstractBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
 from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 from bhv.vanilla import VanillaBHV
-# from bhv.native import NativePackedBHV
+# from bhv.cnative import NativePackedBHV
 
 
 def associative(m): return lambda x, y, z: m(m(x, y), z) == m(x, m(y, z))
