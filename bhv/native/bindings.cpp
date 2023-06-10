@@ -29,7 +29,7 @@ static int BHV_init(BHV *v, PyObject *args, PyObject *kwds) {
 static PyObject *BHV_rand(PyTypeObject *type, PyObject *Py_UNUSED(ignored));
 static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
 
-static PyObject *BHV_true_majority(PyTypeObject *type, PyObject *args);
+static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
@@ -66,7 +66,7 @@ static PyMethodDef BHV_methods[] = {
                 "Bernoulli 1/2 distributed bit vector"},
         {"random",           (PyCFunction) BHV_random,       METH_CLASS | METH_VARARGS,
                 "Bernoulli p distributed bit vector"},
-        {"_true_majority", (PyCFunction) BHV_true_majority,  METH_CLASS | METH_VARARGS,
+        {"majority", (PyCFunction) BHV_majority,  METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
         {"representative", (PyCFunction) BHV_representative, METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
@@ -129,23 +129,26 @@ static PyObject *BHV_hamming(BHV *v1, PyObject *args) {
     return Py_BuildValue("i", bhv::hamming(v1->data, v2->data));
 }
 
-static PyObject *BHV_true_majority(PyTypeObject *type, PyObject *args) {
+static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
     PyObject * vector_list;
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &vector_list))
         return nullptr;
 
     size_t n_vectors = PyList_GET_SIZE(vector_list);
+    size_t even = 1 - n_vectors % 2;
 
-    word_t **vs = (word_t **) malloc(n_vectors * sizeof(word_t *));
+    word_t **vs = (word_t **) malloc((n_vectors + even) * sizeof(word_t *));
 
     for (size_t i = 0; i < n_vectors; ++i) {
         PyObject * v_i_py = PyList_GetItem(vector_list, i);
         vs[i] = ((BHV *) v_i_py)->data;
     }
 
+    if (even) vs[n_vectors] = bhv::rand();
+
     PyObject * ret = type->tp_alloc(type, 0);
-    ((BHV *) ret)->data = bhv::true_majority(vs, n_vectors);
+    ((BHV *) ret)->data = bhv::true_majority(vs, n_vectors + even);
     return ret;
 }
 
