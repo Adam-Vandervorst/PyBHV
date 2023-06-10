@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, Extension
 
-VERSION = '0.5.3'
+VERSION = '0.5.4'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 

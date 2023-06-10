@@ -33,6 +33,8 @@ static PyObject *BHV_true_majority(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_select(BHV *v1, PyObject *args);
+
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
 static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
     switch (op) {
@@ -68,6 +70,8 @@ static PyMethodDef BHV_methods[] = {
                 "The majority of a list of BHVs"},
         {"representative", (PyCFunction) BHV_representative, METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
+        {"select",         (PyCFunction) BHV_select,         METH_VARARGS,
+                "MUX or IF-THEN-ELSE"},
         {"eq",         (PyCFunction) BHV_eq,         METH_VARARGS,
                 "Check equality"},
         {"hamming",         (PyCFunction) BHV_hamming,         METH_VARARGS,
@@ -223,6 +227,17 @@ static PyObject *BHV_eq(BHV *v1, PyObject *args) {
     else Py_RETURN_FALSE;
 }
 
+static PyObject *BHV_select(BHV *cond, PyObject *args) {
+    BHV *when1;
+    BHV *when0;
+
+    if (!PyArg_ParseTuple(args, "O!O!", &BHVType, &when1, &BHVType, &when0))
+        return nullptr;
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::select_into(cond->data, when1->data, when0->data, ((BHV *) ret)->data);
+    return ret;
+}
 
 static PyObject *dimension(PyObject * self, PyObject * args, PyObject * kwds) {
     return PyLong_FromLong(BITS);
