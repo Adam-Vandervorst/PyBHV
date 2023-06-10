@@ -27,6 +27,7 @@ static int BHV_init(BHV *v, PyObject *args, PyObject *kwds) {
 }
 
 static PyObject *BHV_rand(PyTypeObject *type, PyObject *Py_UNUSED(ignored));
+static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_true_majority(PyTypeObject *type, PyObject *args);
 
@@ -60,7 +61,9 @@ static PyMemberDef BHV_members[] = {
 
 static PyMethodDef BHV_methods[] = {
         {"rand",           (PyCFunction) BHV_rand,       METH_CLASS | METH_NOARGS,
-                "Set vector elements to random values"},
+                "Bernoulli 1/2 distributed bit vector"},
+        {"random",           (PyCFunction) BHV_random,       METH_CLASS | METH_VARARGS,
+                "Bernoulli p distributed bit vector"},
         {"_true_majority", (PyCFunction) BHV_true_majority,  METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
         {"representative", (PyCFunction) BHV_representative, METH_CLASS | METH_VARARGS,
@@ -101,6 +104,16 @@ static PyTypeObject BHVType = {
 static PyObject *BHV_rand(PyTypeObject *type, PyObject *Py_UNUSED(ignored)) {
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::rand_into(((BHV *) v)->data);
+    return v;
+}
+
+static PyObject *BHV_random(PyTypeObject *type, PyObject *args) {
+    float p;
+    if (!PyArg_ParseTuple(args, "f", &p))
+        return nullptr;
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::random_into(((BHV *) v)->data, p);
     return v;
 }
 

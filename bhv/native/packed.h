@@ -23,11 +23,28 @@ namespace bhv {
         }
     }
 
+    void random_into(word_t * x, float_t p) {
+        std::uniform_real_distribution<float> gen(0.0, 1.0);
+
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            word_t word = 0;
+            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+                if (gen(rng) < p)
+                    word |= 1UL << bit_id;
+            }
+            x[i] = word;
+        }
+    }
+
     word_t * rand() {
         word_t * x = empty();
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            x[i] = rng();
-        }
+        rand_into(x);
+        return x;
+    }
+
+    word_t * random(float_t p) {
+        word_t * x = empty();
+        random_into(x, p);
         return x;
     }
 
