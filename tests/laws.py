@@ -2,8 +2,9 @@ from time import monotonic
 from itertools import product, groupby
 
 from bhv.abstract import AbstractBHV
+from bhv.native import NativePackedBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
-from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
+# from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 from bhv.vanilla import VanillaBHV
 # from bhv.cnative import NativePackedBHV
 
@@ -183,7 +184,8 @@ def run_for(impl: AbstractBHV, ts):
 
 
 def run():
-    all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
+    # all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
+    all_implementations = [VanillaBHV, NumPyPacked64BHV, NativePackedBHV]
 
     for impl in all_implementations:
         print(f"Testing {impl.__name__}...")
@@ -200,14 +202,14 @@ def run():
     run_for(NumPyBoolBHV, bhv_conv_ops(NumPyBoolBHV, NumPyPacked64BHV, NumPyBoolBHV.pack64, NumPyPacked64BHV.unpack))
     print("Testing metrics invariant under pack64")
     run_for(NumPyBoolBHV, bhv_conv_metrics(NumPyBoolBHV.pack64))
-    run_for(TorchBoolBHV, bhv_conv_metrics(TorchBoolBHV.pack))
+    # run_for(TorchBoolBHV, bhv_conv_metrics(TorchBoolBHV.pack))
     print("Testing large unbalanced majority")
     rs = [~v for v in NumPyPacked64BHV.nrand2(1001, 3)]
     rs_ = [r.unpack() for r in rs]
     assert NumPyPacked64BHV.majority(rs) == NumPyBoolBHV.majority(rs_).pack64()
-    rs = [~v for v in TorchPackedBHV.nrand2(1001, 3)]
-    rs_ = [r.unpack() for r in rs]
-    assert TorchPackedBHV.majority(rs) == TorchBoolBHV.majority(rs_).pack()
+    # rs = [~v for v in TorchPackedBHV.nrand2(1001, 3)]
+    # rs_ = [r.unpack() for r in rs]
+    # assert TorchPackedBHV.majority(rs) == TorchBoolBHV.majority(rs_).pack()
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [

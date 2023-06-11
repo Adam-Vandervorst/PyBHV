@@ -3,6 +3,7 @@
 
 #include <random>
 #include <cstring>
+#include <algorithm>
 #include "shared.h"
 
 
@@ -13,8 +14,24 @@ namespace bhv {
         return (word_t *) malloc(BYTES);
     }
 
-    word_t * zeros() {
+    word_t * zero() {
         return (word_t *) calloc(WORDS, sizeof(word_t));
+    }
+
+    word_t * one() {
+        word_t * x = empty();
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            x[i] = std::numeric_limits<word_t>::max();
+        }
+        return x;
+    }
+
+    word_t * half() {
+        word_t * x = empty();
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            x[i] = std::numeric_limits<word_t>::max() << BITS_PER_WORD/2;
+        }
+        return x;
     }
 
     void rand_into(word_t * x) {
@@ -134,7 +151,7 @@ namespace bhv {
     }
 
     word_t * representative_impl(word_t ** xs, size_t size) {
-        word_t * x = zeros();
+        word_t * x = zero();
 
         std::uniform_int_distribution<size_t> gen(0, size - 1);
         for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
@@ -184,6 +201,39 @@ namespace bhv {
         else if (size == 1) { word_t * r = empty(); memcpy(r, xs[0], BYTES); return r; }
         else if (size == 2) { word_t * r = rand(); select_into(r, xs[0], xs[1], r); return r; }
         else return representative_impl(xs, size);
+    }
+
+    word_t* permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            target[i] = x[word_permutation[i]];
+        }
+        return x;
+    }
+
+    word_t* inverse_permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            target[word_permutation[i]] = x[i];
+        }
+        return x;
+    }
+
+    word_iter_t* rand_word_permutation(uint32_t seed) {
+        std::minstd_rand0 perm_rng(seed);
+
+        auto p = (word_iter_t *) malloc(sizeof(word_iter_t)*WORDS);
+
+        for (word_iter_t i = 0; i < WORDS; ++i)
+            p[i] = i;
+
+        std::shuffle(p, p + WORDS, perm_rng);
+
+        return p;
+    }
+
+    word_t* permute_into(word_t * x, int32_t perm, word_t * target) {
+        if (perm == 0) return x;
+        else if (perm > 0) return permute_words_into(x, rand_word_permutation(perm), target);
+        else return inverse_permute_words_into(x, rand_word_permutation(-perm), target);
     }
 }
 #endif //BHV_PACKED_H

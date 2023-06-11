@@ -33,7 +33,8 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
-static PyObject *BHV_select(BHV *v1, PyObject *args);
+static PyObject *BHV_select(BHV *cond, PyObject *args);
+static PyObject *BHV_permute(BHV *v1, PyObject *args);
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
 static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
@@ -72,6 +73,8 @@ static PyMethodDef BHV_methods[] = {
                 "Random representative of a list of BHVs"},
         {"select",         (PyCFunction) BHV_select,         METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
+        {"permute",         (PyCFunction) BHV_permute,         METH_VARARGS,
+                "Word-level permutation"},
         {"eq",         (PyCFunction) BHV_eq,         METH_VARARGS,
                 "Check equality"},
         {"hamming",         (PyCFunction) BHV_hamming,         METH_VARARGS,
@@ -100,6 +103,7 @@ static PyTypeObject BHVType = {
         .tp_richcompare = BHV_richcompare,
         .tp_methods = BHV_methods,
         .tp_members = BHV_members,
+        .tp_dict = PyDict_New(),
         .tp_init = (initproc) BHV_init,
         .tp_new = BHV_new,
 };
@@ -242,6 +246,17 @@ static PyObject *BHV_select(BHV *cond, PyObject *args) {
     return ret;
 }
 
+static PyObject *BHV_permute(BHV *cond, PyObject *args) {
+    int32_t perm;
+
+    if (!PyArg_ParseTuple(args, "i", &perm))
+        return nullptr;
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::permute_into(cond->data, perm, ((BHV *) ret)->data);
+    return ret;
+}
+
 static PyObject *dimension(PyObject * self, PyObject * args, PyObject * kwds) {
     return PyLong_FromLong(BITS);
 }
@@ -275,6 +290,16 @@ PyMODINIT_FUNC PyInit_cnative(void) {
     m = PyModule_Create(&cModPyDem);
     if (m == nullptr)
         return nullptr;
+
+    BHV *z = (BHV*) BHVType.tp_alloc(&BHVType, 0);
+    z->data = bhv::zero();
+    PyDict_SetItemString(BHVType.tp_dict, "ZERO", (PyObject *)z);
+    BHV *o = (BHV*) BHVType.tp_alloc(&BHVType, 0);
+    o->data = bhv::one();
+    PyDict_SetItemString(BHVType.tp_dict, "ONE", (PyObject *)o);
+    BHV *h = (BHV*) BHVType.tp_alloc(&BHVType, 0);
+    h->data = bhv::half();
+    PyDict_SetItemString(BHVType.tp_dict, "HALF", (PyObject *)h);
 
     Py_INCREF(&BHVType);
     PyModule_AddObject(m, "CNativePackedBHV", (PyObject *) &BHVType);
