@@ -254,13 +254,13 @@ class NumPyPacked64BHV(AbstractBHV):
         return NumPyPacked64BHV(np.roll(self.data, n))
 
     def roll_word_bits(self, n: int) -> 'NumPyPacked64BHV':
-        assert abs(permutation_id) < 64, "only supports 64 rolls"
+        assert abs(n) < 64, "only supports 64 rolls"
         if n == 0:
             return NumPyPacked64BHV(self.data)
         elif n > 0:
-            return np.bitwise_or(np.right_shift(self.data, d), np.left_shift(self.data, (64 - d)))
+            return np.bitwise_or(np.right_shift(self.data, n), np.left_shift(self.data, (64 - n)))
         else:
-            return np.bitwise_or(np.left_shift(self.data, d), np.right_shift(self.data, (64 - d)))
+            return np.bitwise_or(np.left_shift(self.data, n), np.right_shift(self.data, (64 - n)))
 
     # roll_words and roll_word_bits could be combined for more options allowing positive and negative combinations
     # ((1 2 3 4) (a b c d) (α β γ δ))

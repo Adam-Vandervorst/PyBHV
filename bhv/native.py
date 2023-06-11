@@ -44,9 +44,16 @@ class NativePackedBHV(AbstractBHV):
     def permute(self, permutation_id: int):
         return NativePackedBHV(self.ins.permute(permutation_id))
 
+    def rehash(self):
+        return NativePackedBHV(self.ins.rehash())
+
+    def swap_halves(self):
+        return NativePackedBHV(self.ins.swap_halves())
+
     def __eq__(self, other):
         return self.ins == other.ins
 
 NativePackedBHV.ZERO = NativePackedBHV(CNativePackedBHV.ZERO)
 NativePackedBHV.ONE = NativePackedBHV(CNativePackedBHV.ONE)
 NativePackedBHV.HALF = NativePackedBHV(CNativePackedBHV.HALF)
+NativePackedBHV._FEISTAL_SUBKEYS = NativePackedBHV.nrand2(NativePackedBHV._FEISTAL_ROUNDS, 4)

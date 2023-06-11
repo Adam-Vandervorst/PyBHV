@@ -5,9 +5,16 @@
 #include <cstring>
 #include <algorithm>
 #include "shared.h"
+//#include "KeccakSpongeAVX2/KeccakSponge.h"
+#include "TurboSHAKEref/TurboSHAKE.h"
 
 
 namespace bhv {
+    constexpr word_t ONE_WORD = std::numeric_limits<word_t>::max();
+    constexpr bit_word_iter_t HALF_BITS_PER_WORD = BITS_PER_WORD/2;
+    constexpr word_t HALF_WORD = ONE_WORD << HALF_BITS_PER_WORD;
+    constexpr word_t OTHER_HALF_WORD = ~HALF_WORD;
+
     std::mt19937_64 rng;
 
     word_t * empty() {
@@ -21,7 +28,7 @@ namespace bhv {
     word_t * one() {
         word_t * x = empty();
         for (word_iter_t i = 0; i < WORDS; ++i) {
-            x[i] = std::numeric_limits<word_t>::max();
+            x[i] = ONE_WORD;
         }
         return x;
     }
@@ -29,9 +36,15 @@ namespace bhv {
     word_t * half() {
         word_t * x = empty();
         for (word_iter_t i = 0; i < WORDS; ++i) {
-            x[i] = std::numeric_limits<word_t>::max() << BITS_PER_WORD/2;
+            x[i] = HALF_WORD;
         }
         return x;
+    }
+
+    void swap_halves_into(word_t * x, word_t * target) {
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            target[i] = ((x[i] & HALF_WORD) >> HALF_BITS_PER_WORD) | ((x[i] & OTHER_HALF_WORD) << HALF_BITS_PER_WORD);
+        }
     }
 
     void rand_into(word_t * x) {
@@ -203,18 +216,16 @@ namespace bhv {
         else return representative_impl(xs, size);
     }
 
-    word_t* permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
+    void permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             target[i] = x[word_permutation[i]];
         }
-        return x;
     }
 
-    word_t* inverse_permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
+    void inverse_permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             target[word_permutation[i]] = x[i];
         }
-        return x;
     }
 
     word_iter_t* rand_word_permutation(uint32_t seed) {
@@ -230,10 +241,14 @@ namespace bhv {
         return p;
     }
 
-    word_t* permute_into(word_t * x, int32_t perm, word_t * target) {
-        if (perm == 0) return x;
-        else if (perm > 0) return permute_words_into(x, rand_word_permutation(perm), target);
-        else return inverse_permute_words_into(x, rand_word_permutation(-perm), target);
+    void permute_into(word_t * x, int32_t perm, word_t * target) {
+        if (perm == 0) *target = *x;
+        else if (perm > 0) permute_words_into(x, rand_word_permutation(perm), target);
+        else inverse_permute_words_into(x, rand_word_permutation(-perm), target);
+    }
+
+    void rehash_into(word_t * x, word_t * target) {
+        TurboSHAKE(512, (uint8_t *)x, BYTES, 0x1F, (uint8_t *)target, BYTES);
     }
 }
 #endif //BHV_PACKED_H

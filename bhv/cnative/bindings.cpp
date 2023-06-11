@@ -34,7 +34,9 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_select(BHV *cond, PyObject *args);
-static PyObject *BHV_permute(BHV *v1, PyObject *args);
+static PyObject *BHV_permute(BHV *x, PyObject *args);
+static PyObject *BHV_rehash(BHV *x, PyObject *args);
+static PyObject *BHV_swap_halves(BHV *x, PyObject *args);
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
 static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
@@ -75,6 +77,10 @@ static PyMethodDef BHV_methods[] = {
                 "MUX or IF-THEN-ELSE"},
         {"permute",         (PyCFunction) BHV_permute,         METH_VARARGS,
                 "Word-level permutation"},
+        {"rehash",         (PyCFunction) BHV_rehash,         METH_NOARGS,
+                "Hash the vector into another vector"},
+        {"swap_halves",         (PyCFunction) BHV_swap_halves,         METH_NOARGS,
+                "Swap the halves of the vector"},
         {"eq",         (PyCFunction) BHV_eq,         METH_VARARGS,
                 "Check equality"},
         {"hamming",         (PyCFunction) BHV_hamming,         METH_VARARGS,
@@ -246,14 +252,27 @@ static PyObject *BHV_select(BHV *cond, PyObject *args) {
     return ret;
 }
 
-static PyObject *BHV_permute(BHV *cond, PyObject *args) {
+static PyObject *BHV_permute(BHV *x, PyObject *args) {
     int32_t perm;
 
     if (!PyArg_ParseTuple(args, "i", &perm))
         return nullptr;
 
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
-    bhv::permute_into(cond->data, perm, ((BHV *) ret)->data);
+    bhv::permute_into(x->data, perm, ((BHV *) ret)->data);
+    return ret;
+}
+
+static PyObject *BHV_rehash(BHV *x, PyObject *args) {
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    ((BHV *) ret)->data = bhv::zero();
+    bhv::rehash_into(x->data, ((BHV *) ret)->data);
+    return ret;
+}
+
+static PyObject *BHV_swap_halves(BHV *x, PyObject *args) {
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::swap_halves_into(x->data, ((BHV *) ret)->data);
     return ret;
 }
 

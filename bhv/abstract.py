@@ -171,7 +171,7 @@ class AbstractBHV:
         return (self ^ other).active()
 
     def bit_error_rate(self, other: Self) -> float:
-        return (self ^ other).active_fraction()
+        return self.hamming(other)/DIMENSION
 
     def jaccard(self, other: Self, distance=False) -> float:
         union_active = (self | other).active()
