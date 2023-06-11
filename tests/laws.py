@@ -162,6 +162,7 @@ def bhv_conv_metrics(under):
         invariant_under2(lambda x, y: x.std_apart(y), under),
         invariant_under2(lambda x, y: x.related(y), under),
         invariant_under2(lambda x, y: x.bit_error_rate(y), under),
+        invariant_under2(lambda x, y: x.mutual_information(y), under),
     ]
 
 

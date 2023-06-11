@@ -2,7 +2,7 @@ from statistics import NormalDist
 from itertools import accumulate
 from functools import cache
 from operator import or_, and_
-from math import comb
+from math import comb, log2
 
 from .shared import *
 
@@ -231,6 +231,35 @@ class AbstractBHV:
         rel_l = (rel & self).active()
         rel_r = (rel & other).active()
         return rel_l/(rel_l + rel_r)
+
+    def mutual_information(self, other: Self, distance=False) -> float:
+        nself = ~self
+        nother = ~other
+
+        # Probabilities
+        P00 = (nself & nother).active_fraction()
+        P01 = (nself & other).active_fraction()
+        P10 = (self & nother).active_fraction()
+        P11 = (self & other).active_fraction()
+
+        # Marginal probabilities
+        PX0 = (P00 + P01)
+        PX1 = (P10 + P11)
+        PY0 = (P00 + P10)
+        PY1 = (P01 + P11)
+
+        # Mutual Information
+        MI = 0
+        if P00 and PX0 and PY0:
+            MI += P00 * log2(P00 / (PX0 * PY0))
+        if P01 and PX0 and PY1:
+            MI += P01 * log2(P01 / (PX0 * PY1))
+        if P10 and PX1 and PY0:
+            MI += P10 * log2(P10 / (PX1 * PY0))
+        if P11 and PX1 and PY1:
+            MI += P11 * log2(P11 / (PX1 * PY1))
+
+        return 1 - MI if distance else MI
 
     # Alternative implementations
 
