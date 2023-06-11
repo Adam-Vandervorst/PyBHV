@@ -173,6 +173,9 @@ class AbstractBHV:
     def bit_error_rate(self, other: Self) -> float:
         return self.hamming(other)/DIMENSION
 
+    def overlap(self, other: Self) -> float:
+        return (self & other).active_fraction()
+
     def jaccard(self, other: Self, distance=False) -> float:
         union_active = (self | other).active()
         if union_active == 0:
@@ -228,8 +231,8 @@ class AbstractBHV:
         return abs(self.std_apart(other, invert=True)) <= stdvs
 
     def bias_rel(self, other: Self, rel: Self) -> float:
-        rel_l = (rel & self).active()
-        rel_r = (rel & other).active()
+        rel_l = rel.overlap(self)
+        rel_r = rel.overlap(other)
         return rel_l/(rel_l + rel_r)
 
     def mutual_information(self, other: Self, distance=False) -> float:
@@ -237,10 +240,10 @@ class AbstractBHV:
         nother = ~other
 
         # Probabilities
-        P00 = (nself & nother).active_fraction()
-        P01 = (nself & other).active_fraction()
-        P10 = (self & nother).active_fraction()
-        P11 = (self & other).active_fraction()
+        P00 = nself.overlap(nother)
+        P01 = nself.overlap(other)
+        P10 = self.overlap(nother)
+        P11 = self.overlap(other)
 
         # Marginal probabilities
         PX0 = (P00 + P01)
@@ -260,6 +263,12 @@ class AbstractBHV:
             MI += P11 * log2(P11 / (PX1 * PY1))
 
         return 1 - MI if distance else MI
+
+    def tversky(self, other: Self, l: float, r: float) -> float:
+        o = self.overlap(other)
+        lr = self.overlap(~other)
+        rl = other.overlap(~self)
+        return o/(l*lr + r*rl + o)
 
     # Alternative implementations
 
