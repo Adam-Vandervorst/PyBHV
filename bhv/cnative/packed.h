@@ -68,7 +68,7 @@ namespace bhv {
     bit_iter_t active(word_t * x) {
         bit_iter_t total = 0;
         for (word_iter_t i = 0; i < WORDS; ++i) {
-            total += std::popcount(x[i]);
+            total += __builtin_popcountl(x[i]);
         }
         return total;
     }
@@ -76,7 +76,7 @@ namespace bhv {
     bit_iter_t hamming(word_t * x, word_t * y) {
         bit_iter_t total = 0;
         for (word_iter_t i = 0; i < WORDS; ++i) {
-            total += std::popcount(x[i] ^ y[i]);
+            total += __builtin_popcountl(x[i] ^ y[i]);
         }
         return total;
     }
