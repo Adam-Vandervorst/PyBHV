@@ -1,11 +1,12 @@
 from collections import Counter
 from bhv.symbolic import SymbolicBHV, Var
 from bhv.np import NumPyBoolBHV as BHV, DIMENSION
+from bhv.visualization import Image
 import numpy as np
 
 
-RULE = 30
-ITERATIONS = 1000
+RULE = 90
+ITERATIONS = 10000
 
 def make_rule(r: int):
     mask = [b == '1' for b in bin(r)[2:].rjust(8, "0")]
@@ -28,14 +29,10 @@ last_v = BHV.random(.03)
 # initial[64] = np.bool_(1)
 # last_v = BHV(initial)
 
+vs = [last_v]
 
-with open(f"rule{RULE}.pbm", 'w') as f:
-    f.write(f"P1\n{DIMENSION} {ITERATIONS}\n")
+for i in range(ITERATIONS):
+    vs.append(rule(vs[-1]))
 
-    f.write(''.join(map(lambda i: '1' if i else '0', last_v.data)) + '\n')
-
-    for i in range(ITERATIONS):
-        v = rule(last_v)
-        f.write(''.join(map(lambda i: '1' if i else '0', v.data)) + '\n')
-        last_v = v
-
+with open(f"rule{RULE}.pbm", 'wb') as f:
+    Image(vs).pbm(f, binary=True, )

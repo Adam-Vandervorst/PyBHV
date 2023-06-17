@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, Extension
 
-VERSION = '0.5.11'
+VERSION = '0.5.12'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
@@ -10,7 +10,7 @@ native = Extension("bhv.cnative",
                             'bhv/cnative/TurboSHAKEref/KeccakSponge.cpp',
                             'bhv/cnative/TurboSHAKEref/KeccakP-1600-reference.cpp',
                             ],
-                   include_dirs=['bhv/cnative'],
+                   include_dirs=['bhv/cnative', 'bhv/cnative/TurboSHAKEref'],
                    extra_compile_args=['-std=c++2a', '-O3', '-march=native'],
                    language='c++')
 setup(

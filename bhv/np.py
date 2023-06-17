@@ -93,6 +93,12 @@ class NumPyBoolBHV(AbstractBHV):
     def pack64(self) -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(np.packbits(self.data).view(dtype=np.uint64))
 
+    def to_bytes(self):
+        return self.pack8().to_bytes()
+
+    def bits(self):
+        return iter(self.data)
+
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV._FEISTAL_SUBKEYS = NumPyBoolBHV.nrand2(NumPyBoolBHV._FEISTAL_ROUNDS, 4)
@@ -185,6 +191,9 @@ class NumPyPacked8BHV(AbstractBHV):
 
     def repack64(self) -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(self.data.view(dtype=np.uint64))
+
+    def to_bytes(self):
+        return self.data.tobytes()
 
 NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
 NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtype=np.uint8))
@@ -300,6 +309,9 @@ class NumPyPacked64BHV(AbstractBHV):
 
     def repack8(self) -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(self.data.view(dtype=np.uint8))
+
+    def to_bytes(self):
+        return self.repack8().to_bytes()
 
 NumPyPacked64BHV.ZERO = NumPyPacked64BHV(np.zeros(DIMENSION//64, dtype=np.uint64))
 NumPyPacked64BHV.ONE = NumPyPacked64BHV(np.full(DIMENSION//64, fill_value=-1, dtype=np.uint64))

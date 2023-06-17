@@ -1,4 +1,4 @@
-from .abstract import AbstractBHV
+from .abstract import AbstractBHV, DIMENSION
 
 
 class DistanceGraph:
@@ -19,3 +19,22 @@ class DistanceGraph:
             for j, d in enumerate(r):
                 if d != 0 and i < j:
                     print(f"{i} -- {j} [label=\"{d}\"];")
+
+
+class Image:
+    def __init__(self, hvs: 'list[AbstractBHV]'):
+        self.hvs = hvs
+
+    def pbm(self, file: 'IO[Any]', binary=False):
+        if binary:
+            file.write(b"P4\n")
+            file.write(bytes(str(DIMENSION), "ascii") + b" " + bytes(str(len(self.hvs)), "ascii") + b"\n")
+            for hv in self.hvs:
+                file.write(hv.to_bytes())
+        else:
+            file.write(f"P1\n{DIMENSION} {len(self.hvs)}\n")
+            ref = ord('0')
+            for hv in self.hvs:
+                for bit in hv.bits():
+                    file.write('1' if bit else '0')
+                file.write('\n')

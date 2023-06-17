@@ -86,6 +86,8 @@ class VanillaBHV(AbstractBHV):
     def from_int(cls, i: int):
         return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=False))
 
+    def to_bytes(self):
+        return self.data
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
 VanillaBHV.ONE = VanillaBHV(bytes([0xff for _ in range(DIMENSION//8)]))

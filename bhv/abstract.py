@@ -270,6 +270,9 @@ class AbstractBHV:
         rl = other.overlap(~self)
         return o/(l*lr + r*rl + o)
 
+    def to_bytes(self):
+        raise NotImplementedError()
+
     # Alternative implementations
 
     @classmethod
