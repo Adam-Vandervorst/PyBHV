@@ -89,6 +89,10 @@ class VanillaBHV(AbstractBHV):
     def to_bytes(self):
         return self.data
 
+    @classmethod
+    def from_bytes(cls, bs):
+        return cls(bs)
+
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
 VanillaBHV.ONE = VanillaBHV(bytes([0xff for _ in range(DIMENSION//8)]))
 VanillaBHV._FEISTAL_SUBKEYS = VanillaBHV.nrand2(VanillaBHV._FEISTAL_ROUNDS, 4)

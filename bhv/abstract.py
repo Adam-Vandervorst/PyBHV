@@ -273,6 +273,31 @@ class AbstractBHV:
     def to_bytes(self):
         raise NotImplementedError()
 
+    @classmethod
+    def from_bytes(cls, bs):
+        raise NotImplementedError()
+
+    def bits(self):
+        for b in self.to_bytes():
+            yield (b >> 7) & 0x1
+            yield (b >> 6) & 0x1
+            yield (b >> 5) & 0x1
+            yield (b >> 4) & 0x1
+            yield (b >> 3) & 0x1
+            yield (b >> 2) & 0x1
+            yield (b >> 1) & 0x1
+            yield b & 0x1
+
+    @classmethod
+    def from_bitstream(cls, bits_s):
+        it = iter(bits_s)
+        bs = bytes(
+            (next(it) << 7) | (next(it) << 6) | (next(it) << 5) | (next(it) << 4) | (next(it) << 3) | (next(it) << 2) | (next(it) << 1) | next(it)
+            for _ in range(DIMENSION//8)
+        )
+        return cls.from_bytes(bs)
+
+
     # Alternative implementations
 
     @classmethod

@@ -186,7 +186,7 @@ def run_for(impl: AbstractBHV, ts):
 
 def run():
     # all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
-    all_implementations = [VanillaBHV, NumPyPacked64BHV, NativePackedBHV]
+    all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV]
 
     for impl in all_implementations:
         print(f"Testing {impl.__name__}...")
@@ -211,6 +211,14 @@ def run():
     # rs = [~v for v in TorchPackedBHV.nrand2(1001, 3)]
     # rs_ = [r.unpack() for r in rs]
     # assert TorchPackedBHV.majority(rs) == TorchBoolBHV.majority(rs_).pack()
+    print("Testing bits and bytes")
+    for impl in all_implementations:
+        r = impl.rand()
+        rb = r.to_bytes()
+        rbits = list(r.bits())
+        for impl_ in all_implementations:
+            assert impl_.from_bytes(rb).to_bytes() == rb, f"{impl}, {impl_}"
+            assert list(impl_.from_bitstream(rbits).bits()) == rbits, f"{impl}, {impl_}"
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [

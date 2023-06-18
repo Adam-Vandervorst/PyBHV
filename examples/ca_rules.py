@@ -35,4 +35,4 @@ for i in range(ITERATIONS):
     vs.append(rule(vs[-1]))
 
 with open(f"rule{RULE}.pbm", 'wb') as f:
-    Image(vs).pbm(f, binary=True, )
+    Image(vs).pbm(f, binary=True)

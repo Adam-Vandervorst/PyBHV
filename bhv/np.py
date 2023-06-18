@@ -96,8 +96,12 @@ class NumPyBoolBHV(AbstractBHV):
     def to_bytes(self):
         return self.pack8().to_bytes()
 
+    @classmethod
+    def from_bytes(cls, bs):
+        return NumPyPacked8BHV.from_bytes(bs).unpack()
+
     def bits(self):
-        return iter(self.data)
+        return iter(self.data.astype(np.uint8))
 
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
@@ -157,10 +161,9 @@ class NumPyPacked8BHV(AbstractBHV):
         return self.permute_bytes(NumPyBytePermutation.get(permutation_id))
 
     def rehash(self) -> 'NumPyPacked8BHV':
-        byte_data = self.data.tobytes()
+        byte_data = self.to_bytes()
         rehashed_byte_data = hashlib.shake_256(byte_data).digest(DIMENSION//8)
-        rehashed_data = np.frombuffer(rehashed_byte_data, dtype=np.uint8)
-        return NumPyPacked8BHV(rehashed_data)
+        return NumPyPacked8BHV.from_bytes(rehashed_byte_data)
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
@@ -194,6 +197,11 @@ class NumPyPacked8BHV(AbstractBHV):
 
     def to_bytes(self):
         return self.data.tobytes()
+
+    @classmethod
+    def from_bytes(cls, bs):
+        return cls(np.frombuffer(bs, dtype=np.uint8))
+
 
 NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
 NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtype=np.uint8))
@@ -312,6 +320,10 @@ class NumPyPacked64BHV(AbstractBHV):
 
     def to_bytes(self):
         return self.repack8().to_bytes()
+
+    @classmethod
+    def from_bytes(cls, bs):
+        return NumPyPacked8BHV.from_bytes(bs).repack64()
 
 NumPyPacked64BHV.ZERO = NumPyPacked64BHV(np.zeros(DIMENSION//64, dtype=np.uint64))
 NumPyPacked64BHV.ONE = NumPyPacked64BHV(np.full(DIMENSION//64, fill_value=-1, dtype=np.uint64))
