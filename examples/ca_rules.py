@@ -4,9 +4,6 @@ from bhv.visualization import Image
 import numpy as np
 
 
-RULE = 90
-ITERATIONS = 10000
-
 def make_rule(r: int):
     mask = [b == '1' for b in bin(r)[2:].rjust(8, "0")]
     formula = SymbolicBHV.synth([Var("left"), Var("center"), Var("right")], mask)
@@ -14,9 +11,12 @@ def make_rule(r: int):
     print("formula:", formula.show())
     return lambda x: formula.execute(vars={"left": x.roll_bits(1), "center": x, "right": x.roll_bits(-1)})
 
+
+RULE = 90
+ITERATIONS = 10000
+
 rule = make_rule(RULE)
 
-v = None
 # completely random
 # last_v = BHV.rand()
 
