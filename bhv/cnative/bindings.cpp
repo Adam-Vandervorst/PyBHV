@@ -1,5 +1,5 @@
 #include <cstdlib>
-
+#define PY_SSIZE_T_CLEAN size_t
 #include <Python.h>
 #include "structmember.h"
 
@@ -288,12 +288,20 @@ static PyObject *BHV_to_bytes(BHV *x, PyObject *Py_UNUSED(ignored)) {
 }
 
 static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args) {
-    PyObject * v = BHV_new(type, nullptr, nullptr);
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    char* buf;
+    size_t size;
 
-    if (!PyArg_ParseTuple(args, "y*", (char**)&(((BHV*)v)->data)))
+    if (!PyArg_ParseTuple(args, "s#", &buf, &size))
         return nullptr;
 
-    return v;
+    if (size != BYTES) {
+        PyErr_SetString(PyExc_TypeError, "Bytes object didn't have the right size");
+        return nullptr;
+    }
+
+    memcpy(((BHV*)ret)->data, buf, BYTES);
+    return ret;
 }
 
 static PyObject *dimension(PyObject * self, PyObject * args, PyObject * kwds) {
