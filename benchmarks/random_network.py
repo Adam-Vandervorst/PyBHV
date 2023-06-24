@@ -1,6 +1,7 @@
 # N-input M-output computational vat implementations using different primitives
 # NOTE: can fail due to tight bounds on the probabilistic properties, run multiple times
-from bhv.np import NumPyPacked64BHV as BHV
+# from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import NativePackedBHV as BHV
 from bhv.symbolic import SymbolicBHV, Var, List
 
 from time import monotonic
@@ -15,7 +16,7 @@ repeat_executions = 10
 I = 50
 O = 50
 sizes = [200]*20 + [O]
-vat_type: '"MAJ3" | "XOR NOT", "SELECT EQ"' = "MAJ3"
+vat_type: '"MAJ3" | "XOR NOT", "SELECT EQ"' = "XOR NOT"
 
 names = [Var(x) for x in ascii_lowercase[:I]]
 

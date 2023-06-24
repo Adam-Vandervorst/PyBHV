@@ -3,6 +3,7 @@
 # XOR, NOT, AND, OR
 # NOTE: takes about a minute and doesn't show intermediate results
 from bhv.np import NumPyPacked64BHV as BHV
+# from bhv.native import NativePackedBHV as BHV
 from bhv.symbolic import SymbolicBHV, Var, List
 
 from time import monotonic

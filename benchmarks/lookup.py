@@ -1,10 +1,9 @@
 # Similarity search
-from bhv.np import NumPyPacked64BHV as BHV
-from bhv.symbolic import SymbolicBHV, Var, List
+# from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import NativePackedBHV as BHV
 from bhv.lookup import StoreList, StoreRejectList, StoreChunks
 
 from time import monotonic
-from string import ascii_lowercase
 from random import shuffle, random, randrange, sample
 from statistics import pstdev, fmean
 

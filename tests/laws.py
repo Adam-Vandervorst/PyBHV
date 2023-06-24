@@ -2,11 +2,10 @@ from time import monotonic
 from itertools import product, groupby
 
 from bhv.abstract import AbstractBHV
-from bhv.native import NativePackedBHV
+# from bhv.native import NativePackedBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
 # from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 from bhv.vanilla import VanillaBHV
-# from bhv.cnative import NativePackedBHV
 
 
 def associative(m): return lambda x, y, z: m(m(x, y), z) == m(x, m(y, z))
@@ -185,7 +184,7 @@ def run_for(impl: AbstractBHV, ts):
 
 
 def run():
-    # all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV]
+    # all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV, NativePackedBHV]
     all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV]
 
     for impl in all_implementations:

@@ -1,10 +1,9 @@
 # N-input M-output stack of random computation (from different families)
 # NOTE: can fail due to tight bounds on the probabilistic properties, run multiple times
-from bhv.np import NumPyPacked64BHV as BHV
-from bhv.symbolic import SymbolicBHV, Var, List
+# from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import CNativePackedBHV as BHV
 
 from time import monotonic
-from string import ascii_lowercase
 from random import shuffle, random, randrange, sample
 from statistics import pstdev, fmean
 from multiprocessing import Pool
@@ -21,10 +20,10 @@ vat_type: '"MAJ3" | "XOR NOT", "SELECT EQ"' = "MAJ3"
 if vat_type == "MAJ3":
     def execute(_):
         i, j, k = sample(values[-1], k=3)
-        return BHV.majority3(
+        return BHV.majority([
                 i if random() < 2/3 else ~i,
                 j if random() < 2/3 else ~j,
-                k if random() < 2/3 else ~k)
+                k if random() < 2/3 else ~k])
 elif vat_type == "XOR NOT":
     def execute(_):
         r = random()

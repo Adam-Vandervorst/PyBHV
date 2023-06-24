@@ -1,13 +1,11 @@
 # Majority of a various number of inputs
-from bhv.np import NumPyPacked64BHV as BHV
+from bhv import DIMENSION, AbstractBHV
+# from bhv.np import NumPyPacked64BHV as BHV
 # from bhv.np import NumPyBoolBHV as BHV
-from bhv.symbolic import SymbolicBHV, Var, List
+from bhv.native import NativePackedBHV as BHV
 
 from time import monotonic
-from string import ascii_lowercase
-from random import shuffle, random, randrange, sample
 from statistics import pstdev, fmean
-from multiprocessing import Pool
 
 
 repeat_pipeline = 5
@@ -20,7 +18,7 @@ execution_times = {s: [] for s in sizes}
 
 for _ in range(repeat_pipeline):
     for size in sizes:
-        rs = BHV.nrand(size)
+        rs = [BHV.rand() for _ in range(size)]
 
         t_exec = monotonic()
 
@@ -28,10 +26,10 @@ for _ in range(repeat_pipeline):
 
         execution_times[size].append(monotonic() - t_exec)
 
-        distances[size].append([r.std_apart(maj, invert=True) for r in rs])
+        distances[size].append([AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION, invert=True) for r in rs])
 
 
-with open("results/majority_2000_np_packed64.csv", 'w') as f:
+with open("results/majority_2000_native_packed.csv", 'w') as f:
     f.write("size,mean_distance,std_distance,time\n")
     for size in sizes:
         print(size)
