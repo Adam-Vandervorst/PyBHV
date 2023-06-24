@@ -27,13 +27,11 @@ class Image:
 
     def pbm(self, file: 'IO[Any]', binary=False):
         if binary:
-            file.write(b"P4\n")
-            file.write(bytes(str(DIMENSION), "ascii") + b" " + bytes(str(len(self.hvs)), "ascii") + b"\n")
+            file.write(b"P4\n" + bytes(str(DIMENSION), "ascii") + b" " + bytes(str(len(self.hvs)), "ascii") + b"\n")
             for hv in self.hvs:
                 file.write(hv.to_bytes())
         else:
             file.write(f"P1\n{DIMENSION} {len(self.hvs)}\n")
-            ref = ord('0')
             for hv in self.hvs:
                 for bit in hv.bits():
                     file.write('1' if bit else '0')

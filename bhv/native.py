@@ -53,6 +53,13 @@ class NativePackedBHV(AbstractBHV):
     def __eq__(self, other):
         return self.ins == other.ins
 
+    @classmethod
+    def from_bytes(cls, bs):
+        return NativePackedBHV(CNativePackedBHV.from_bytes(bs))
+
+    def to_bytes(self):
+        return self.ins.to_bytes()
+
 NativePackedBHV.ZERO = NativePackedBHV(CNativePackedBHV.ZERO)
 NativePackedBHV.ONE = NativePackedBHV(CNativePackedBHV.ONE)
 NativePackedBHV.HALF = NativePackedBHV(CNativePackedBHV.HALF)

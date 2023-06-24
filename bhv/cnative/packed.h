@@ -180,6 +180,22 @@ namespace bhv {
         return x;
     }
 
+    word_t * n_representatives_impl(word_t ** xs, size_t size) {
+        word_t * x = zero();
+
+        std::uniform_int_distribution<size_t> gen(0, size - 1);
+        for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
+            word_t word = 0;
+            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+                size_t x_id = gen(rng);
+                word |=  1UL << (xs[x_id][word_id] >> bit_id) & 1;
+            }
+            x[word_id] = word;
+        }
+
+        return x;
+    }
+
     word_t* threshold(word_t ** xs, size_t size, size_t threshold) {
         if (size < UINT8_MAX)
             return generic_gt<uint8_t>(generic_counts<uint8_t>(xs, size), threshold);

@@ -56,6 +56,9 @@ static PyObject *BHV_invert(PyObject *v);
 
 static PyObject *BHV_hamming(BHV *v1, PyObject *args);
 
+static PyObject *BHV_to_bytes(BHV *x, PyObject *Py_UNUSED(ignored));
+static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_active(BHV *v, PyObject *Py_UNUSED(ignored)) {
     return Py_BuildValue("i", bhv::active(v->data));
 }
@@ -87,6 +90,10 @@ static PyMethodDef BHV_methods[] = {
                 "Hamming distance between two BHVs"},
         {"active",         (PyCFunction) BHV_active,     METH_NOARGS,
                 "Count the number of active bits"},
+        {"to_bytes",         (PyCFunction) BHV_to_bytes,         METH_NOARGS,
+                "Bytes normalized form"},
+        {"from_bytes",         (PyCFunction) BHV_from_bytes,         METH_CLASS | METH_VARARGS,
+                "Construct from bytes normalized form"},
         {nullptr}
 };
 
@@ -274,6 +281,19 @@ static PyObject *BHV_swap_halves(BHV *x, PyObject *args) {
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
     bhv::swap_halves_into(x->data, ((BHV *) ret)->data);
     return ret;
+}
+
+static PyObject *BHV_to_bytes(BHV *x, PyObject *Py_UNUSED(ignored)) {
+    return PyBytes_FromStringAndSize((char*)x->data, BYTES);
+}
+
+static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args) {
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+
+    if (!PyArg_ParseTuple(args, "y*", (char**)&(((BHV*)v)->data)))
+        return nullptr;
+
+    return v;
 }
 
 static PyObject *dimension(PyObject * self, PyObject * args, PyObject * kwds) {

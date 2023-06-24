@@ -1,4 +1,3 @@
-from collections import Counter
 from bhv.symbolic import SymbolicBHV, Var
 from bhv.np import NumPyBoolBHV as BHV, DIMENSION
 from bhv.visualization import Image

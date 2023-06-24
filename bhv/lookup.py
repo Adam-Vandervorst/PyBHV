@@ -8,7 +8,7 @@ K = TypeVar("K")
 
 class Store(Generic[K]):
     @classmethod
-    def auto_associative(cls, vs: Iterable[AbstractBHV]) -> 'StoreList[AbstractBHV]':
+    def auto_associative(cls, vs: Iterable[AbstractBHV]) -> 'Store[int]':
         return cls(dict(enumerate(vs)))
 
     def __init__(self, hvs: Mapping[K, AbstractBHV]):
