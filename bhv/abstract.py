@@ -111,6 +111,10 @@ class AbstractBHV:
         return cls.majority([x, y, z])
 
     @classmethod
+    def minority3(cls, x, y, z) -> Self:
+        return (x & ~y & ~z) | (~x & y & ~z) | (~x & ~y & z)
+
+    @classmethod
     def majority(cls, vs: list[Self]) -> Self:
         n = len(vs)
 
@@ -142,6 +146,25 @@ class AbstractBHV:
             )
 
         return rec(0, 0)
+
+    @classmethod
+    def sigma(cls, vs: list[Self], stdevs: float = None) -> Self:
+        m = cls.majority(vs)
+        return cls.minority([v ^ m for v in vs])
+
+
+    @classmethod
+    def sigma3(cls, a, b, c) -> Self:
+
+        m = cls.majority3(a, b, c)
+        ma = m ^ a
+        mb = m ^ b
+        mc = m ^ c
+        # print(ma.data[:4])
+        # print(mb.data[:4])
+        # print(mc.data[:4])
+        return cls.minority3(ma, mb, mc)
+        # return ~(x & y & z) & (x | y | z)
 
     def __eq__(self, other: Self) -> bool:
         raise NotImplementedError()

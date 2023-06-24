@@ -1,5 +1,7 @@
 from .abstract import *
 import numpy as np
+from math import floor, ceil
+from statistics import NormalDist
 from sys import byteorder, version_info
 
 
@@ -58,16 +60,54 @@ class NumPyBoolBHV(AbstractBHV):
         return self.permute_bits(NumPyBoolPermutation.get(permutation_id))
 
     @classmethod
-    def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+    def threshold(cls, vs: list['NumPyBoolBHV'], threshold) -> 'NumPyBoolBHV':
         data = [v.data for v in vs]
         extra = [cls.rand().data] if len(vs) % 2 == 0 else []
 
         tensor = np.stack(data + extra)
         counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
 
-        threshold = (len(vs) + len(extra))//2
-
         return NumPyBoolBHV(np.greater(counts, threshold))
+
+    @classmethod
+    def window(cls, vs: list['NumPyBoolBHV'], low=None, high=None, tiebreaker=False) -> 'NumPyBoolBHV':
+        data = [v.data for v in vs]
+        if tiebreaker and len(vs) % 2 == 0:
+            data.append(cls.rand().data)
+
+        tensor = np.stack(data)
+        counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
+
+        if low is None and high is None:
+            raise TypeError()
+        elif low is None:
+            return NumPyBoolBHV(np.less(counts, high))
+        elif high is None:
+            return NumPyBoolBHV(np.greater(counts, low))
+        else:
+            return NumPyBoolBHV(np.logical_and(np.less(counts, high), np.greater(counts, low)))
+
+    @classmethod
+    def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        threshold = (len(vs) + (len(vs) % 2 == 0))//2
+        return cls.threshold(vs, threshold)
+
+    @classmethod
+    def minority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        threshold = (len(vs) + (len(vs) % 2 == 0))//2 - 1
+        return cls.threshold(vs, threshold)
+
+    @classmethod
+    def sigma(cls, vs: list['NumPyBoolBHV'], stdevs: float = 1) -> 'NumPyBoolBHV':
+        if stdevs == -1:
+            # P(X <= x) = p
+
+            # print(NormalDist().inv_cdf(.25))
+            stdevs = len(vs)/4 - 1
+        tiebreaker = 1 # (len(vs) % 2 == 0)
+        threshold = (len(vs) + tiebreaker)/2.
+
+        return cls.window(vs, threshold - stdevs, threshold + stdevs, tiebreaker)
 
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:
         return np.array_equal(self.data, other.data)
