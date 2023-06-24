@@ -5,8 +5,8 @@
 #include <cstring>
 #include <algorithm>
 #include "shared.h"
-//#include "KeccakSpongeAVX2/KeccakSponge.h"
-#include "TurboSHAKEref/TurboSHAKE.h"
+//#include "TurboSHAKE.h"
+#include "TurboSHAKEopt/TurboSHAKE.h"
 
 
 namespace bhv {

@@ -1,17 +1,17 @@
 from setuptools import setup, find_packages, Extension
 
-VERSION = '0.5.14'
+VERSION = '0.6.2'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
 native = Extension("bhv.cnative",
                    sources=['bhv/cnative/bindings.cpp',
-                            'bhv/cnative/TurboSHAKEref/TurboSHAKE.cpp',
-                            'bhv/cnative/TurboSHAKEref/KeccakSponge.cpp',
-                            'bhv/cnative/TurboSHAKEref/KeccakP-1600-reference.cpp',
+                            'bhv/cnative/TurboSHAKEopt/TurboSHAKE.cpp',
+                            'bhv/cnative/TurboSHAKEopt/KeccakSponge.cpp',
+                            'bhv/cnative/TurboSHAKEopt/KeccakP-1600-opt64.cpp',
                             ],
-                   include_dirs=['bhv/cnative', 'bhv/cnative/TurboSHAKEref'],
-                   extra_compile_args=['-std=c++2a', '-O3', '-march=native'],
+                   include_dirs=['bhv/cnative', 'bhv/cnative/TurboSHAKEopt'],
+                   extra_compile_args=['-std=c++2a', '-O3', '-march=native', '-Wall'],
                    language='c++')
 setup(
     name="bhv",
@@ -24,8 +24,8 @@ setup(
     packages=find_packages(),
     install_requires=[],
     extras_require={
-        "torch": ["torch>=2.0.0"],
-        "numpy": ["numpy>=1.24.2"],
+        "pytorch": ["torch>=2.0.0"],
+        "np": ["numpy>=1.24.2"],
     },
     keywords='ai binary hypervector hdc bsc',
     python_requires='>=3.8',
