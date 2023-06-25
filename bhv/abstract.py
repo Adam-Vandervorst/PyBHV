@@ -89,6 +89,7 @@ class AbstractBHV:
         raise NotImplementedError()
 
     _FEISTAL_ROUNDS = 8
+    _FEISTAL_SUBKEYS: list[Self]
 
     @classmethod
     def _feistal_round(cls, block: Self, round_key: Self) -> Self:
