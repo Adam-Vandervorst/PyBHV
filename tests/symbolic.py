@@ -1,7 +1,5 @@
 import unittest
 
-import torch
-
 from bhv.symbolic import Var, SymbolicBHV
 from bhv.shared import stable_hashcode
 

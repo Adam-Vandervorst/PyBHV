@@ -1,7 +1,7 @@
 from time import monotonic_ns
 
-# from bhv.np import NumPyPacked64BHV as BHV
-from bhv.native import NativePackedBHV as BHV
+from bhv.np import NumPyPacked64BHV as BHV
+# from bhv.native import NativePackedBHV as BHV
 
 
 N = 201
