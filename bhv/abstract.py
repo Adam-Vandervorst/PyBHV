@@ -3,6 +3,7 @@ from itertools import accumulate
 from functools import cache
 from operator import or_, and_
 from math import comb, log2
+from typing import Iterator
 
 from .shared import *
 
@@ -27,13 +28,20 @@ class StoreBHV:
             yield b & 0x1
 
     @classmethod
-    def from_bitstream(cls, bits_s):
+    def from_bitstream(cls, bits_s: 'Iterator[bool]') -> Self:
         it = iter(bits_s)
         bs = bytes(
             (next(it) << 7) | (next(it) << 6) | (next(it) << 5) | (next(it) << 4) | (next(it) << 3) | (next(it) << 2) | (next(it) << 1) | next(it)
             for _ in range(DIMENSION//8)
         )
         return cls.from_bytes(bs)
+
+    def bitstring(self) -> str:
+        return "".join("1" if b else "0" for b in self.bits())
+
+    @classmethod
+    def from_bitstring(cls, s: str) -> Self:
+        return cls.from_bitstream(c == "1" for c in s)
 
 
 class BaseBHV(StoreBHV):

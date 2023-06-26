@@ -22,6 +22,23 @@ class DistanceGraph:
 
 
 class Image:
+    @classmethod
+    def load_pbm(cls, file: 'IO[Any]', bhv: 'AbstractBHV', binary=False):
+        if binary:
+            header = file.readline().rstrip()
+            assert header == b"P4"
+            dimension, n = map(int, file.readline().rstrip().split(b" "))
+            assert dimension == DIMENSION
+            hvs = [bhv.from_bytes(file.read(DIMENSION//8)) for _ in range(n)]
+            return cls(hvs)
+        else:
+            header = file.readline().rstrip()
+            assert header == "P1"
+            dimension, n = map(int, file.readline().rstrip().split(" "))
+            assert dimension == DIMENSION
+            hvs = [bhv.from_bitstring(file.readline().rstrip()) for _ in range(n)]
+            return cls(hvs)
+
     def __init__(self, hvs: 'list[AbstractBHV]'):
         self.hvs = hvs
 
@@ -33,6 +50,5 @@ class Image:
         else:
             file.write(f"P1\n{DIMENSION} {len(self.hvs)}\n")
             for hv in self.hvs:
-                for bit in hv.bits():
-                    file.write('1' if bit else '0')
+                file.write(hv.bitstring())
                 file.write('\n')

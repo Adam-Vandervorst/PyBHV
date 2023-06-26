@@ -103,6 +103,15 @@ class NumPyBoolBHV(AbstractBHV):
     def bits(self):
         return iter(self.data.astype(np.uint8))
 
+    def bitstring(self) -> str:
+        b = ord('0')
+        return (self.data.astype(np.uint8) + b).tobytes().decode('ascii')
+
+    @classmethod
+    def from_bitstring(cls, s: str) -> str:
+        b = ord('0')
+        return cls((np.frombuffer(bytes(s, 'ascii'), dtype=np.uint8) - b).astype(np.bool_))
+
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV._FEISTAL_SUBKEYS = NumPyBoolBHV.nrand2(NumPyBoolBHV._FEISTAL_ROUNDS, 4)

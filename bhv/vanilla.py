@@ -80,11 +80,11 @@ class VanillaBHV(AbstractBHV):
             return bin(self.to_int()).count("1")
 
     def to_int(self) -> int:
-        return int.from_bytes(self.data, byteorder, signed=False)
+        return int.from_bytes(self.data, "big", signed=False)
 
     @classmethod
     def from_int(cls, i: int):
-        return VanillaBHV(i.to_bytes(DIMENSION//8, byteorder, signed=False))
+        return VanillaBHV(i.to_bytes(DIMENSION//8, "big", signed=False))
 
     def to_bytes(self):
         return self.data
@@ -92,6 +92,13 @@ class VanillaBHV(AbstractBHV):
     @classmethod
     def from_bytes(cls, bs):
         return cls(bs)
+
+    def bitstring(self) -> str:
+        return bin(self.to_int())[2:].rjust(DIMENSION, "0")
+
+    @classmethod
+    def from_bitstring(cls, s: str) -> Self:
+        return cls.from_int(int(s, 2))
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
 VanillaBHV.ONE = VanillaBHV(bytes([0xff for _ in range(DIMENSION//8)]))

@@ -32,6 +32,8 @@ Additionally, provided are
 - Very [basic embeddings](bhv/embedding.py) for other datatypes (more to come)
 - Graph visualization of distances in hyperdimensional space ([see example](examples/viz_distances.py)).
 - Boolean expression and network synthesis (e.g. [Cellular Automata](examples/ca_rules) and [perfectly random functions](benchmarks/exact_synthesis.py))
+- Visualization and storage via [pbm](bhv/visualization.py) (e.g. [Cellular Automata](examples/ca_rules))
+- A normal form and conversions between different implementations and storage methods
 
 ## Installation
 Make sure you have a recent Python version, 3.10 is recommended.

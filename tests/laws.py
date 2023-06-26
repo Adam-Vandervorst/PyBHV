@@ -1,8 +1,8 @@
 from time import monotonic
 from itertools import product, groupby
 
-from bhv.abstract import AbstractBHV
-# from bhv.native import NativePackedBHV
+from bhv.abstract import AbstractBHV, DIMENSION
+from bhv.native import NativePackedBHV
 from bhv.np import NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV
 # from bhv.pytorch import TorchBoolBHV, TorchPackedBHV
 from bhv.vanilla import VanillaBHV
@@ -185,7 +185,7 @@ def run_for(impl: AbstractBHV, ts):
 
 def run():
     # all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, TorchBoolBHV, TorchPackedBHV, NativePackedBHV]
-    all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV]
+    all_implementations = [VanillaBHV, NumPyBoolBHV, NumPyPacked8BHV, NumPyPacked64BHV, NativePackedBHV]
 
     for impl in all_implementations:
         print(f"Testing {impl.__name__}...")
@@ -215,9 +215,12 @@ def run():
         r = impl.rand()
         rb = r.to_bytes()
         rbits = list(r.bits())
+        rstr = r.bitstring()
         for impl_ in all_implementations:
             assert impl_.from_bytes(rb).to_bytes() == rb, f"{impl}, {impl_}"
             assert list(impl_.from_bitstream(rbits).bits()) == rbits, f"{impl}, {impl_}"
+            assert impl_.from_bytes(rb).bitstring() == rstr, f"{impl}, {impl_}"
+            assert impl_.from_bitstring(rstr).bitstring() == rstr, f"{impl}, {impl_}"
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [
