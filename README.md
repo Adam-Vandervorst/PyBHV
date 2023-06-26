@@ -1,8 +1,8 @@
-# Python Boolean Hyper-Vectors
+# Python Boolean Hyper-Vectors [WIP]
 
-WIP repository for research into vector symbolic architectures, Multiply-Add-Permute and Binary Spatter Codes.
-Can be used dependency-free.
+A rich research framework for [hyperdimensional computing](https://en.wikipedia.org/wiki/Hyperdimensional_computing) on large boolean vectors supporting program transformation and multiple backends for computation (plain Python, C++, NumPy, PyTorch). Many metrics and utility functions aim to aid the intuitive understanding of this new paradigm, and there are multiple levels of functionality available from the data marshalling and the basic (XOR, MAJ, PERMUTE)-algebra to cryptography support. All vector operations are implemented in C(++) and make use of bit-packing and SIMD, subprograms can be optimized and compiled to these operations in Python or C, and parallelization and pipelining are planned.
 
+If your application is a relatively direct pipeline, take a look at [HDCC](https://arxiv.org/abs/2304.12398).
 If you want a more stable library, or want to work with another base field than the booleans, use [torch-hd](https://pypi.org/project/torch-hd/).
 
 ## Overview
@@ -79,7 +79,7 @@ Example exploratory usages of the library:
 - [Fiestal Cipher](https://en.wikipedia.org/wiki/Feistel_cipher), [the tests (for statistical properties)](tests/fiestal.py), and [the implementation](bhv/abstract.py)
 
 ## Note
-This repository is highly active, and a work-in-progress.
+This repository is (highly) active development, and a work-in-progress.
 Do expect changes to the naming, and even features to be swapped for more elegant alternatives.
 
 The codebase also works with PyPy. Use the vanilla Python implementation. The numeric operations are slower than on CPython, but the symbolic ones are way faster.
