@@ -36,7 +36,8 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
         word_t* m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
         word_t** rs = inputs[io_buf_idx];
 
-        bhv::byte_threshold_into(rs, n, n/2, m);
+//        bhv::byte_threshold_into(rs, n, n/2, m);
+        bhv::dynamic_logic_majority_into(rs, n, m);
 
         // So the test operation doesn't get optimized away
         something = something ^ m[0] ^ m[4] ^ m[8] ^ m[12];
@@ -78,22 +79,22 @@ int main() {
     majority_benchmark(3, true, false);
 
     cout << "*-= IN CACHE TESTS =-*" << endl;
-//    majority_benchmark(3, true, true);
+    majority_benchmark(3, true, true);
     majority_benchmark(5, true, true);
     majority_benchmark(9, true, true);
     majority_benchmark(27, true, true);
-    majority_benchmark(81, true, true);
-    majority_benchmark(201, true, true);
+//    majority_benchmark(81, true, true);
+//    majority_benchmark(201, true, true);
 //    majority_benchmark(667, true, true);
 //    majority_benchmark(2001, true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-//    majority_benchmark(3, true, false);
+    majority_benchmark(3, true, false);
     majority_benchmark(5, true, false);
     majority_benchmark(9, true, false);
     majority_benchmark(27, true, false);
-    majority_benchmark(81, true, false);
-    majority_benchmark(201, true, false); // FIXME, byte_threshold_into fails on this case
+//    majority_benchmark(81, true, false);
+//    majority_benchmark(201, true, false); // FIXME, byte_threshold_into fails on this case
 //    majority_benchmark(667, true, false);
 //    majority_benchmark(2001, true, false);
 }

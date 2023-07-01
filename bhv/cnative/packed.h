@@ -158,6 +158,42 @@ namespace bhv {
         }
     }
 
+    template <uint8_t size>
+    void logic_majority_into(word_t ** xs, word_t* dst) {
+        __m256i** xs_chunks = (__m256i**)xs;
+
+        for (word_iter_t simd_id = 0; simd_id < BITS/256; ++simd_id) {
+            uint8_t half = size/2;
+
+            __m256i grid [size/2 + 1][size/2 + 1];
+
+            grid[half][half] = xs_chunks[size - 1][simd_id];
+
+            for (uint8_t i = 0; i < half; ++i) {
+                __m256i chunk = xs_chunks[size - i - 2][simd_id];
+                grid[half - i - 1][half] = grid[half - i][half] & chunk;
+                grid[half][half - i - 1] = grid[half][half - i] | chunk;
+            }
+
+            for (uint8_t i = half - 1; i < half; --i) for (uint8_t j = half - 1; j < half; --j) {
+                __m256i chunk = xs_chunks[i + j][simd_id];
+                grid[i][j] = _mm256_blendv_epi8(grid[i + 1][j], grid[i][j + 1],chunk);
+            }
+
+            *(__m256i*)dst[simd_id] = grid[0][0];
+        }
+    }
+
+    void dynamic_logic_majority_into(word_t ** xs, uint8_t size, word_t* dst) {
+        switch (size) {
+            case 3: logic_majority_into<3>(xs, dst); break;
+            case 5: logic_majority_into<5>(xs, dst); break;
+            case 7: logic_majority_into<7>(xs, dst); break;
+            case 9: logic_majority_into<9>(xs, dst); break;
+            case 27: logic_majority_into<27>(xs, dst); break;
+        }
+    }
+
     template <typename N>
     N* generic_counts(word_t ** xs, N size) {
         N* totals = (N *) calloc(BITS, sizeof(N));
