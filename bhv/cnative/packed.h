@@ -5,6 +5,7 @@
 #include <cstring>
 #include <algorithm>
 #include "shared.h"
+#include <immintrin.h>
 //#include "TurboSHAKE.h"
 #include "TurboSHAKEopt/TurboSHAKE.h"
 
@@ -124,6 +125,36 @@ namespace bhv {
     void invert_into(word_t * x, word_t * target) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             target[i] = ~x[i];
+        }
+    }
+
+    void byte_threshold_into(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
+        __m256i threshold_simd = _mm256_set1_epi8(threshold);
+        uint8_t** xs_bytes = (uint8_t**)xs;
+        uint8_t* dst_bytes = (uint8_t*)dst;
+
+        for (byte_iter_t byte_id = 0; byte_id < BYTES; byte_id += 4) {
+            __m256i total_simd = _mm256_set1_epi8(0);
+
+            for (uint8_t i = 0; i < size; ++i) {
+                uint8_t* bytes_i = xs_bytes[i];
+                uint64_t spread_words[4] = {
+                        _pdep_u64(bytes_i[byte_id], 0x0101010101010101),
+                        _pdep_u64(bytes_i[byte_id + 1], 0x0101010101010101),
+                        _pdep_u64(bytes_i[byte_id + 2], 0x0101010101010101),
+                        _pdep_u64(bytes_i[byte_id + 3], 0x0101010101010101)
+                };
+
+                total_simd = _mm256_add_epi8(total_simd, *((__m256i *)spread_words));
+            }
+
+            uint64_t maj_words[4];
+            *(__m256i *) maj_words = _mm256_cmpgt_epi8(total_simd, threshold_simd);
+
+            dst_bytes[byte_id] = (uint8_t)_pext_u64(maj_words[0], 0x0101010101010101);;
+            dst_bytes[byte_id + 1] = (uint8_t)_pext_u64(maj_words[1], 0x0101010101010101);
+            dst_bytes[byte_id + 2] = (uint8_t)_pext_u64(maj_words[2], 0x0101010101010101);
+            dst_bytes[byte_id + 3] = (uint8_t)_pext_u64(maj_words[3], 0x0101010101010101);
         }
     }
 
