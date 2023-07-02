@@ -128,59 +128,80 @@ namespace bhv {
         }
     }
 
-    void byte_threshold_into(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
-        __m256i threshold_simd = _mm256_set1_epi8(threshold);
-        uint8_t** xs_bytes = (uint8_t**)xs;
-        uint8_t* dst_bytes = (uint8_t*)dst;
-
-        for (byte_iter_t byte_id = 0; byte_id < BYTES; byte_id += 4) {
-            __m256i total_simd = _mm256_set1_epi8(0);
-
-            for (uint8_t i = 0; i < size; ++i) {
-                uint8_t* bytes_i = xs_bytes[i];
-                uint64_t spread_words[4] = {
-                        _pdep_u64(bytes_i[byte_id], 0x0101010101010101),
-                        _pdep_u64(bytes_i[byte_id + 1], 0x0101010101010101),
-                        _pdep_u64(bytes_i[byte_id + 2], 0x0101010101010101),
-                        _pdep_u64(bytes_i[byte_id + 3], 0x0101010101010101)
-                };
-
-                total_simd = _mm256_add_epi8(total_simd, *((__m256i *)spread_words));
-            }
-
-            uint64_t maj_words[4];
-            *(__m256i *) maj_words = _mm256_cmpgt_epi8(total_simd, threshold_simd);
-
-            dst_bytes[byte_id] = (uint8_t)_pext_u64(maj_words[0], 0x0101010101010101);;
-            dst_bytes[byte_id + 1] = (uint8_t)_pext_u64(maj_words[1], 0x0101010101010101);
-            dst_bytes[byte_id + 2] = (uint8_t)_pext_u64(maj_words[2], 0x0101010101010101);
-            dst_bytes[byte_id + 3] = (uint8_t)_pext_u64(maj_words[3], 0x0101010101010101);
-        }
-    }
+// USES _mm256_cmpgt_epu8_mask is AVX-512
+//    void byte_threshold_into(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
+//        __m256i threshold_simd = _mm256_set1_epi8(threshold);
+//        uint8_t** xs_bytes = (uint8_t**)xs;
+//        uint8_t* dst_bytes = (uint8_t*)dst;
+//
+//        for (byte_iter_t byte_id = 0; byte_id < BYTES; byte_id += 4) {
+//            __m256i total_simd = _mm256_set1_epi8(0);
+//
+//            for (uint8_t i = 0; i < size; ++i) {
+//                uint8_t* bytes_i = xs_bytes[i];
+//                uint64_t spread_words[4] = {
+//
+//                        //GOAT, use this for 11 < N < 54
+////                        deposit_bits_lut[bytes_i[byte_id]],
+////                        deposit_bits_lut[bytes_i[byte_id + 1]],
+////                        _pdep_u64(bytes_i[byte_id + 2], 0x0101010101010101),
+////                        _pdep_u64(bytes_i[byte_id + 3], 0x0101010101010101)
+//
+//                        // //GOAT, use this for N > 53
+//                         _pdep_u64(bytes_i[byte_id], 0x0101010101010101),
+//                         _pdep_u64(bytes_i[byte_id + 1], 0x0101010101010101),
+//                         _pdep_u64(bytes_i[byte_id + 2], 0x0101010101010101),
+//                         _pdep_u64(bytes_i[byte_id + 3], 0x0101010101010101)
+//
+//                };
+//
+//                total_simd = _mm256_adds_epu8(total_simd, *((__m256i *)spread_words));
+//            }
+//
+//            *((uint32_t*)&(dst_bytes[byte_id])) = _mm256_cmpgt_epu8_mask(total_simd, threshold_simd);
+//        }
+//    }
 
     template <uint8_t size>
     void logic_majority_into(word_t ** xs, word_t* dst) {
-        __m256i** xs_chunks = (__m256i**)xs;
-
-        for (word_iter_t simd_id = 0; simd_id < BITS/256; ++simd_id) {
+        for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
             uint8_t half = size/2;
 
             __m256i grid [size/2 + 1][size/2 + 1];
 
-            grid[half][half] = xs_chunks[size - 1][simd_id];
+            word_t* x = xs[size - 1];
+            word_t words [4];
+            words[0] = x[word_id];
+            words[1] = x[word_id + 1];
+            words[2] = x[word_id + 2];
+            words[3] = x[word_id + 3];
+            grid[half][half] = *((__m256i *)(words));
 
             for (uint8_t i = 0; i < half; ++i) {
-                __m256i chunk = xs_chunks[size - i - 2][simd_id];
+                x = xs[size - i - 2];
+                words[0] = x[word_id];
+                words[1] = x[word_id + 1];
+                words[2] = x[word_id + 2];
+                words[3] = x[word_id + 3];
+                __m256i chunk = *((__m256i *)(words));
                 grid[half - i - 1][half] = grid[half - i][half] & chunk;
                 grid[half][half - i - 1] = grid[half][half - i] | chunk;
             }
 
             for (uint8_t i = half - 1; i < half; --i) for (uint8_t j = half - 1; j < half; --j) {
-                __m256i chunk = xs_chunks[i + j][simd_id];
-                grid[i][j] = _mm256_blendv_epi8(grid[i + 1][j], grid[i][j + 1],chunk);
+                x = xs[i + j];
+                words[0] = x[word_id];
+                words[1] = x[word_id + 1];
+                words[2] = x[word_id + 2];
+                words[3] = x[word_id + 3];
+                __m256i chunk = *((__m256i *)(words));
+                grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j]));
             }
 
-            *(__m256i*)dst[simd_id] = grid[0][0];
+            dst[word_id] = _mm256_extract_epi64(grid[0][0], 0);
+            dst[word_id + 1] = _mm256_extract_epi64(grid[0][0], 1);
+            dst[word_id + 2] = _mm256_extract_epi64(grid[0][0], 2);
+            dst[word_id + 3] = _mm256_extract_epi64(grid[0][0], 3);
         }
     }
 
@@ -190,7 +211,18 @@ namespace bhv {
             case 5: logic_majority_into<5>(xs, dst); break;
             case 7: logic_majority_into<7>(xs, dst); break;
             case 9: logic_majority_into<9>(xs, dst); break;
+            case 11: logic_majority_into<11>(xs, dst); break;
+            case 13: logic_majority_into<13>(xs, dst); break;
+            case 15: logic_majority_into<15>(xs, dst); break;
+            case 17: logic_majority_into<17>(xs, dst); break;
+            case 19: logic_majority_into<19>(xs, dst); break;
+            case 21: logic_majority_into<21>(xs, dst); break;
+            case 23: logic_majority_into<23>(xs, dst); break;
+            case 25: logic_majority_into<25>(xs, dst); break;
             case 27: logic_majority_into<27>(xs, dst); break;
+            case 29: logic_majority_into<29>(xs, dst); break;
+            case 31: logic_majority_into<31>(xs, dst); break;
+            case 33: logic_majority_into<33>(xs, dst); break;
         }
     }
 

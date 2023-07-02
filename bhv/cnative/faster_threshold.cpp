@@ -79,20 +79,23 @@ int main() {
     majority_benchmark(3, true, false);
 
     cout << "*-= IN CACHE TESTS =-*" << endl;
-    majority_benchmark(3, true, true);
-    majority_benchmark(5, true, true);
-    majority_benchmark(9, true, true);
-    majority_benchmark(27, true, true);
+    for (size_t i = 3; i <= 33; i += 2)
+        majority_benchmark(i, true, true);
+
+//    majority_benchmark(5, true, true);
+//    majority_benchmark(7, true, true);
+//    majority_benchmark(9, true, true);
+//    majority_benchmark(27, true, true);
 //    majority_benchmark(81, true, true);
 //    majority_benchmark(201, true, true);
 //    majority_benchmark(667, true, true);
 //    majority_benchmark(2001, true, true);
 
-    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    majority_benchmark(3, true, false);
-    majority_benchmark(5, true, false);
-    majority_benchmark(9, true, false);
-    majority_benchmark(27, true, false);
+//    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+//    majority_benchmark(3, true, false);
+//    majority_benchmark(5, true, false);
+//    majority_benchmark(9, true, false);
+//    majority_benchmark(27, true, false);
 //    majority_benchmark(81, true, false);
 //    majority_benchmark(201, true, false); // FIXME, byte_threshold_into fails on this case
 //    majority_benchmark(667, true, false);
