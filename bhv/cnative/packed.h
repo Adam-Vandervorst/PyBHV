@@ -164,44 +164,24 @@ namespace bhv {
 
     template <uint8_t size>
     void logic_majority_into(word_t ** xs, word_t* dst) {
+        uint8_t half = size/2;
+        __m256i grid [size/2 + 1][size/2 + 1];
+
         for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
-            uint8_t half = size/2;
-
-            __m256i grid [size/2 + 1][size/2 + 1];
-
-            word_t* x = xs[size - 1];
-            word_t words [4];
-            words[0] = x[word_id];
-            words[1] = x[word_id + 1];
-            words[2] = x[word_id + 2];
-            words[3] = x[word_id + 3];
-            grid[half][half] = *((__m256i *)(words));
+            grid[half][half] = _mm256_loadu_si256((__m256i *)(xs[size - 1] + word_id));
 
             for (uint8_t i = 0; i < half; ++i) {
-                x = xs[size - i - 2];
-                words[0] = x[word_id];
-                words[1] = x[word_id + 1];
-                words[2] = x[word_id + 2];
-                words[3] = x[word_id + 3];
-                __m256i chunk = *((__m256i *)(words));
+                __m256i chunk = _mm256_loadu_si256((__m256i *)(xs[size - i - 2] + word_id));
                 grid[half - i - 1][half] = grid[half - i][half] & chunk;
                 grid[half][half - i - 1] = grid[half][half - i] | chunk;
             }
 
             for (uint8_t i = half - 1; i < half; --i) for (uint8_t j = half - 1; j < half; --j) {
-                x = xs[i + j];
-                words[0] = x[word_id];
-                words[1] = x[word_id + 1];
-                words[2] = x[word_id + 2];
-                words[3] = x[word_id + 3];
-                __m256i chunk = *((__m256i *)(words));
+                __m256i chunk = _mm256_loadu_si256((__m256i *)(xs[i + j] + word_id));
                 grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j]));
             }
 
-            dst[word_id] = _mm256_extract_epi64(grid[0][0], 0);
-            dst[word_id + 1] = _mm256_extract_epi64(grid[0][0], 1);
-            dst[word_id + 2] = _mm256_extract_epi64(grid[0][0], 2);
-            dst[word_id + 3] = _mm256_extract_epi64(grid[0][0], 3);
+            _mm256_storeu_si256((__m256i*)(dst + word_id), grid[0][0]);
         }
     }
 
