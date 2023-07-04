@@ -67,7 +67,6 @@ int main() {
 
     cout << "*-= IN CACHE TESTS =-*" << endl;
     majority_benchmark(3, true, true);
-    majority_benchmark(4, true, true);
     majority_benchmark(5, true, true);
     majority_benchmark(7, true, true);
     majority_benchmark(9, true, true);
@@ -104,7 +103,6 @@ int main() {
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     majority_benchmark(3, true, false);
-    majority_benchmark(4, true, false);
     majority_benchmark(5, true, false);
     majority_benchmark(7, true, false);
     majority_benchmark(9, true, false);
@@ -125,7 +123,8 @@ int main() {
     majority_benchmark(175, true, false);
     majority_benchmark(201, true, false);
     majority_benchmark(255, true, false);
-    majority_benchmark(256, true, false);
+    majority_benchmark(257, true, false);
+    majority_benchmark(313, true, false);
     majority_benchmark(385, true, false);
     majority_benchmark(511, true, false);
     majority_benchmark(667, true, false);
