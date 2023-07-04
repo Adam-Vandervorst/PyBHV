@@ -275,34 +275,15 @@ namespace bhv {
         return x;
     }
 
-    word_t* threshold(word_t ** xs, size_t size, size_t threshold) {
-        if (size < UINT8_MAX)
-            return generic_gt<uint8_t>(generic_counts<uint8_t>(xs, size), threshold);
-        else if (size < UINT16_MAX)
-            return generic_gt<uint16_t>(generic_counts<uint16_t>(xs, size), threshold);
-        else
-            return generic_gt<uint32_t>(generic_counts<uint32_t>(xs, size), threshold);
-    }
-
     void select_into(word_t * cond, word_t * when1, word_t * when0, word_t * target) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             target[i] = when0[i] ^ (cond[i] & (when0[i] ^ when1[i]));
         }
     }
 
-    void majority3_into(word_t * x, word_t * y, word_t * z, word_t * target) {
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            target[i] = ((x[i] & y[i]) | (x[i] & z[i]) | (y[i] & z[i]));
-        }
-    }
+    #include "threshold.h"
 
-    word_t* true_majority(word_t ** xs, size_t size) {
-        if (size == 0) return rand();
-        else if (size == 1) { word_t * r = empty(); memcpy(r, xs[0], BYTES); return r; }
-        else if (size == 2) { word_t * r = rand(); select_into(r, xs[0], xs[1], r); return r; }
-        else if (size == 3) { word_t * r = empty(); majority3_into(xs[0], xs[1], xs[2], r); return r; }
-        else return threshold(xs, size, size/2);
-    }
+    #include "majority.h"
 
     word_t* representative(word_t ** xs, size_t size) {
         if (size == 0) return rand();
