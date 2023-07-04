@@ -36,11 +36,10 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
         word_t* m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
         word_t** rs = inputs[io_buf_idx];
 
-//        bhv::byte_threshold_into(rs, n, n/2, m);
-        bhv::dynamic_logic_majority_into(rs, n, m);
+        bhv::true_majority_into(rs, n, m);
 
         // So the test operation doesn't get optimized away
-        something = something ^ m[0] ^ m[4] ^ m[8] ^ m[12];
+        something = something ^ m[0] + 3*m[4] + 5*m[WORDS/2] + 7*m[WORDS - 1];
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -55,7 +54,7 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
 
         word_t* m = bhv::threshold(rs, n, n/2);
         // So the test operation doesn't get optimized away
-        something_else = something_else ^ m[0] ^ m[4] ^ m[8] ^ m[12];
+        something_else = something_else ^ m[0] + 3*m[4] + 5*m[WORDS/2] + 7*m[WORDS - 1];
     }
 
     if (display)
@@ -76,28 +75,78 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
 
 int main() {
     //Run one throw-away test to make sure the OS is ready to give us full resource
-    majority_benchmark(3, true, false);
+    majority_benchmark(3, false, false);
 
     cout << "*-= IN CACHE TESTS =-*" << endl;
-    for (size_t i = 3; i <= 33; i += 2)
-        majority_benchmark(i, true, true);
+    majority_benchmark(3, true, true);
+    majority_benchmark(5, true, true);
+    majority_benchmark(7, true, true);
+    majority_benchmark(9, true, true);
+    majority_benchmark(11, true, true);
+    majority_benchmark(27, true, true);
+    majority_benchmark(39, true, true);
+    majority_benchmark(47, true, true);
+    majority_benchmark(55, true, true);
+    majority_benchmark(63, true, true);
+    majority_benchmark(73, true, true);
+    majority_benchmark(77, true, true);
+    majority_benchmark(79, true, true);
+    majority_benchmark(81, true, true);
+    majority_benchmark(85, true, true);
+    majority_benchmark(89, true, true);
+    majority_benchmark(91, true, true);
+    majority_benchmark(109, true, true);
+    // majority_benchmark(175, true, true);
+    // majority_benchmark(201, true, true);
+    // majority_benchmark(255, true, true);
+    // majority_benchmark(256, true, true);
+    // majority_benchmark(385, true, true);
+    // majority_benchmark(511, true, true);
+    // majority_benchmark(667, true, true);
+    // majority_benchmark(881, true, true);
+    // majority_benchmark(945, true, true);
+    // majority_benchmark(1021, true, true);
+    // majority_benchmark(2001, true, true);
+    // majority_benchmark(5001, true, true);
+    // majority_benchmark(9999, true, true);
+    // majority_benchmark(10003, true, true);
+    // majority_benchmark(20001, true, true);
+    // majority_benchmark(200001, true, true);
 
-//    majority_benchmark(5, true, true);
-//    majority_benchmark(7, true, true);
-//    majority_benchmark(9, true, true);
-//    majority_benchmark(27, true, true);
-//    majority_benchmark(81, true, true);
-//    majority_benchmark(201, true, true);
-//    majority_benchmark(667, true, true);
-//    majority_benchmark(2001, true, true);
-
-//    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-//    majority_benchmark(3, true, false);
-//    majority_benchmark(5, true, false);
-//    majority_benchmark(9, true, false);
-//    majority_benchmark(27, true, false);
-//    majority_benchmark(81, true, false);
-//    majority_benchmark(201, true, false); // FIXME, byte_threshold_into fails on this case
-//    majority_benchmark(667, true, false);
-//    majority_benchmark(2001, true, false);
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    majority_benchmark(3, true, false);
+    majority_benchmark(5, true, false);
+    majority_benchmark(7, true, false);
+    majority_benchmark(9, true, false);
+    majority_benchmark(11, true, false);
+    majority_benchmark(27, true, false);
+    majority_benchmark(39, true, false);
+    majority_benchmark(47, true, false);
+    majority_benchmark(55, true, false);
+    majority_benchmark(63, true, false);
+    majority_benchmark(73, true, false);
+    majority_benchmark(77, true, false);
+    majority_benchmark(79, true, false);
+    majority_benchmark(81, true, false);
+    majority_benchmark(85, true, false);
+    majority_benchmark(89, true, false);
+    majority_benchmark(91, true, false);
+    majority_benchmark(109, true, false);
+    majority_benchmark(175, true, false);
+    majority_benchmark(201, true, false);
+    majority_benchmark(255, true, false);
+    majority_benchmark(257, true, false);
+    majority_benchmark(313, true, false);
+    majority_benchmark(385, true, false);
+    majority_benchmark(511, true, false);
+    majority_benchmark(667, true, false);
+    majority_benchmark(881, true, false);
+    majority_benchmark(945, true, false);
+    majority_benchmark(1021, true, false);
+    majority_benchmark(2001, true, false);
+    majority_benchmark(5001, true, false);
+    majority_benchmark(9999, true, false);
+    majority_benchmark(10003, true, false);
+    majority_benchmark(20001, true, false);
+    majority_benchmark(200001, true, false);
 }

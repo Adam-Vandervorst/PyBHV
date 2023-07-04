@@ -164,9 +164,9 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
 
     if (even) vs[n_vectors] = bhv::rand();
 
-    PyObject * ret = type->tp_alloc(type, 0);
-    ((BHV *) ret)->data = bhv::true_majority(vs, n_vectors + even);
-    return ret;
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::true_majority_into(vs, n_vectors + even, ((BHV *) v)->data);
+    return v;
 }
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {

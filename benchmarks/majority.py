@@ -2,7 +2,7 @@
 from bhv import DIMENSION, AbstractBHV
 # from bhv.np import NumPyPacked64BHV as BHV
 # from bhv.np import NumPyBoolBHV as BHV
-from bhv.native import NativePackedBHV as BHV
+from bhv.native import CNativePackedBHV as BHV
 
 from time import monotonic
 from statistics import pstdev, fmean
@@ -29,7 +29,7 @@ for _ in range(repeat_pipeline):
         distances[size].append([AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION, invert=True) for r in rs])
 
 
-with open("results/majority_2000_native_packed.csv", 'w') as f:
+with open("results/majority_2000_native_simd.csv", 'w') as f:
     f.write("size,mean_distance,std_distance,time\n")
     for size in sizes:
         print(size)

@@ -1,6 +1,3 @@
-
-#include <immintrin.h>
-
 // This LUT is the exact same operation as `V = _pdep_u64(B, 0x0001000100010001);`
 #define pdep_lut(V, B) switch(B) {\
     case 0: V=0x0; break;\
