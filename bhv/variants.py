@@ -23,7 +23,7 @@ class LinearBHV(Generic[HV]):
         return (self ^ other, b, b)
 
     @staticmethod
-    def thresholds3(cls, x: Self, y: Self, z: Self) -> (Self, Self, Self):
+    def thresholds3(cls: 'Type[HV]', x: 'HV', y: 'HV', z: 'HV') -> ('HV', 'HV', 'HV'):
         # x y z  ->  + M -
         # x y z  ->  + M -
         # 0 0 0  ->  0 0 0
@@ -40,7 +40,7 @@ class LinearBHV(Generic[HV]):
         return (x & y & z, cls.majority([x, y, z]), x | y | z)
 
     @staticmethod
-    def and_or(self: Self, other: Self) -> (Self, Self):
+    def and_or(self: 'HV', other: 'HV') -> ('HV', 'HV'):
         # x y  ->  & |
         # 0 0  ->  0 0
         # 0 1  ->  0 1
@@ -49,7 +49,7 @@ class LinearBHV(Generic[HV]):
         return (self & other, self | other)
 
     @staticmethod
-    def switch(self: Self, left: Self, right: Self) -> (Self, Self, Self):
+    def switch(self: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV'):
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
 
@@ -68,7 +68,7 @@ class LinearBHV(Generic[HV]):
         return (self, pos, neg)
 
     @staticmethod
-    def invert(self: Self, one: 'HV.ONE', zero: 'HV.ZERO') -> (Self, Self, Self):
+    def invert(self: 'HV', one: 'HV.ONE', zero: 'HV.ZERO') -> ('HV', 'HV', 'HV'):
         # P I O  ->  N A B
         # 0 1 0  ->  1 0 0
         # 1 1 0  ->  0 1 1
@@ -76,20 +76,21 @@ class LinearBHV(Generic[HV]):
         return (inverted, self_1, self_2)
 
     @staticmethod
-    def permute(self, permutation_id: int) -> Self:
+    def permute(self: 'HV', permutation_id: int) -> 'HV':
         return self.permute(permutation_id)
 
 
 class MarbleBHV:
     @staticmethod
-    def spawn_c(cls) -> (Self, Self, int):
+    def spawn_c(cls) -> ('HV', 'HV', int):
+        # Note: maybe there's a more efficient way to generate random vectors in this context
         # I O  ->  P N
         # 1 0  ->  1 0  |  0 1
         r = cls.rand()
         return (r, ~r, -DIMENSION)
 
     @staticmethod
-    def xor_c(self: Self, other: Self) -> (Self, int):
+    def xor_c(self: 'HV', other: 'HV') -> ('HV', int):
         # L R  ->  X
         # 0 0  ->  0
         # 0 1  ->  1
@@ -99,7 +100,7 @@ class MarbleBHV:
         return (self ^ other, 2*b)
 
     @staticmethod
-    def majority3_c(cls, x: Self, y: Self, z: Self) -> (Self, int):
+    def majority3_c(cls, x: 'HV', y: 'HV', z: 'HV') -> ('HV', int):
         # x y z  ->  M
         # 0 0 0  ->  0
 
@@ -115,7 +116,7 @@ class MarbleBHV:
         return (cls.majority([x, y, z]), (x & y & z).active() + (x | y | z).active())
 
     @staticmethod
-    def and_or_c(self: Self, other: Self) -> (Self, Self, int):
+    def and_or_c(self: 'HV', other: 'HV') -> ('HV', 'HV', int):
         # x y  ->  & |
         # 0 0  ->  0 0
         # 0 1  ->  0 1
@@ -124,7 +125,7 @@ class MarbleBHV:
         return (self & other, self | other, 0)
 
     @staticmethod
-    def switch_c(self: Self, left: Self, right: Self) -> (Self, Self, Self, int):
+    def switch_c(self: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV', int):
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
 
@@ -143,13 +144,13 @@ class MarbleBHV:
         return (self, pos, neg, 0)
 
     @staticmethod
-    def invert_c(self: Self) -> (Self, int):
+    def invert_c(self: 'HV') -> ('HV', int):
         # P I O  ->  N A B
         # 0 1 0  ->  1 0 0
         # 1 1 0  ->  0 1 1
-        return (~self, 2*(self.active() - DIMENSION/2))
+        return (~self, 2*(self.active() - DIMENSION//2))
 
     @staticmethod
-    def permute_c(self, permutation_id: int) -> (Self, int):
+    def permute_c(self, permutation_id: int) -> ('HV', int):
         return (self.permute(permutation_id), 0)
 
