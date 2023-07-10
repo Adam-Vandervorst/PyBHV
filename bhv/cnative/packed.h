@@ -257,10 +257,16 @@ namespace bhv {
         return p;
     }
 
-    void permute_into(word_t * x, int32_t perm, word_t * target) {
-        if (perm == 0) *target = *x;
-        else if (perm > 0) permute_words_into(x, rand_word_permutation(perm), target);
-        else inverse_permute_words_into(x, rand_word_permutation(-perm), target);
+    void permute_into(word_t * x, int32_t perm_id, word_t * target) {
+        if (perm_id == 0) {
+            memcpy(target, x, BYTES);
+            return;
+        }
+
+        word_iter_t* perm = rand_word_permutation(abs(perm_id));
+        if (perm_id > 0) permute_words_into(x, perm, target);
+        else inverse_permute_words_into(x, perm, target);
+        free(perm);
     }
 
     void rehash_into(word_t * x, word_t * target) {

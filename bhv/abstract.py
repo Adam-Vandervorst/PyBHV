@@ -519,13 +519,17 @@ class Permutation:
     def __call__(self, hv: 'AbstractBHV') -> 'AbstractBHV':
         raise NotImplementedError()
 
+    IDENTITY: Self
+
 
 class MemoizedPermutation(Permutation):
     _permutations: 'dict[int | tuple[int, ...], Self]'
 
     @classmethod
     def _get_singular(cls, permutation_id: int) -> Self:
-        if permutation_id in cls._permutations:
+        if permutation_id == 0:
+            return cls.IDENTITY
+        elif permutation_id in cls._permutations:
             return cls._permutations[permutation_id]
         elif -permutation_id in cls._permutations:
             inv_permutation = cls._permutations[-permutation_id]

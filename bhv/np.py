@@ -25,6 +25,8 @@ class NumPyBoolPermutation(MemoizedPermutation):
     def __call__(self, hv: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return hv.permute_bits(self)
 
+NumPyBoolPermutation.IDENTITY = NumPyBoolPermutation(np.arange(DIMENSION))
+
 
 class NumPyBoolBHV(AbstractBHV):
     def __init__(self, array: np.ndarray):
@@ -142,6 +144,8 @@ class NumPyBytePermutation(MemoizedPermutation):
     def __call__(self, hv: 'NumPyPacked8BHV') -> 'NumPyPacked8BHV':
         return hv.permute_bytes(self)
 
+NumPyBytePermutation.IDENTITY = NumPyBytePermutation(np.arange(DIMENSION//8))
+
 
 class NumPyPacked8BHV(AbstractBHV):
     def __init__(self, array: np.ndarray):
@@ -241,6 +245,8 @@ class NumPyWordPermutation(MemoizedPermutation):
 
     def __call__(self, hv: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         return hv.permute_words(self)
+
+NumPyWordPermutation.IDENTITY = NumPyWordPermutation(np.arange(DIMENSION//64))
 
 
 class NumPyPacked64BHV(AbstractBHV):

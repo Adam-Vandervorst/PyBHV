@@ -27,6 +27,8 @@ class VanillaPermutation(MemoizedPermutation):
     def __call__(self, hv: 'VanillaBHV') -> 'VanillaBHV':
         return hv.permute_bytes(self)
 
+VanillaPermutation.IDENTITY = VanillaPermutation(list(range(DIMENSION//8)))
+
 
 class VanillaBHV(AbstractBHV):
     def __init__(self, data: bytes):
