@@ -1,4 +1,4 @@
-from bhv.abstract import AbstractBHV, DIMENSION, Permutation
+from bhv.abstract import AbstractBHV, DIMENSION
 from bhv.cnative import CNativePackedBHV, _DIMENSION
 
 assert DIMENSION == _DIMENSION()
@@ -40,6 +40,12 @@ class NativePackedBHV(AbstractBHV):
 
     def hamming(self, other):
         return self.ins.hamming(other.ins)
+
+    def roll_words(self, d: int):
+        return NativePackedBHV(self.ins.roll_words(d))
+
+    def roll_word_bits(self, d: int):
+        return NativePackedBHV(self.ins.roll_word_bits(d))
 
     def _permute_composite(self, permutation_id: 'tuple'):
         v = self

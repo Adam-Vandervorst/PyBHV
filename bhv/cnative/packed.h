@@ -232,6 +232,26 @@ namespace bhv {
         else return representative_impl(xs, size);
     }
 
+    void roll_words_into(word_t * x, int32_t d, word_t * target) {
+        int32_t offset = ((d % WORDS) + WORDS) % WORDS;
+
+        memcpy(target, x + offset, (WORDS - offset) * sizeof(word_t));
+        memcpy(target + WORDS - offset, x, offset * sizeof(word_t));
+    }
+
+    void roll_word_bits_into(word_t * x, int32_t d, word_t * target) {
+        int32_t offset = d % BITS_PER_WORD;
+
+        for (word_iter_t i = 0; i < WORDS; ++i) {
+            if (offset == 0)
+                target[i] = x[i];
+            else if (offset > 0)
+                target[i] = std::__rotl(x[i], offset);
+            else
+                target[i] = std::__rotr(x[i], -offset);
+        }
+    }
+
     void permute_words_into(word_t * x, word_iter_t* word_permutation, word_t * target) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             target[i] = x[word_permutation[i]];
