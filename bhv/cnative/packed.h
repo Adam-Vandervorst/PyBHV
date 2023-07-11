@@ -1,6 +1,7 @@
 #ifndef BHV_PACKED_H
 #define BHV_PACKED_H
 
+#include <bit>
 #include <random>
 #include <cstring>
 #include <algorithm>
@@ -243,12 +244,7 @@ namespace bhv {
         int32_t offset = d % BITS_PER_WORD;
 
         for (word_iter_t i = 0; i < WORDS; ++i) {
-            if (offset == 0)
-                target[i] = x[i];
-            else if (offset > 0)
-                target[i] = std::__rotl(x[i], offset);
-            else
-                target[i] = std::__rotr(x[i], -offset);
+            target[i] = std::rotl(x[i], offset);
         }
     }
 
