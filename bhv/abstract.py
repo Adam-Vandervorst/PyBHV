@@ -9,6 +9,9 @@ from .shared import *
 
 
 class StoreBHV:
+    def __deepcopy__(self, memodict={}):
+        return self.from_bytes(self.to_bytes())
+
     def to_bytes(self):
         raise NotImplementedError()
 

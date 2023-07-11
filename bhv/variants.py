@@ -1,29 +1,37 @@
 from typing import Generic, TypeVar, Type
+from copy import deepcopy
 from .abstract import *
 
 HV = TypeVar("HV", bound=BooleanAlgBHV, covariant=True)
 
 
-class LinearBHV(Generic[HV]):
-    @staticmethod
-    def spawn(cls: 'Type[HV]', one: 'HV.ONE', zero: 'HV.ZERO') -> (HV, HV):
+class LinearBHVModel(Generic[HV]):
+    def __init__(self, bhv: Type[HV]):
+        self.bhv = bhv
+        self.used = IdSet()
+    
+    def spawn(self, one: 'HV.ONE', zero: 'HV.ZERO') -> (HV, HV):
+        assert one not in self.used and zero not in self.used
+        self.used.add(one); self.used.add(zero)
         # I O  ->  P N
         # 1 0  ->  1 0  |  0 1
-        r = cls.rand()
+        r = self.bhv.select_rand(one, zero)
         return (r, ~r)
 
-    @staticmethod
-    def xor(self: HV, other: HV) -> (HV, HV, HV):
+    def xor(self, x: HV, y: HV) -> (HV, HV, HV):
+        assert x not in self.used and y not in self.used
+        self.used.add(x); self.used.add(y)
         # L R  ->  X L R
         # 0 0  ->  0 0 0
         # 0 1  ->  1 0 0
         # 1 0  ->  1 0 0
         # 1 1  ->  0 1 1
-        b = self & other
-        return (self ^ other, b, b)
+        b = x & y
+        return (x ^ y, b, deepcopy(b))
 
-    @staticmethod
-    def thresholds3(cls: 'Type[HV]', x: 'HV', y: 'HV', z: 'HV') -> ('HV', 'HV', 'HV'):
+    def thresholds3(self, x: 'HV', y: 'HV', z: 'HV') -> ('HV', 'HV', 'HV'):
+        assert x not in self.used and y not in self.used and z not in self.used
+        self.used.add(x); self.used.add(y); self.used.add(z)
         # x y z  ->  + M -
         # x y z  ->  + M -
         # 0 0 0  ->  0 0 0
@@ -37,19 +45,22 @@ class LinearBHV(Generic[HV]):
         # 1 1 0  ->  0 1 1
 
         # 1 1 1  ->  1 1 1
-        return (x & y & z, cls.majority([x, y, z]), x | y | z)
+        return (x & y & z, self.bhv.majority([x, y, z]), x | y | z)
 
-    @staticmethod
-    def and_or(self: 'HV', other: 'HV') -> ('HV', 'HV'):
+    def and_or(self, x: 'HV', y: 'HV') -> ('HV', 'HV'):
+        assert x not in self.used and y not in self.used
+        self.used.add(x); self.used.add(y)
         # x y  ->  & |
         # 0 0  ->  0 0
         # 0 1  ->  0 1
         # 1 0  ->  0 1
         # 1 1  ->  1 1
-        return (self & other, self | other)
+        return (x & y, x | y)
 
-    @staticmethod
-    def switch(self: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV'):
+    def switch(self, cond: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV'):
+        assert cond not in self.used and left not in self.used and right not in self.used
+        self.used.add(cond); self.used.add(left); self.used.add(right)
+
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
 
@@ -63,44 +74,89 @@ class LinearBHV(Generic[HV]):
 
         # 1 1 1  ->  1 1 1
 
-        pos = self.select(left, right)
-        neg = self.select(right, left)
-        return (self, pos, neg)
+        pos = self.bhv.select(cond, left, right)
+        neg = self.bhv.select(cond, right, left)
+        return (deepcopy(cond), pos, neg)
 
-    @staticmethod
-    def invert(self: 'HV', one: 'HV.ONE', zero: 'HV.ZERO') -> ('HV', 'HV', 'HV'):
+    def invert(self, x: 'HV', one: 'HV.ONE', zero: 'HV.ZERO') -> ('HV', 'HV', 'HV'):
         # P I O  ->  N A B
         # 0 1 0  ->  1 0 0
         # 1 1 0  ->  0 1 1
-        (self_1, self_2, inverted) = LinearBHV.switch(self, one, zero)
+        (self_1, self_2, inverted) = self.switch(x, one, zero)
         return (inverted, self_1, self_2)
 
-    @staticmethod
-    def permute(self: 'HV', permutation_id: int) -> 'HV':
-        return self.permute(permutation_id)
+    def permute(self, x: 'HV', permutation_id: int) -> 'HV':
+        assert x not in self.used
+        self.used.add(x)
+        return self.bhv.permute(permutation_id)
 
 
-class MarbleBHV:
-    @staticmethod
-    def spawn_c(cls) -> ('HV', 'HV', int):
+class Tank:
+    def __init__(self, capacity: float, fill=None, check=True, record=False):
+        self.capacity = capacity
+        self.level = capacity if fill is None else fill
+        self.check = check
+        self.record = record
+        self.updates = []
+
+    def update(self, amount: float):
+        if self.check:
+            if amount < 0:
+                assert self.level >= amount, "not enough to drain"
+            else:
+                assert amount <= self.capacity, "too much to fill"
+        if self.record:
+            self.updates.append(amount)
+        self.level += amount
+
+    def historical_levels(self):
+        assert self.record, "history not recorded, please pass record=True"
+        level = self.level
+        record = [level]
+        for update in reversed(self.updates):
+            level -= update
+            record.append(level)
+        record.reverse()
+        return record
+
+
+class AdiabaticBHVModel:
+    def __init__(self, tank: Tank, bhv: Type[HV]):
+        self.tank = tank
+        self.bhv = bhv
+        self.used = IdSet()
+
+    def get_one(self) -> 'HV.ONE':
+        self.tank.update(-DIMENSION)
+        return deepcopy(self.bhv.ONE)
+
+    def get_zero(self) -> 'HV.ZERO':
+        self.tank.update(0)
+        return deepcopy(self.bhv.ZERO)
+
+    def spawn(self) -> ('HV', 'HV'):
         # Note: maybe there's a more efficient way to generate random vectors in this context
         # I O  ->  P N
         # 1 0  ->  1 0  |  0 1
-        r = cls.rand()
-        return (r, ~r, -DIMENSION)
+        r = self.bhv.rand()
+        self.tank.update(-DIMENSION)
+        return (r, ~r)
 
-    @staticmethod
-    def xor_c(self: 'HV', other: 'HV') -> ('HV', int):
+    def xor(self, x: 'HV', y: 'HV') -> 'HV':
+        assert x not in self.used and y not in self.used
+        self.used.add(x); self.used.add(y)
         # L R  ->  X
         # 0 0  ->  0
         # 0 1  ->  1
         # 1 0  ->  1
         # 1 1  ->  0
-        b = self.overlap(other)
-        return (self ^ other, 2*b)
+        b = (x & y).active()
+        self.tank.update(2*b)
+        return x ^ y
 
-    @staticmethod
-    def majority3_c(cls, x: 'HV', y: 'HV', z: 'HV') -> ('HV', int):
+    def majority3(self, x: 'HV', y: 'HV', z: 'HV') -> 'HV':
+        assert x not in self.used and y not in self.used and z not in self.used
+        self.used.add(x); self.used.add(y); self.used.add(z)
         # x y z  ->  M
         # 0 0 0  ->  0
 
@@ -113,19 +169,23 @@ class MarbleBHV:
         # 1 1 0  ->  1
 
         # 1 1 1  ->  1
-        return (cls.majority([x, y, z]), (x & y & z).active() + (x | y | z).active())
+        self.tank.update((x & y & z).active() + (x | y | z).active())
+        return self.bhv.majority([x, y, z])
 
-    @staticmethod
-    def and_or_c(self: 'HV', other: 'HV') -> ('HV', 'HV', int):
+    def and_or(self, x: 'HV', y: 'HV') -> ('HV', 'HV'):
+        assert x not in self.used and y not in self.used
+        self.used.add(x); self.used.add(y)
         # x y  ->  & |
         # 0 0  ->  0 0
         # 0 1  ->  0 1
         # 1 0  ->  0 1
         # 1 1  ->  1 1
-        return (self & other, self | other, 0)
+        self.tank.update(0)
+        return (x & y, x | y)
 
-    @staticmethod
-    def switch_c(self: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV', int):
+    def switch(self, cond: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV'):
+        assert cond not in self.used and left not in self.used and right not in self.used
+        self.used.add(cond); self.used.add(left); self.used.add(right)
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
 
@@ -139,18 +199,21 @@ class MarbleBHV:
 
         # 1 1 1  ->  1 1 1
 
-        pos = self.select(left, right)
-        neg = self.select(right, left)
-        return (self, pos, neg, 0)
+        pos = cond.select(left, right)
+        neg = cond.select(right, left)
+        self.tank.update(0)
+        return (deepcopy(cond), pos, neg)
 
-    @staticmethod
-    def invert_c(self: 'HV') -> ('HV', int):
+    def invert(self, x: 'HV') -> 'HV':
+        assert x not in self.used
+        self.used.add(x)
         # P I O  ->  N A B
         # 0 1 0  ->  1 0 0
         # 1 1 0  ->  0 1 1
-        return (~self, 2*(self.active() - DIMENSION//2))
+        self.tank.update(2*(x.active() - DIMENSION//2))
+        return ~x
 
-    @staticmethod
-    def permute_c(self, permutation_id: int) -> ('HV', int):
-        return (self.permute(permutation_id), 0)
+    def permute(self, permutation_id: int) -> 'HV':
+        self.tank.update(0)
+        return self.bhv.permute(permutation_id)
 
