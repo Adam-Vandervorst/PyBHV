@@ -107,12 +107,17 @@ namespace bhv {
         }
     }
 
-// TODO include in benchmark.cpp, along with its brother that does |=
     void rand2_into(word_t * target, int8_t pow) {
+        if (pow == 0)
+            return rand_into(target);
+
         for (word_iter_t i = 0; i < WORDS; ++i) {
             word_t w = rng();
-            for (int8_t p = 1; p < pow; ++p) {
-                w &= rng();
+            for (int8_t p = 0; p < std::abs(pow); ++p) {
+                if (pow > 0)
+                    w &= rng();
+                else
+                    w |= rng();
             }
             target[i] = w;
         }

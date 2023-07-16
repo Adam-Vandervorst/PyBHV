@@ -95,6 +95,43 @@ float rand_benchmark(bool display, bool keep_in_cache) {
     return mean_test_time;
 }
 
+float rand2_benchmark(bool display, bool keep_in_cache, int pow) {
+    const int test_count = INPUT_HYPERVECTOR_COUNT;
+    const int input_output_count = (keep_in_cache? 1 : test_count);
+    volatile int p = pow;
+
+    //Allocate a buffer for TEST_COUNT results
+    word_t* result_buffer = (word_t*)malloc(input_output_count * BYTES);
+
+    double observed_frac [test_count];
+
+    auto t1 = chrono::high_resolution_clock::now();
+    for (int i=0; i<test_count; i++) {
+        const int io_buf_idx = (keep_in_cache? 0 : i);
+
+        word_t* m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+
+        bhv::rand2_into(m, p);
+
+        // once runtime of random_into drops under 500ns, consider removing this
+        observed_frac[i] = (double)bhv::active(m)/(double)BITS;
+    }
+    auto t2 = chrono::high_resolution_clock::now();
+
+    float mean_test_time = (float)chrono::duration_cast<chrono::nanoseconds>(t2-t1).count() / (float)test_count;
+    std::sort(observed_frac, observed_frac + test_count);
+    double mean_observed = std::reduce(observed_frac, observed_frac + test_count, 0., std::plus<double>())/(double)test_count;
+    mean_observed = mean_observed > .5 ? 1 + std::log2(1 - mean_observed) : -1 - std::log2(mean_observed);
+    if (display)
+        cout << pow << "pow, observed: " << mean_observed << ", in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+
+    //Clean up our mess
+    free(result_buffer);
+
+    return mean_test_time;
+}
+
+
 float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
     const int test_count = INPUT_HYPERVECTOR_COUNT;
     const int input_output_count = (keep_in_cache? 1 : test_count);
@@ -113,8 +150,8 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
         word_t* m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
 //        bhv::random_into(m, p); // baseline
-        bhv::random_into_tree_avx2(m, p); // 1 level of tree expansion into sparse
-//        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
+//        bhv::random_into_tree_avx2(m, p); // full tree expansion
+        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
 
         // once runtime of random_into drops under 500ns, consider removing this
         observed_frac[i] = (double)bhv::active(m)/(double)BITS;
@@ -135,8 +172,9 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 
 
 //#define MAJ
-#define RAND
-#define RANDOM
+//#define RAND
+#define RAND2
+//#define RANDOM
 
 int main() {
 #ifdef RAND
@@ -152,12 +190,28 @@ int main() {
     rand_benchmark(true, false);
     rand_benchmark(true, false);
 #endif
+#ifdef RAND2
+    int8_t pws[33];
+    for (int8_t i = -16; i < 17; ++i)
+        pws[i + 16] = i;
+
+    rand2_benchmark(false, false, 4);
+
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    for (float p : pws)
+        rand2_benchmark(true, true, p);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    for (float p : pws)
+        rand2_benchmark(true, true, p);
+
+#endif
 #ifdef RANDOM
-//    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
+    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
 //    float ps[12] = {.001, .01, .04, .2, .26, .48, .52, .74,.8, .95, .99, .999};
-    float ps[99];
-    for (size_t i = 1; i < 100; ++i)
-        ps[i - 1] = (float)i/100.f;
+//    float ps[99];
+//    for (size_t i = 1; i < 100; ++i)
+//        ps[i - 1] = (float)i/100.f;
 
     random_benchmark(false, false, .1);
 
