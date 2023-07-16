@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "shared.h"
 #include <immintrin.h>
+#include <ieee754.h>
 #include "TurboSHAKEopt/TurboSHAKE.h"
 #include "simdpcg.h"
 
@@ -149,6 +150,35 @@ namespace bhv {
                 sparse_random_switch_into<false>(x, 2*(.5f - p), x);
             else
                 sparse_random_switch_into<true>(x, 2*(p - .5f), x);
+        }
+    }
+
+    uint32_t instruction(float frac, uint8_t* to) {
+        ieee754_float p = {frac};
+
+        int32_t exponent = IEEE754_FLOAT_BIAS - int(p.ieee.exponent);
+        uint32_t instruction = (exponent << 24) | (1 << 23) | p.ieee.mantissa;
+        instruction >>= (_tzcnt_u32(instruction) + 1);
+
+        *to = 31 - _lzcnt_u32(instruction);
+
+        return instruction;
+    }
+
+    void random_into_tree_avx2(word_t * x, float_t p) {
+        uint8_t to;
+        uint32_t instr = instruction(p, &to);
+
+        for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
+            __m256i chunk = avx2_pcg32_random_r(&key);
+
+            for (uint8_t i = 0; i < to; ++i)
+                if ((instr & (1 << i)) >> i)
+                    chunk = _mm256_or_si256(chunk, avx2_pcg32_random_r(&key));
+                else
+                    chunk = _mm256_and_si256(chunk, avx2_pcg32_random_r(&key));
+
+            _mm256_storeu_si256((__m256i*)(x + word_id), chunk);
         }
     }
 

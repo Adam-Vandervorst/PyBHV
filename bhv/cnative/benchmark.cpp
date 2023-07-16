@@ -113,7 +113,8 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
         word_t* m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
 //        bhv::random_into(m, p); // baseline
-        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
+        bhv::random_into_tree_avx2(m, p); // 1 level of tree expansion into sparse
+//        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
 
         // once runtime of random_into drops under 500ns, consider removing this
         observed_frac[i] = (double)bhv::active(m)/(double)BITS;
