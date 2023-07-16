@@ -153,10 +153,10 @@ namespace bhv {
         }
     }
 
-    uint32_t instruction(float frac, uint8_t* to) {
+    uint32_t instruction(float_t frac, uint8_t* to) {
         ieee754_float p = {frac};
 
-        int32_t exponent = IEEE754_FLOAT_BIAS - int(p.ieee.exponent);
+        int32_t exponent = IEEE754_FLOAT_BIAS - (int32_t)p.ieee.exponent;
         uint32_t instruction = (exponent << 24) | (1 << 23) | p.ieee.mantissa;
         instruction >>= (_tzcnt_u32(instruction) + 1);
 
