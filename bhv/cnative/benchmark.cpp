@@ -153,6 +153,7 @@ int main() {
     rand_benchmark(true, false);
 #endif
 #ifdef RANDOM
+//    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
 //    float ps[12] = {.001, .01, .04, .2, .26, .48, .52, .74,.8, .95, .99, .999};
     float ps[99];
     for (size_t i = 1; i < 100; ++i)

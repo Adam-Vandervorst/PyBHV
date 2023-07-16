@@ -153,21 +153,18 @@ namespace bhv {
         }
     }
 
-    uint32_t instruction(float_t frac, uint8_t* to) {
+    uint64_t instruction(float frac, uint8_t* to) {
         ieee754_float p = {frac};
-
-        int32_t exponent = IEEE754_FLOAT_BIAS - (int32_t)p.ieee.exponent;
-        uint32_t instruction = (exponent << 24) | (1 << 23) | p.ieee.mantissa;
-        instruction >>= (_tzcnt_u32(instruction) + 1);
-
-        *to = 31 - _lzcnt_u32(instruction);
-
+        int32_t exponent = IEEE754_FLOAT_BIAS - int(p.ieee.exponent);
+        uint64_t instruction = (1 << (23 + exponent)) | p.ieee.mantissa | (1 << 23);
+        instruction = instruction >> (_tzcnt_u64(instruction) + 1);
+        *to = 63 - _lzcnt_u64(instruction);
         return instruction;
     }
 
     void random_into_tree_avx2(word_t * x, float_t p) {
         uint8_t to;
-        uint32_t instr = instruction(p, &to);
+        uint64_t instr = instruction(p, &to);
 
         for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
             __m256i chunk = avx2_pcg32_random_r(&key);
