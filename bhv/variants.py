@@ -60,18 +60,15 @@ class LinearBHVModel(Generic[HV]):
     def switch(self, cond: 'HV', left: 'HV', right: 'HV') -> ('HV', 'HV', 'HV'):
         assert cond not in self.used and left not in self.used and right not in self.used
         self.used.add(cond); self.used.add(left); self.used.add(right)
-
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
-
         # 0 0 1  ->  0 0 1
         # 0 1 0  ->  0 1 0
         # 0 1 1  ->  0 1 1
 
-        # 1 0 1  ->  0 1 0
-        # 1 1 0  ->  0 0 1
-        # 1 1 1  ->  0 1 1
-
+        # 1 0 0  ->  1 0 0
+        # 1 0 1  ->  1 1 0
+        # 1 1 0  ->  1 0 1
         # 1 1 1  ->  1 1 1
 
         pos = self.bhv.select(cond, left, right)
@@ -188,15 +185,13 @@ class AdiabaticBHVModel:
         self.used.add(cond); self.used.add(left); self.used.add(right)
         # C L R  ->  C P N
         # 0 0 0  ->  0 0 0
-
         # 0 0 1  ->  0 0 1
         # 0 1 0  ->  0 1 0
         # 0 1 1  ->  0 1 1
 
-        # 1 0 1  ->  0 1 0
-        # 1 1 0  ->  0 0 1
-        # 1 1 1  ->  0 1 1
-
+        # 1 0 0  ->  1 0 0
+        # 1 0 1  ->  1 1 0
+        # 1 1 0  ->  1 0 1
         # 1 1 1  ->  1 1 1
 
         pos = cond.select(left, right)
