@@ -151,7 +151,8 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 
 //        bhv::random_into(m, p); // baseline
 //        bhv::random_into_tree_avx2(m, p); // full tree expansion
-        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
+//        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
+        bhv::random_into_tree_sparse(m, p); // full tree expansion + sparse + some short-circuiting
 
         // once runtime of random_into drops under 500ns, consider removing this
         observed_frac[i] = (double)bhv::active(m)/(double)BITS;
@@ -173,10 +174,39 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 
 //#define MAJ
 //#define RAND
-#define RAND2
+//#define RAND2
 //#define RANDOM
+#include "bitset"
+void print_bits(int64_t w) {
+    std::bitset<64> x(w);
+    std::cout << x << std::endl;
+}
 
 int main() {
+    // testing code
+
+        uint8_t to = 0;
+        float_t remaining = 0;
+    //    uint64_t instruction = bhv::instruction_upto(.0000001, &to, &remaining);  //
+    //    uint64_t instruction = bhv::instruction_upto(.5, &to, &remaining);  //
+    //    uint64_t instruction = bhv::instruction_upto(.625, &to); // 10
+    //    uint64_t instruction = bhv::instruction_upto(.375, &to);  // 01
+        uint64_t instruction = bhv::instruction_upto(.5625, &to, &remaining);  // 100
+//        uint64_t instruction = bhv::instruction_upto(123.f/256.f, &to, &remaining);  // 0111101
+//        uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
+//        uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
+
+        std::cout << "to: " << (uint32_t)to << std::endl;
+        std::cout << "rem: " << remaining << std::endl;
+        print_bits(instruction);
+
+        for (uint8_t i = 0; i < to; ++i)
+            std::cout << ((instruction & (1 << i)) >> i);
+
+        std::cout << std::endl;
+
+
+
 #ifdef RAND
     rand_benchmark(false, false);
 
@@ -207,11 +237,11 @@ int main() {
 
 #endif
 #ifdef RANDOM
-    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
-//    float ps[12] = {.001, .01, .04, .2, .26, .48, .52, .74,.8, .95, .99, .999};
-//    float ps[99];
-//    for (size_t i = 1; i < 100; ++i)
-//        ps[i - 1] = (float)i/100.f;
+//    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
+//    float ps[13] = {.001, .01, .04, .2, .26, .48, .5, .52, .74,.8, .95, .99, .999};
+    float ps[99];
+    for (size_t i = 1; i < 100; ++i)
+        ps[i - 1] = (float)i/100.f;
 
     random_benchmark(false, false, .1);
 
