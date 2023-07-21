@@ -47,7 +47,21 @@ class NativePackedBHV(AbstractBHV):
     def permute_byte_bits(self, permutation_id: int):
         return NativePackedBHV(self.ins.permute_byte_bits(permutation_id))
 
-    def permute(self, permutation_id: int):
+    def roll_words(self, d: int):
+        return NativePackedBHV(self.ins.roll_words(d))
+
+    def roll_word_bits(self, d: int):
+        return NativePackedBHV(self.ins.roll_word_bits(d))
+
+    def _permute_composite(self, permutation_id: 'tuple'):
+        v = self
+        for e in permutation_id:
+            v = v.permute(e)
+        return v
+
+    def permute(self, permutation_id: 'int | tuple'):
+        if isinstance(permutation_id, tuple):
+            return self._permute_composite(permutation_id)
         return NativePackedBHV(self.ins.permute(permutation_id))
 
     def rehash(self):

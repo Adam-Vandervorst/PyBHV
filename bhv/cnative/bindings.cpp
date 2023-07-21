@@ -34,6 +34,8 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_select(BHV *cond, PyObject *args);
+static PyObject *BHV_roll_words(BHV *x, PyObject *args);
+static PyObject *BHV_roll_word_bits(BHV *x, PyObject *args);
 static PyObject *BHV_permute_byte_bits(BHV *x, PyObject *args);
 static PyObject *BHV_permute_words(BHV *x, PyObject *args);
 static PyObject *BHV_permute(BHV *x, PyObject *args);
@@ -80,6 +82,10 @@ static PyMethodDef BHV_methods[] = {
                 "Random representative of a list of BHVs"},
         {"select",         (PyCFunction) BHV_select,         METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
+        {"roll_words",         (PyCFunction) BHV_roll_words,         METH_VARARGS,
+                "Word-level rotation"},
+        {"roll_word_bits",         (PyCFunction) BHV_roll_word_bits,         METH_VARARGS,
+                "Word-level rotation of bits"},
         {"permute_byte_bits",         (PyCFunction) BHV_permute_byte_bits,         METH_VARARGS,
                 "Permutes the bits of every byte"},
         {"permute_words",         (PyCFunction) BHV_permute_words,         METH_VARARGS,
@@ -263,6 +269,26 @@ static PyObject *BHV_select(BHV *cond, PyObject *args) {
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
     bhv::select_into(cond->data, when1->data, when0->data, ((BHV *) ret)->data);
     return ret;
+}
+
+static PyObject *BHV_roll_words(BHV *x, PyObject *args) {
+    int32_t p;
+    if (!PyArg_ParseTuple(args, "i", &p))
+        return nullptr;
+
+    PyObject * v = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::roll_words_into(x->data, p, ((BHV *) v)->data);
+    return v;
+}
+
+static PyObject *BHV_roll_word_bits(BHV *x, PyObject *args) {
+    int32_t p;
+    if (!PyArg_ParseTuple(args, "i", &p))
+        return nullptr;
+
+    PyObject * v = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::roll_word_bits_into(x->data, p, ((BHV *) v)->data);
+    return v;
 }
 
 static PyObject *BHV_permute_words(BHV *x, PyObject *args) {

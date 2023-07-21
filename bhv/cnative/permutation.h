@@ -1,3 +1,18 @@
+void roll_words_into(word_t * x, int32_t d, word_t * target) {
+    int32_t offset = ((d % WORDS) + WORDS) % WORDS;
+
+    memcpy(target, x + offset, (WORDS - offset) * sizeof(word_t));
+    memcpy(target + WORDS - offset, x, offset * sizeof(word_t));
+}
+
+void roll_word_bits_into(word_t * x, int32_t d, word_t * target) {
+    int32_t offset = d % BITS_PER_WORD;
+
+    for (word_iter_t i = 0; i < WORDS; ++i) {
+        target[i] = std::rotl(x[i], offset);
+    }
+}
+
 uint8_t permute_single_byte_bits(uint8_t x, uint64_t p) {
     uint64_t w = _pdep_u64(x, 0x0101010101010101);
     uint64_t res = (uint64_t)_mm_shuffle_pi8(_mm_cvtsi64_m64(w), _mm_cvtsi64_m64(p));
