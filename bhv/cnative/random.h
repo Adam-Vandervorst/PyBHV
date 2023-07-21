@@ -92,25 +92,23 @@ void random_into_1tree_sparse(word_t * x, float_t p) {
     }
 }
 
-uint64_t instruction_upto(float frac, uint8_t* to, float* remaining, float threshold = 1e-6, uint8_t max_depth = 1, uint8_t depth = 1) {
+uint64_t instruction_upto(float frac, uint8_t* to, float* remaining, float threshold = 1e-6, uint8_t depth = 1) {
     float d = frac - (1.f / (float)(1 << depth));
     uint64_t v = 1 << (depth - 1);
     if (abs(d) > threshold) {
         if (d > 0)
-            return v | instruction_upto(d, to, remaining, threshold, max_depth, depth + 1);
+            return v | instruction_upto(d, to, remaining, threshold, depth + 1);
         else
-            return (~v) & instruction_upto(frac, to, remaining, threshold, max_depth, depth + 1);
+            return instruction_upto(frac, to, remaining, threshold, depth + 1);
     } else {
         *to = depth - 1;
         *remaining = d;
-        return ONE_WORD;
+        return 0;
     }
 }
 
 void random_into_tree_sparse(word_t * x, float_t p) {
     constexpr float sparse_faster_threshold = .01;
-    constexpr uint8_t tree_max_depth = 6;
-
 
     if (p < sparse_faster_threshold)
         return sparse_random_switch_into<true>(ZERO, p, x);
@@ -119,26 +117,27 @@ void random_into_tree_sparse(word_t * x, float_t p) {
 
     uint8_t to;
     float_t remaining;
-    uint64_t instr = instruction_upto(p, &to, &remaining, sparse_faster_threshold, tree_max_depth);
+    uint64_t instr = instruction_upto(p, &to, &remaining, sparse_faster_threshold);
 
     for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
         __m256i chunk = avx2_pcg32_random_r(&key);
 
-        for (uint8_t i = 0; i < to; ++i)
+        for (uint8_t i = to - 1; i < to; --i) {
             if ((instr & (1 << i)) >> i)
                 chunk = _mm256_or_si256(chunk, avx2_pcg32_random_r(&key));
             else
                 chunk = _mm256_and_si256(chunk, avx2_pcg32_random_r(&key));
+        }
 
         _mm256_storeu_si256((__m256i*)(x + word_id), chunk);
     }
 
-//        if (remaining == 0)
-//            return;
-//        else if (remaining > 0) // TODO calculate prob correctly
-//            return sparse_random_switch_into<true>(ZERO, remaining, x);
-//        else
-//            return sparse_random_switch_into<false>(ONE, -remaining, x);
+        if (remaining == 0)
+            return;
+        else if (remaining > 0) // TODO calculate prob correctly
+            return sparse_random_switch_into<true>(x, remaining, x);
+        else
+            return sparse_random_switch_into<false>(x, -remaining, x);
 }
 
 uint64_t instruction(float frac, uint8_t* to) {

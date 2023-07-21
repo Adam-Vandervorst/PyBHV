@@ -54,7 +54,8 @@ void test_instruction_upto() {
 //    uint64_t instruction = bhv::instruction_upto(.5, &to, &remaining);  //
 //    uint64_t instruction = bhv::instruction_upto(.625, &to); // 10
 //    uint64_t instruction = bhv::instruction_upto(.375, &to);  // 01
-    uint64_t instruction = bhv::instruction_upto(.5625, &to, &remaining);  // 100
+    uint64_t instruction = bhv::instruction_upto(.9, &to, &remaining, .005);  // 1110
+//    uint64_t instruction = bhv::instruction_upto(.5625, &to, &remaining);  // 100
 //        uint64_t instruction = bhv::instruction_upto(123.f/256.f, &to, &remaining);  // 0111101
 //        uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
 //        uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
@@ -63,13 +64,17 @@ void test_instruction_upto() {
     std::cout << "rem: " << remaining << std::endl;
     print_bits(instruction);
 
-    for (uint8_t i = 0; i < to; ++i)
+    for (uint8_t i = to - 1; i < to; --i)
         std::cout << ((instruction & (1 << i)) >> i);
 
     std::cout << std::endl;
+
+    word_t* x = bhv::empty();
+    bhv::random_into_tree_sparse(x, .9);
+    std::cout << "active: " << (double)bhv::active(x)/(double )BITS << std::endl;
 }
 
 
 int main() {
-    test_single_byte_permutation();
+    test_instruction_upto();
 }

@@ -175,8 +175,8 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 //#define MAJ
 //#define RAND
 //#define RAND2
-//#define RANDOM
-#define PERMUTE
+#define RANDOM
+//#define PERMUTE
 
 
 int main() {
