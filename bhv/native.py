@@ -41,6 +41,12 @@ class NativePackedBHV(AbstractBHV):
     def hamming(self, other):
         return self.ins.hamming(other.ins)
 
+    def permute_words(self, permutation_id: int):
+        return NativePackedBHV(self.ins.permute_words(permutation_id))
+
+    def permute_byte_bits(self, permutation_id: int):
+        return NativePackedBHV(self.ins.permute_byte_bits(permutation_id))
+
     def permute(self, permutation_id: int):
         return NativePackedBHV(self.ins.permute(permutation_id))
 

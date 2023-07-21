@@ -216,10 +216,10 @@ int main() {
 
     print_byte(r0);
 
-    uint8_t res = bhv::permute_byte_bits(r0, rp1);
+    uint8_t res = bhv::permute_single_byte_bits(r0, rp1);
     print_byte(res);
 
-    uint8_t res_ = bhv::permute_byte_bits(res, rp1_inv);
+    uint8_t res_ = bhv::permute_single_byte_bits(res, rp1_inv);
     print_byte(res_);
 
 #endif

@@ -1,4 +1,4 @@
-uint8_t permute_byte_bits(uint8_t x, uint64_t p) {
+uint8_t permute_single_byte_bits(uint8_t x, uint64_t p) {
     uint64_t w = _pdep_u64(x, 0x0101010101010101);
     uint64_t res = (uint64_t)_mm_shuffle_pi8(_mm_cvtsi64_m64(w), _mm_cvtsi64_m64(p));
     return _pext_u64(res, 0x0101010101010101);
@@ -35,35 +35,38 @@ void inverse_permute_words_into(word_t * x, word_iter_t* word_permutation, word_
     }
 }
 
-word_iter_t* rand_word_permutation(uint32_t seed) {
+void rand_word_permutation_into(uint32_t seed, word_iter_t* p) {
     std::minstd_rand0 perm_rng(seed);
-
-    auto p = (word_iter_t *) malloc(sizeof(word_iter_t)*WORDS);
 
     for (word_iter_t i = 0; i < WORDS; ++i)
         p[i] = i;
 
     std::shuffle(p, p + WORDS, perm_rng);
-
-    return p;
 }
 
-void permute_bits_of_bytes_into(word_t * x, int32_t perm_id, word_t * target) {
-    if (perm_id == 0) memcpy(target, x, BYTES);
-    else {
-        uint8_t* x_bytes = (uint8_t*)x;
-        uint8_t* target_bytes = (uint8_t*)target;
+void permute_byte_bits_into(word_t * x, int32_t perm_id, word_t * target) {
+    if (perm_id == 0) {memcpy(target, x, BYTES); return;}
 
-        uint64_t byte_perm = rand_bits_of_byte_permutation(perm_id);
-        if (perm_id < 0) byte_perm = bits_of_byte_permutation_invert(byte_perm);
+    uint8_t* x_bytes = (uint8_t*)x;
+    uint8_t* target_bytes = (uint8_t*)target;
 
-        for (byte_iter_t i = 0; i < BYTES; ++i)
-            target[i] = permute_byte_bits(x[i], byte_perm);
-    }
+    uint64_t byte_perm = rand_bits_of_byte_permutation(perm_id);
+    if (perm_id < 0) byte_perm = bits_of_byte_permutation_invert(byte_perm);
+
+    for (byte_iter_t i = 0; i < BYTES; ++i)
+        target[i] = permute_single_byte_bits(x[i], byte_perm);
+}
+
+void permute_words_into(word_t * x, int32_t perm, word_t * target) {
+    if (perm == 0) {memcpy(target, x, BYTES); return;}
+
+    word_iter_t p [WORDS];
+    rand_word_permutation_into(abs(perm), p);
+
+    if (perm > 0) permute_words_into(x, p, target);
+    else inverse_permute_words_into(x, p, target);
 }
 
 void permute_into(word_t * x, int32_t perm, word_t * target) {
-    if (perm == 0) memcpy(target, x, BYTES);
-    else if (perm > 0) permute_words_into(x, rand_word_permutation(perm), target);
-    else inverse_permute_words_into(x, rand_word_permutation(-perm), target);
+    permute_words_into(x, perm, target);
 }
