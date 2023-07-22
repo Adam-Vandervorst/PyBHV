@@ -6,7 +6,7 @@
 using namespace std;
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000000
-#define INPUT_HYPERVECTOR_COUNT 10000
+#define INPUT_HYPERVECTOR_COUNT 100000
 
 
 float majority_benchmark(int n, bool display, bool keep_in_cache) {
@@ -163,7 +163,7 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
     std::sort(observed_frac, observed_frac + test_count);
     double mean_observed_frac = std::reduce(observed_frac, observed_frac + test_count, 0., std::plus<double>())/(double)test_count - n;
     if (display)
-        cout << base_frac << "frac, observed: " << mean_observed_frac << ", in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+        cout << base_frac << "frac, observed: " << abs(base_frac - mean_observed_frac) << ", in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
 
     //Clean up our mess
     free(result_buffer);

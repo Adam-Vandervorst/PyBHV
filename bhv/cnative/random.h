@@ -61,17 +61,17 @@ void rand2_into(word_t * target, int8_t pow) {
 // Note This could have an AVX-512 implementation with 512-bit float-level log and floor, and probably and equivalent to generate_canonical
 template <bool additive>
 void sparse_random_switch_into(word_t * x, float_t prob, word_t * target) {
-    double inv_log_not_prob = 1. / std::log(1 - prob);
-    size_t skip_count = std::floor(std::log(std::generate_canonical<float_t, 32>(rng)) * inv_log_not_prob);
+    double inv_log_not_prob = 1. / log(1 - prob);
+    size_t skip_count = floor(log(generate_canonical<float_t, 23>(rng)) * inv_log_not_prob);
 
     for (word_iter_t i = 0; i < WORDS; ++i) {
         word_t word = x[i];
         while (skip_count < BITS_PER_WORD) {
             if constexpr (additive)
-                word |= 1UL << skip_count;
+                word |= 1ULL << skip_count;
             else
-                word &= ~(1UL << skip_count);
-            skip_count += std::floor(std::log(std::generate_canonical<float_t, 32>(rng)) * inv_log_not_prob);
+                word &= ~(1ULL << skip_count);
+            skip_count += floor(log(generate_canonical<float_t, 23>(rng)) * inv_log_not_prob);
         }
         skip_count -= BITS_PER_WORD;
         target[i] = word;
@@ -92,23 +92,32 @@ void random_into_1tree_sparse(word_t * x, float_t p) {
     }
 }
 
-uint64_t instruction_upto(float frac, uint8_t* to, float* remaining, float threshold = 1e-6, uint8_t depth = 1) {
-    float d = frac - (1.f / (float)(1 << depth));
-    uint64_t v = 1 << (depth - 1);
-    if (abs(d) > threshold) {
-        if (d > 0)
-            return v | instruction_upto(d, to, remaining, threshold, depth + 1);
-        else
-            return instruction_upto(frac, to, remaining, threshold, depth + 1);
-    } else {
-        *to = depth - 1;
-        *remaining = d;
-        return 0;
-    }
+uint64_t instruction_upto(float target, uint8_t* to, float* remaining, float threshold = 1e-4) {
+    uint8_t depth = 0;
+    uint64_t res = 0;
+    float frac = target;
+    float delta;
+    float correction;
+
+    do  {
+        delta = frac - (1.f / (float)(2 << depth));
+
+        if (delta > 0) {
+            res |= 1 << depth;
+            frac = delta;
+        }
+
+        depth += 1;
+        correction = (1. - target)/(1. - (target + delta)) - 1.;
+    } while (abs(correction) > threshold);
+
+    *to = depth - 1;
+    *remaining = correction;
+    return res;
 }
 
 void random_into_tree_sparse(word_t * x, float_t p) {
-    constexpr float sparse_faster_threshold = .01;
+    constexpr float sparse_faster_threshold = .0049;
 
     if (p < sparse_faster_threshold)
         return sparse_random_switch_into<true>(ZERO, p, x);
@@ -116,8 +125,8 @@ void random_into_tree_sparse(word_t * x, float_t p) {
         return sparse_random_switch_into<false>(ONE, 1.f - p, x);
 
     uint8_t to;
-    float_t remaining;
-    uint64_t instr = instruction_upto(p, &to, &remaining, sparse_faster_threshold);
+    float_t correction;
+    uint64_t instr = instruction_upto(p, &to, &correction, sparse_faster_threshold);
 
     for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
         __m256i chunk = avx2_pcg32_random_r(&key);
@@ -132,12 +141,12 @@ void random_into_tree_sparse(word_t * x, float_t p) {
         _mm256_storeu_si256((__m256i*)(x + word_id), chunk);
     }
 
-        if (remaining == 0)
-            return;
-        else if (remaining > 0) // TODO calculate prob correctly
-            return sparse_random_switch_into<true>(x, remaining, x);
-        else
-            return sparse_random_switch_into<false>(x, -remaining, x);
+    if (correction == 0.)
+        return;
+    else if (correction > 0)
+        return sparse_random_switch_into<true>(x, correction, x);
+    else
+        return sparse_random_switch_into<false>(x, -correction, x);
 }
 
 uint64_t instruction(float frac, uint8_t* to) {

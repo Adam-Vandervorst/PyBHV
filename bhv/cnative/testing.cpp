@@ -51,14 +51,14 @@ void test_instruction_upto() {
     uint8_t to = 0;
     float_t remaining = 0;
 //    uint64_t instruction = bhv::instruction_upto(.0000001, &to, &remaining);  //
-//    uint64_t instruction = bhv::instruction_upto(.5, &to, &remaining);  //
-//    uint64_t instruction = bhv::instruction_upto(.625, &to); // 10
-//    uint64_t instruction = bhv::instruction_upto(.375, &to);  // 01
-    uint64_t instruction = bhv::instruction_upto(.9, &to, &remaining, .005);  // 1110
+    uint64_t instruction = bhv::instruction_upto(.5, &to, &remaining);  //
+//    uint64_t instruction = bhv::instruction_upto(.625, &to, &remaining); // 10
+//    uint64_t instruction = bhv::instruction_upto(.375, &to, &remaining);  // 01
+//    uint64_t instruction = bhv::instruction_upto(.9, &to, &remaining, .005);  // 1110
 //    uint64_t instruction = bhv::instruction_upto(.5625, &to, &remaining);  // 100
-//        uint64_t instruction = bhv::instruction_upto(123.f/256.f, &to, &remaining);  // 0111101
-//        uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
-//        uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
+//    uint64_t instruction = bhv::instruction_upto(123.f/256.f, &to, &remaining);  // 0111101
+//    uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
+//    uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
 
     std::cout << "to: " << (uint32_t)to << std::endl;
     std::cout << "rem: " << remaining << std::endl;
@@ -70,8 +70,8 @@ void test_instruction_upto() {
     std::cout << std::endl;
 
     word_t* x = bhv::empty();
-    bhv::random_into_tree_sparse(x, .9);
-    std::cout << "active: " << (double)bhv::active(x)/(double )BITS << std::endl;
+    bhv::random_into_tree_sparse(x, .5);
+    std::cout << "active: " << (double)bhv::active(x)/(double)BITS << std::endl;
 }
 
 
