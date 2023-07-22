@@ -9,7 +9,7 @@ void roll_word_bits_into(word_t *x, int32_t d, word_t *target) {
     int32_t offset = d % BITS_PER_WORD;
 
     for (word_iter_t i = 0; i < WORDS; ++i) {
-        target[i] = std::rotl(x[i], offset);
+        target[i] = std::__rotl(x[i], offset);
     }
 }
 
@@ -81,7 +81,7 @@ __m512i rand_word_bits_permutation(uint32_t seed) {
 
     std::shuffle(p, p + 64, perm_rng);
 
-    return _mm512_loadu_epi8(p);
+    return _mm512_loadu_si512(p);
 }
 
 void permute_word_bits_into(word_t * x, int32_t perm_id, word_t * target) {
