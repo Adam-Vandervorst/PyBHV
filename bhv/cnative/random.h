@@ -4,6 +4,23 @@ void rand_into_reference(word_t *x) {
     }
 }
 
+__m256i aes_state = _mm256_setzero_si256();
+__m256i increment = _mm256_set_epi8(0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13,
+                                    0x11, 0x0D, 0x0B, 0x07, 0x05, 0x03, 0x02, 0x01,
+                                    0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+                                    0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c);
+
+void rand_into_aes(word_t *x) {
+    for (word_iter_t i = 0; i < WORDS; i += 8) {
+        aes_state += increment;
+
+        __m256i penultimate = _mm256_aesenc_epi128(aes_state, increment);
+
+        _mm256_storeu_si256((__m256i *) (x + i), _mm256_aesenc_epi128(penultimate, increment));
+        _mm256_storeu_si256((__m256i *) (x + i + 4), _mm256_aesdec_epi128(penultimate, increment));
+    }
+}
+
 avx2_pcg32_random_t key = {
         .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc),
                   _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},

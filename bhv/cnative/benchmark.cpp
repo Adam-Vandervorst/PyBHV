@@ -81,7 +81,8 @@ float rand_benchmark(bool display, bool keep_in_cache) {
 
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
-        bhv::rand_into_avx2(m);
+        bhv::rand_into_aes(m);
+
         something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
     }
     auto t2 = chrono::high_resolution_clock::now();
@@ -177,10 +178,10 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 }
 
 
-#define MAJ
+//#define MAJ
 #define RAND
-#define RAND2
-#define RANDOM
+//#define RAND2
+//#define RANDOM
 //#define PERMUTE
 
 
