@@ -1,6 +1,7 @@
-#ifndef BHV_PACKED_H
-#define BHV_PACKED_H
+#ifndef BHV_CORE_H
+#define BHV_CORE_H
 
+#include <bit>
 #include <random>
 #include <cstring>
 #include <cassert>
@@ -115,7 +116,7 @@ namespace bhv {
         }
     }
 
-#include "random.h"
+    #include "random.h"
 
     #include "threshold.h"
 
@@ -129,4 +130,4 @@ namespace bhv {
         TurboSHAKE(512, (uint8_t *) x, BYTES, 0x1F, (uint8_t *) target, BYTES);
     }
 }
-#endif //BHV_PACKED_H
+#endif //BHV_CORE_H

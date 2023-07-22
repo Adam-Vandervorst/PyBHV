@@ -1,7 +1,7 @@
 #include <iostream>
 #include <random>
 #include <bitset>
-#include "packed.h"
+#include "core.h"
 
 
 void print_bits(int64_t w) {
@@ -21,7 +21,7 @@ void test_single_byte_permutation() {
 
     uint64_t r = rng();
 
-    uint8_t r0 = 0b01110001;
+    uint8_t r0 = 0b11110001;
 
     uint64_t id = (uint64_t) _mm_set_pi8(7, 6, 5, 4, 3, 2, 1, 0);
 
@@ -31,7 +31,7 @@ void test_single_byte_permutation() {
     uint64_t p2 = (uint64_t) _mm_set_pi8(7, 6, 5, 4, 0, 1, 2, 3);
     uint64_t p2_inv = p2;
 
-    uint64_t rp1 = bhv::rand_byte_bits_permutation(2);
+    uint64_t rp1 = bhv::rand_byte_bits_permutation(5);
     uint64_t rp1_inv = bhv::byte_bits_permutation_invert(rp1);
 
 
@@ -76,5 +76,5 @@ void test_instruction_upto() {
 
 
 int main() {
-    test_instruction_upto();
+    test_single_byte_permutation();
 }

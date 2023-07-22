@@ -9,7 +9,7 @@ void roll_word_bits_into(word_t *x, int32_t d, word_t *target) {
     int32_t offset = d % BITS_PER_WORD;
 
     for (word_iter_t i = 0; i < WORDS; ++i) {
-        target[i] = std::__rotl(x[i], offset);
+        target[i] = std::rotl(x[i], offset);
     }
 }
 
@@ -22,8 +22,8 @@ uint8_t permute_single_byte_bits(uint8_t x, uint64_t p) {
 uint64_t byte_bits_permutation_invert(uint64_t p) {
     uint64_t r = 0;
 
-    for (uint8_t i = 0; i < 8; ++i)
-        r |= (i << ((p >> i * 8) & 0x07) * 8);
+    for (uint64_t i = 0; i < 8; ++i)
+        r |= i << (((p >> (i * 8)) & 0x07) * 8);
 
     return r;
 }
@@ -47,11 +47,11 @@ void permute_byte_bits_into(word_t *x, int32_t perm_id, word_t *target) {
     uint8_t *x_bytes = (uint8_t *) x;
     uint8_t *target_bytes = (uint8_t *) target;
 
-    uint64_t byte_perm = rand_byte_bits_permutation(perm_id);
+    uint64_t byte_perm = rand_byte_bits_permutation(abs(perm_id));
     if (perm_id < 0) byte_perm = byte_bits_permutation_invert(byte_perm);
 
     for (byte_iter_t i = 0; i < BYTES; ++i)
-        target[i] = permute_single_byte_bits(x[i], byte_perm);
+        target_bytes[i] = permute_single_byte_bits(x_bytes[i], byte_perm);
 }
 
 #if __AVX512BW__
@@ -87,7 +87,7 @@ __m512i rand_word_bits_permutation(uint32_t seed) {
 void permute_word_bits_into(word_t * x, int32_t perm_id, word_t * target) {
     if (perm_id == 0) {memcpy(target, x, BYTES); return;}
 
-    __m512i word_perm = rand_word_bits_permutation(perm_id);
+    __m512i word_perm = rand_word_bits_permutation(abs(perm_id));
     if (perm_id < 0) word_perm = word_bits_permutation_invert(word_perm);
 
     for (word_iter_t i = 0; i < WORDS; ++i)

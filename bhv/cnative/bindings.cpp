@@ -5,7 +5,7 @@
 #include <Python.h>
 #include "structmember.h"
 
-#include "packed.h"
+#include "core.h"
 
 typedef struct {
     PyObject_HEAD
