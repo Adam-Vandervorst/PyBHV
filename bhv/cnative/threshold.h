@@ -58,7 +58,7 @@ void threshold_into_short_avx512(word_t ** xs, uint16_t size, uint16_t threshold
 /// @brief AVX-256 implementation of threshold_into using a 2-Byte counter
 /// @note The AVX-256 implementation is faster than threshold_into_short_avx512 for smaller
 /// values or N, even when AVX-512  is available, probably on account of less cache pressure.
-void threshold_into_short_avx256(word_t ** xs, uint16_t size, uint16_t threshold, word_t* dst) {
+void threshold_into_short_avx2(word_t ** xs, uint16_t size, uint16_t threshold, word_t* dst) {
     __m256i threshold_simd = _mm256_set1_epi16(threshold);
     uint8_t** xs_bytes = (uint8_t**)xs;
     uint8_t* dst_bytes = (uint8_t*)dst;
@@ -123,7 +123,7 @@ void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, w
 #endif //__AVX512BW__
 
 /// @brief AVX-256 implementation of threshold_into using a 1-Byte counter
-void threshold_into_byte_avx256(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
+void threshold_into_byte_avx2(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
     __m256i threshold_simd = _mm256_set1_epi8(threshold);
     uint8_t** xs_bytes = (uint8_t**)xs;
     uint8_t* dst_bytes = (uint8_t*)dst;
@@ -156,12 +156,12 @@ void threshold_into_byte_avx256(word_t ** xs, uint8_t size, uint8_t threshold, w
 #if __AVX512BW__
     #define threshold_into_byte threshold_into_byte_avx512
 #else
-    #define threshold_into_byte threshold_into_byte_avx256
+    #define threshold_into_byte threshold_into_byte_avx2
 #endif //__AVX512BW__
 
 /// @brief A generic implementation for threshold_into, that can use any size counter
 template<typename N>
-void threshold_into_generic(word_t ** xs, size_t size, N threshold, word_t *dst) {
+void threshold_into_reference(word_t ** xs, size_t size, N threshold, word_t *dst) {
 
     N totals[BITS];
     memset(totals, 0, BITS*sizeof(N));
@@ -192,7 +192,7 @@ void threshold_into_generic(word_t ** xs, size_t size, N threshold, word_t *dst)
 #if __AVX512BW__
     #define threshold_into_short_wide threshold_into_short_avx512
 #else
-    #define threshold_into_short_wide threshold_into_generic<uint32_t>
+    #define threshold_into_short_wide threshold_into_reference<uint32_t>
 #endif //__AVX512BW__
 
 /// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
@@ -204,9 +204,9 @@ void threshold_into(word_t ** xs, size_t size, size_t threshold, word_t* dst) {
     switch (size) {
         case 0 ... 255: threshold_into_byte(xs, size, threshold, dst); return;
         //TODO: See note about changing the implementation of threshold_into_short_avx512
-        // case 256 ... 650: threshold_into_short_avx256(xs, size, threshold, dst); return;
+        // case 256 ... 650: threshold_into_short_avx2(xs, size, threshold, dst); return;
         // case 651 ... 10000: threshold_into_short_wide(xs, size, threshold, dst); return;
-        default: threshold_into_generic<uint32_t>(xs, size, threshold, dst); return;
+        default: threshold_into_reference<uint32_t>(xs, size, threshold, dst); return;
     }
 }
 

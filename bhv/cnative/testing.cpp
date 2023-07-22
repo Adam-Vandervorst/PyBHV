@@ -23,16 +23,16 @@ void test_single_byte_permutation() {
 
     uint8_t r0 = 0b01110001;
 
-    uint64_t id = (uint64_t)_mm_set_pi8(7, 6, 5, 4, 3, 2, 1, 0);
+    uint64_t id = (uint64_t) _mm_set_pi8(7, 6, 5, 4, 3, 2, 1, 0);
 
-    uint64_t p1 = (uint64_t)_mm_set_pi8(7, 5, 3, 1, 6, 4, 2, 0);
-    uint64_t p1_inv = (uint64_t)_mm_set_pi8(7, 2, 6, 2, 5, 1, 4, 0);
+    uint64_t p1 = (uint64_t) _mm_set_pi8(7, 5, 3, 1, 6, 4, 2, 0);
+    uint64_t p1_inv = (uint64_t) _mm_set_pi8(7, 2, 6, 2, 5, 1, 4, 0);
 
-    uint64_t p2 = (uint64_t)_mm_set_pi8(7, 6, 5, 4, 0, 1, 2, 3);
+    uint64_t p2 = (uint64_t) _mm_set_pi8(7, 6, 5, 4, 0, 1, 2, 3);
     uint64_t p2_inv = p2;
 
-    uint64_t rp1 = bhv::rand_bits_of_byte_permutation(2);
-    uint64_t rp1_inv = bhv::bits_of_byte_permutation_invert(rp1);
+    uint64_t rp1 = bhv::rand_byte_bits_permutation(2);
+    uint64_t rp1_inv = bhv::byte_bits_permutation_invert(rp1);
 
 
     print_bits(rp1);
@@ -60,7 +60,7 @@ void test_instruction_upto() {
 //    uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
 //    uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
 
-    std::cout << "to: " << (uint32_t)to << std::endl;
+    std::cout << "to: " << (uint32_t) to << std::endl;
     std::cout << "rem: " << remaining << std::endl;
     print_bits(instruction);
 
@@ -69,9 +69,9 @@ void test_instruction_upto() {
 
     std::cout << std::endl;
 
-    word_t* x = bhv::empty();
-    bhv::random_into_tree_sparse(x, .5);
-    std::cout << "active: " << (double)bhv::active(x)/(double)BITS << std::endl;
+    word_t *x = bhv::empty();
+    bhv::random_into_tree_sparse_avx2(x, .5);
+    std::cout << "active: " << (double) bhv::active(x) / (double) BITS << std::endl;
 }
 
 

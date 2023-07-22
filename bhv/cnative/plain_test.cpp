@@ -11,14 +11,14 @@ int main() {
 
     auto t0 = chrono::high_resolution_clock::now();
 
-    word_t * rs[N];
+    word_t *rs[N];
     for (size_t i = 0; i < N; ++i)
         rs[i] = bhv::rand();
 
     auto t1 = chrono::high_resolution_clock::now();
     cout << "rand " << chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count() << endl;
 
-    word_t * m = bhv::true_majority(rs, N);
+    word_t *m = bhv::true_majority(rs, N);
 
     auto t2 = chrono::high_resolution_clock::now();
     cout << "majority " << chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() << endl;
@@ -53,6 +53,6 @@ int main() {
     for (size_t i = 0; i < N; ++i)
         total += qs[i];
 
-    cout << ((double)total/(double )N) << endl;
+    cout << ((double) total / (double) N) << endl;
     return 0;
 }

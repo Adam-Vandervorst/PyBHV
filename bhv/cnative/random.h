@@ -1,50 +1,46 @@
-void rand_into(word_t * x) {
+void rand_into_reference(word_t *x) {
     for (word_iter_t i = 0; i < WORDS; ++i) {
         x[i] = rng();
     }
 }
 
 avx2_pcg32_random_t key = {
-        .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc), _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},
-        .inc = {_mm256_set_epi64x(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640), _mm256_set_epi64x(0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e)},
+        .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc),
+                  _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},
+        .inc = {_mm256_set_epi64x(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640),
+                _mm256_set_epi64x(0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e)},
         .pcg32_mult_l =  _mm256_set1_epi64x(UINT64_C(0x5851f42d4c957f2d) & 0xffffffffu),
         .pcg32_mult_h = _mm256_set1_epi64x(UINT64_C(0x5851f42d4c957f2d) >> 32)};
 
-void rand_into_avx2(word_t * x) {
+void rand_into_avx2(word_t *x) {
     for (word_iter_t i = 0; i < WORDS; i += 4) {
-        _mm256_storeu_si256((__m256i*)(x + i), avx2_pcg32_random_r(&key));
+        _mm256_storeu_si256((__m256i *) (x + i), avx2_pcg32_random_r(&key));
     }
 }
 
 #if __AVX512BW__
-avx512_pcg32_random_t key = {
+avx512_pcg32_random_t key512 = {
     .state = _mm512_set_epi64(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc, 0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49),
     .inc = _mm512_set_epi64(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640, 0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e),
       .multiplier =  _mm512_set1_epi64(0x5851f42d4c957f2d)};
 
 void rand_into_avx512(word_t * x) {
     for (word_iter_t i = 0; i < WORDS; i += 4) {
-        _mm256_storeu_si256((__m256i*)(x + i), avx512_pcg32_random_r(&key));
+        _mm256_storeu_si256((__m256i*)(x + i), avx512_pcg32_random_r(&key512));
     }
 }
 #endif
 
-void random_into(word_t * x, float_t p) {
-    std::bernoulli_distribution gen(p);
+#if __AVX512BW__
+#define rand_into rand_into_avx512
+#else
+#define rand_into rand_into_avx2
+#endif //#if __AVX512BW__
 
-    for (word_iter_t i = 0; i < WORDS; ++i) {
-        word_t word = 0;
-        for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
-            if (gen(rng))
-                word |= 1UL << bit_id;
-        }
-        x[i] = word;
-    }
-}
 
-void rand2_into(word_t * target, int8_t pow) {
+void rand2_into_reference(word_t *target, int8_t pow) {
     if (pow == 0)
-        return rand_into(target);
+        return rand_into_reference(target);
 
     for (word_iter_t i = 0; i < WORDS; ++i) {
         word_t w = rng();
@@ -58,9 +54,24 @@ void rand2_into(word_t * target, int8_t pow) {
     }
 }
 
+#define rand2_into rand2_into_reference
+
+void random_into_reference(word_t *x, float_t p) {
+    std::bernoulli_distribution gen(p);
+
+    for (word_iter_t i = 0; i < WORDS; ++i) {
+        word_t word = 0;
+        for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+            if (gen(rng))
+                word |= 1UL << bit_id;
+        }
+        x[i] = word;
+    }
+}
+
 // Note This could have an AVX-512 implementation with 512-bit float-level log and floor, and probably and equivalent to generate_canonical
-template <bool additive>
-void sparse_random_switch_into(word_t * x, float_t prob, word_t * target) {
+template<bool additive>
+void sparse_random_switch_into(word_t *x, float_t prob, word_t *target) {
     double inv_log_not_prob = 1. / log(1 - prob);
     size_t skip_count = floor(log(generate_canonical<float_t, 23>(rng)) * inv_log_not_prob);
 
@@ -78,7 +89,7 @@ void sparse_random_switch_into(word_t * x, float_t prob, word_t * target) {
     }
 }
 
-void random_into_1tree_sparse(word_t * x, float_t p) {
+void random_into_1tree_sparse(word_t *x, float_t p) {
     if (p < .36)
         return sparse_random_switch_into<true>(ZERO, p, x);
     else if (p > .64)
@@ -86,21 +97,21 @@ void random_into_1tree_sparse(word_t * x, float_t p) {
     else {
         rand_into(x);
         if (p <= .5)
-            sparse_random_switch_into<false>(x, 2*(.5f - p), x);
+            sparse_random_switch_into<false>(x, 2 * (.5f - p), x);
         else
-            sparse_random_switch_into<true>(x, 2*(p - .5f), x);
+            sparse_random_switch_into<true>(x, 2 * (p - .5f), x);
     }
 }
 
-uint64_t instruction_upto(float target, uint8_t* to, float* remaining, float threshold = 1e-4) {
+uint64_t instruction_upto(float target, uint8_t *to, float *remaining, float threshold = 1e-4) {
     uint8_t depth = 0;
     uint64_t res = 0;
     float frac = target;
     float delta;
     float correction;
 
-    do  {
-        delta = frac - (1.f / (float)(2 << depth));
+    do {
+        delta = frac - (1.f / (float) (2 << depth));
 
         if (delta > 0) {
             res |= 1 << depth;
@@ -108,7 +119,7 @@ uint64_t instruction_upto(float target, uint8_t* to, float* remaining, float thr
         }
 
         depth += 1;
-        correction = (1. - target)/(1. - (target + delta)) - 1.;
+        correction = (1. - target) / (1. - (target + delta)) - 1.;
     } while (abs(correction) > threshold);
 
     *to = depth - 1;
@@ -116,7 +127,7 @@ uint64_t instruction_upto(float target, uint8_t* to, float* remaining, float thr
     return res;
 }
 
-void random_into_tree_sparse(word_t * x, float_t p) {
+void random_into_tree_sparse_avx2(word_t *x, float_t p) {
     constexpr float sparse_faster_threshold = .0049;
 
     if (p < sparse_faster_threshold)
@@ -138,7 +149,7 @@ void random_into_tree_sparse(word_t * x, float_t p) {
                 chunk = _mm256_and_si256(chunk, avx2_pcg32_random_r(&key));
         }
 
-        _mm256_storeu_si256((__m256i*)(x + word_id), chunk);
+        _mm256_storeu_si256((__m256i *) (x + word_id), chunk);
     }
 
     if (correction == 0.)
@@ -149,7 +160,7 @@ void random_into_tree_sparse(word_t * x, float_t p) {
         return sparse_random_switch_into<false>(x, -correction, x);
 }
 
-uint64_t instruction(float frac, uint8_t* to) {
+uint64_t instruction(float frac, uint8_t *to) {
     ieee754_float p = {frac};
     int32_t exponent = IEEE754_FLOAT_BIAS - int(p.ieee.exponent);
     uint64_t instruction = (1 << (23 + exponent)) | p.ieee.mantissa | (1 << 23);
@@ -158,7 +169,7 @@ uint64_t instruction(float frac, uint8_t* to) {
     return instruction;
 }
 
-void random_into_tree_avx2(word_t * x, float_t p) {
+void random_into_tree_avx2(word_t *x, float_t p) {
     uint8_t to;
     uint64_t instr = instruction(p, &to);
 
@@ -171,18 +182,21 @@ void random_into_tree_avx2(word_t * x, float_t p) {
             else
                 chunk = _mm256_and_si256(chunk, avx2_pcg32_random_r(&key));
 
-        _mm256_storeu_si256((__m256i*)(x + word_id), chunk);
+        _mm256_storeu_si256((__m256i *) (x + word_id), chunk);
     }
 }
 
-word_t * rand() {
-    word_t * x = empty();
+#define random_into random_into_tree_sparse_avx2
+
+
+word_t *rand() {
+    word_t *x = empty();
     rand_into(x);
     return x;
 }
 
-word_t * random(float_t p) {
-    word_t * x = empty();
+word_t *random(float_t p) {
+    word_t *x = empty();
     random_into(x, p);
     return x;
 }
