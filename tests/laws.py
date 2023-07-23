@@ -95,9 +95,9 @@ def permute_props(permute):
     Π, Τ, Σ = lambda x: permute(x, π), lambda x: permute(x, τ), lambda x: permute(x, σ)
     Πinv, Τinv, Σinv = lambda x: permute(x, -π), lambda x: permute(x, -τ), lambda x: permute(x, -σ)
     return [
-        extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (π, τ))),
-        extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, (τ, σ)))),
-        extensionality(lambda x: permute(x, ((π, σ), τ)), lambda x: permute(x, (π, σ, τ))),
+        extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (τ, π))),
+        extensionality(lambda x: Π(Τ(x)), lambda x: permute(x, (0, τ, 0, π, 0))),
+        extensionality(lambda x: Π(Σ(Τ(x))), lambda x: permute(x, (τ, σ, π))),
         identity(lambda x: permute(x, 0)),
         identity(lambda x: Πinv(Π(x))),
         identity(lambda x: Τinv(Τ(x))),
@@ -166,7 +166,10 @@ def bhv_conv_metrics(under):
 
 
 def run_for(impl: AbstractBHV, ts):
-    argts = {k: list(vs) for k, vs in groupby(ts, lambda f: f.__code__.co_argcount)}
+    argts = {}
+    for t in ts:
+        arity = t.__code__.co_argcount
+        argts.setdefault(arity, []).append(t)
     max_depth = max(argts.keys())
 
     extrema = [impl.ZERO, impl.ONE]
@@ -178,9 +181,9 @@ def run_for(impl: AbstractBHV, ts):
             assert tn(*args), f"property {tn.__qualname__} failed on {args} using implementation {impl.__name__}"
         if depth <= max_depth:
             for x in collections[depth]:
-                rec(args + [x], depth + 1)
+                rec(args + (x,), depth + 1)
 
-    rec([], 0)
+    rec((), 0)
 
 
 def run():
@@ -221,6 +224,24 @@ def run():
             assert list(impl_.from_bitstream(rbits).bits()) == rbits, f"{impl}, {impl_}"
             assert impl_.from_bytes(rb).bitstring() == rstr, f"{impl}, {impl_}"
             assert impl_.from_bitstring(rstr).bitstring() == rstr, f"{impl}, {impl_}"
+
+    print("Testing word-level roll equivalence")
+    rs_np = NumPyPacked64BHV.nrand(10)
+    rs_native = [NativePackedBHV.from_bytes(r.to_bytes()) for r in rs_np]
+
+    word_rot_pos_np = [r.roll_words(12) for r in rs_np]
+    word_rot_pos_native = [r.roll_words(12) for r in rs_native]
+    assert [r == NumPyPacked64BHV.from_bytes(r_.to_bytes()) for r, r_ in zip(word_rot_pos_np, word_rot_pos_native)]
+    word_rot_neg_np = [r.roll_words(-12) for r in rs_np]
+    word_rot_neg_native = [r.roll_words(-12) for r in rs_native]
+    assert [r == NumPyPacked64BHV.from_bytes(r_.to_bytes()) for r, r_ in zip(word_rot_neg_np, word_rot_neg_native)]
+    word_bit_rot_pos_np = [r.roll_word_bits(12) for r in rs_np]
+    word_bit_rot_pos_native = [r.roll_word_bits(12) for r in rs_native]
+    assert [r == NumPyPacked64BHV.from_bytes(r_.to_bytes()) for r, r_ in zip(word_bit_rot_pos_np, word_bit_rot_pos_native)]
+    word_bit_rot_neg_np = [r.roll_word_bits(-12) for r in rs_np]
+    word_bit_rot_neg_native = [r.roll_word_bits(-12) for r in rs_native]
+    assert [r == NumPyPacked64BHV.from_bytes(r_.to_bytes()) for r, r_ in zip(word_bit_rot_neg_np, word_bit_rot_neg_native)]
+
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [

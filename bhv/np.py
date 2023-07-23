@@ -25,6 +25,8 @@ class NumPyBoolPermutation(MemoizedPermutation):
     def __call__(self, hv: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
         return hv.permute_bits(self)
 
+NumPyBoolPermutation.IDENTITY = NumPyBoolPermutation(np.arange(DIMENSION))
+
 
 class NumPyBoolBHV(AbstractBHV):
     def __init__(self, array: np.ndarray):
@@ -142,6 +144,8 @@ class NumPyBytePermutation(MemoizedPermutation):
     def __call__(self, hv: 'NumPyPacked8BHV') -> 'NumPyPacked8BHV':
         return hv.permute_bytes(self)
 
+NumPyBytePermutation.IDENTITY = NumPyBytePermutation(np.arange(DIMENSION//8))
+
 
 class NumPyPacked8BHV(AbstractBHV):
     def __init__(self, array: np.ndarray):
@@ -242,6 +246,8 @@ class NumPyWordPermutation(MemoizedPermutation):
     def __call__(self, hv: 'NumPyPacked64BHV') -> 'NumPyPacked64BHV':
         return hv.permute_words(self)
 
+NumPyWordPermutation.IDENTITY = NumPyWordPermutation(np.arange(DIMENSION//64))
+
 
 class NumPyPacked64BHV(AbstractBHV):
     rng = np.random.SFC64()
@@ -281,12 +287,13 @@ class NumPyPacked64BHV(AbstractBHV):
 
     def roll_word_bits(self, n: int) -> 'NumPyPacked64BHV':
         assert abs(n) < 64, "only supports 64 rolls"
+        # https://github.com/numba/numba/issues/6381
         if n == 0:
             return NumPyPacked64BHV(self.data)
         elif n > 0:
-            return np.bitwise_or(np.right_shift(self.data, n), np.left_shift(self.data, (64 - n)))
+            return NumPyPacked64BHV(np.bitwise_or(np.right_shift(self.data, np.uint64(n)), np.left_shift(self.data, np.uint64(64 - n))))
         else:
-            return np.bitwise_or(np.left_shift(self.data, n), np.right_shift(self.data, (64 - n)))
+            return NumPyPacked64BHV(np.bitwise_or(np.left_shift(self.data, np.uint64(n)), np.right_shift(self.data, np.uint64(64 - n))))
 
     # roll_words and roll_word_bits could be combined for more options allowing positive and negative combinations
     # ((1 2 3 4) (a b c d) (α β γ δ))

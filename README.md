@@ -34,6 +34,7 @@ Additionally, provided are
 - Boolean expression and network synthesis (e.g. [Cellular Automata](examples/ca_rules) and [perfectly random functions](benchmarks/exact_synthesis.py))
 - Visualization and storage via [pbm](bhv/visualization.py) (e.g. [Cellular Automata](examples/ca_rules))
 - A normal form and conversions between different implementations and storage methods
+- [Linear and adiabatic variants](bhv/variants.py) and [example](examples/reasoning_by_analogy_linear.py)
 
 ## Installation
 Make sure you have a recent Python version, 3.10 is recommended.
@@ -57,7 +58,7 @@ The fundamental angle is to start is with [Kanerva's initial paper](http://ww.ro
 For that, multiple resources are provided:
 - [A notebook going over the very basics](examples/Kanerva09.ipynb)
 - [The grandmother example](examples/grandmother_example.py)
-- [A Google Colab hosted reasoning by analogy example notebook](https://colab.research.google.com/drive/10gOc39TsM5CE-6u3kj2oe1t-8KZHr_bB?usp=sharing)
+- [A Google Colab "reasoning by analogy" hosted notebook](https://colab.research.google.com/drive/10gOc39TsM5CE-6u3kj2oe1t-8KZHr_bB?usp=sharing)
 - [A guide to picking metrics](examples/Metric_Picker.ipynb)
 
 As for a Machine Learning angle, you may enjoy:

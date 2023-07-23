@@ -111,3 +111,14 @@ def format_multiple(xs, start="", sep="", end="", indent="", aindent="", newline
 
 def format_list(xs, **kwargs):
     return format_multiple(xs, start="[", sep=", ", end="]", **kwargs)
+
+
+class IdSet:
+    def __init__(self, iterable=()):
+        self.data = {id(x) for x in iterable}
+
+    def __contains__(self, item):
+        return id(item) in self.data
+
+    def add(self, item):
+        self.data.add(id(item))
