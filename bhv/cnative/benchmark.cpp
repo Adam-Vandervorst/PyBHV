@@ -231,7 +231,7 @@ float hamming_benchmark(bool display) {
 
     bool correct = true;
     for (size_t i = 0; i < test_count; ++i) {
-        correct &= observed_distance[i] == bhv::hamming(as[i], bs[i]);
+        correct &= observed_distance[i] == bhv::hamming_reference(as[i], bs[i]);
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;

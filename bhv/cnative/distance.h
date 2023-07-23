@@ -183,13 +183,13 @@ uint64_t hamming_adder_avx2(word_t *x, word_t *y) {
 
 #if __AVX512BW__
 /// @brief The hamming distance between two vectors using vector popcnt (AVX-512 BITALG)
-bit_iter_t hamming_avx512(word_t *x) {
+bit_iter_t hamming_avx512(word_t *x, word_t *y) {
     __m512i total = _mm512_set1_epi64(0);
 
     for (word_iter_t i = 0; i < WORDS; i += 8) {
-        __m512i v1 = _mm512_loadu_si512((__m512i *)(x + i));
-        __m512i v2 = _mm512_loadu_si512((__m512i *)(x + i));
-        __m512i d = _mm512_xor_si512(v1, v2);
+        __m512i vec_x = _mm512_loadu_si512((__m512i *)(x + i));
+        __m512i vec_y = _mm512_loadu_si512((__m512i *)(y + i));
+        __m512i d = _mm512_xor_si512(vec_x, vec_y);
         __m512i cnts = _mm512_popcnt_epi64(d);
         total = _mm512_add_epi64(total, cnts);
     }
