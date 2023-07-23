@@ -191,8 +191,8 @@ float active_benchmark(bool display) {
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
         word_t *m = hvs[i];
-        observed_active[i] = bhv::active_avx512(m);
-//        observed_active[i] = bhv::active_adder_avx2(m);
+//        observed_active[i] = bhv::active_avx512(m);
+        observed_active[i] = bhv::active_adder_avx2(m);
 //        observed_active[i] = bhv::active_reference(m);
     }
     auto t2 = chrono::high_resolution_clock::now();
@@ -209,16 +209,57 @@ float active_benchmark(bool display) {
     return mean_test_time;
 }
 
+float hamming_benchmark(bool display) {
+    const int test_count = INPUT_HYPERVECTOR_COUNT/2;
+
+    word_t *as [test_count];
+    word_t *bs [test_count];
+
+    for (size_t i = 0; i < test_count; ++i) {
+        as[i] = bhv::random((float)i/(float)test_count);
+        bs[i] = bhv::random((float)(test_count - i)/(float)test_count);
+    }
+
+    uint32_t observed_distance[test_count];
+
+    auto t1 = chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < test_count; ++i) {
+//        observed_distance[i] = bhv::hamming_adder_avx2(as[i], bs[i]);
+        observed_distance[i] = bhv::hamming_avx512(as[i], bs[i]);
+    }
+    auto t2 = chrono::high_resolution_clock::now();
+
+    bool correct = true;
+    for (size_t i = 0; i < test_count; ++i) {
+        correct &= observed_distance[i] == bhv::hamming(as[i], bs[i]);
+    }
+
+    float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
+    if (display)
+        cout << "correct " << (correct ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+
+    return mean_test_time;
+}
+
 
 //#define MAJ
 //#define RAND
 //#define RAND2
 //#define RANDOM
 //#define PERMUTE
-#define ACTIVE
+//#define ACTIVE
+#define HAMMING
 
 
 int main() {
+#ifdef HAMMING
+    cout << "*-= HAMMING =-*" << endl;
+    hamming_benchmark(false);
+
+    hamming_benchmark(true);
+    hamming_benchmark(true);
+    hamming_benchmark(true);
+#endif
 #ifdef ACTIVE
     cout << "*-= ACTIVE =-*" << endl;
     active_benchmark(false);
