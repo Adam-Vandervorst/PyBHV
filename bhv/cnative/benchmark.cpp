@@ -6,7 +6,7 @@
 using namespace std;
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000000
-#define INPUT_HYPERVECTOR_COUNT 100000
+#define INPUT_HYPERVECTOR_COUNT 1000
 
 
 float majority_benchmark(int n, bool display, bool keep_in_cache) {
@@ -177,6 +177,60 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
     return mean_test_time;
 }
 
+template<bool keep_in_cache, int different_permutations>
+float permute_benchmark(bool display) {
+    const int test_count = INPUT_HYPERVECTOR_COUNT * different_permutations * 2;
+
+    bool correct = true;
+    double total_test_time = 0.;
+    int perms [different_permutations];
+    for (size_t i = 0; i < different_permutations; ++i)
+        perms[i] = std::abs(std::rand());
+
+    if constexpr (keep_in_cache) {
+        word_t *forward [INPUT_HYPERVECTOR_COUNT][different_permutations + 1];
+        word_t *backward [INPUT_HYPERVECTOR_COUNT][different_permutations + 1];
+        // different_permutations=3
+        // forward:  R                              p0(R)                     p1(p0(R))            p2(p1(p0(R)))
+        //           | hopefully equal                                                  set equal  |
+        // backward: p-0(p-1(p-2(p2(p1(p0(R))))))   p-1(p-2(p2(p1(p0(R)))))   p-2(p2(p1(p0(R))))   p2(p1(p0(R)))
+
+        auto t1 = chrono::high_resolution_clock::now();
+
+        for (size_t i = 0; i < INPUT_HYPERVECTOR_COUNT; ++i) {
+            forward[i][0] = bhv::rand(); // TODO this and the eq should be outside of the timing
+
+            for (size_t j = 0; j < different_permutations; ++j)
+                forward[i][j + 1] = bhv::permute(forward[i][j], perms[j]);
+
+            backward[i][different_permutations] = forward[i][different_permutations];
+
+            for (size_t j = different_permutations; j > 0; --j)
+                backward[i][j - 1] = bhv::permute(backward[i][j], -perms[j - 1]);
+
+            correct &= bhv::eq(forward[i][0], backward[i][0]);
+        }
+
+        auto t2 = chrono::high_resolution_clock::now();
+        total_test_time = (double) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
+
+        for (size_t i = 0; i < INPUT_HYPERVECTOR_COUNT; ++i) {
+            for (size_t j = 0; j < different_permutations; ++j) free(forward[i][j]);
+            for (size_t j = 0; j < different_permutations - 1; ++j) free(backward[i][j]); // -1, don't double free
+        }
+    } else {
+//        word_t *running = bhv::rand();
+        assert(false); // TODO
+    }
+
+    double mean_test_time = total_test_time / (double) test_count;
+    if (display)
+        cout << "correctly inverted: " << (correct ? "v" : "x") << ", in_cache: "
+             << keep_in_cache << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+
+    return mean_test_time;
+}
+
 float active_benchmark(bool display) {
     const int test_count = INPUT_HYPERVECTOR_COUNT;
 
@@ -224,8 +278,9 @@ float hamming_benchmark(bool display) {
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
-//        observed_distance[i] = bhv::hamming_adder_avx2(as[i], bs[i]);
-        observed_distance[i] = bhv::hamming_avx512(as[i], bs[i]);
+//        observed_distance[i] = bhv::hamming_reference(as[i], bs[i]);
+        observed_distance[i] = bhv::hamming_adder_avx2(as[i], bs[i]);
+//        observed_distance[i] = bhv::hamming_avx512(as[i], bs[i]);
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -246,30 +301,35 @@ float hamming_benchmark(bool display) {
 //#define RAND
 //#define RAND2
 //#define RANDOM
-//#define PERMUTE
+#define PERMUTE
 //#define ACTIVE
-#define HAMMING
+//#define HAMMING
 
 
 int main() {
 #ifdef HAMMING
-    cout << "*-= HAMMING =-*" << endl;
     hamming_benchmark(false);
 
+    cout << "*-= HAMMING =-*" << endl;
     hamming_benchmark(true);
     hamming_benchmark(true);
     hamming_benchmark(true);
 #endif
 #ifdef ACTIVE
-    cout << "*-= ACTIVE =-*" << endl;
     active_benchmark(false);
 
+    cout << "*-= ACTIVE =-*" << endl;
     active_benchmark(true);
     active_benchmark(true);
     active_benchmark(true);
 #endif
 #ifdef PERMUTE
+    permute_benchmark<true, 100>(false);
 
+    cout << "*-= PERMUTE =-*" << endl;
+    permute_benchmark<true, 100>(true);
+    permute_benchmark<true, 100>(true);
+    permute_benchmark<true, 100>(true);
 #endif
 #ifdef RAND
     rand_benchmark(false, false);

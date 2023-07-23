@@ -172,3 +172,15 @@ void permute_into(word_t *x, int32_t perm, word_t *target) {
     permute_byte_bits_into(target, perm, target);
 #endif
 }
+
+word_t * permute(word_t *x, int32_t perm) {
+    word_t *r = empty();
+#if __AVX512BW__
+    permute_words_into(x, perm, r);
+    permute_word_bits_into(r, perm, r);
+#else
+    permute_bytes_into(x, perm, r);
+    permute_byte_bits_into(r, perm, r);
+#endif
+    return r;
+}
