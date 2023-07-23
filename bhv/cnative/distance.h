@@ -1,3 +1,5 @@
+/// @brief Count the number of set bits in the vector
+/// @note This implementation is within 30% of AVX-2 and AVX-512 on Ice-Lake
 bit_iter_t active_reference(word_t *x) {
     bit_iter_t total = 0;
     for (word_iter_t i = 0; i < WORDS; ++i) {
@@ -26,6 +28,8 @@ __m256i count(__m256i v) {
     return _mm256_sad_epu8(total, _mm256_setzero_si256());
 }
 
+/// @brief Count the number of set bits in the vector using an expanded AVX2 adder
+/// @note This follows https://github.com/JeWaVe/hamming_rs
 bit_iter_t active_adder_avx2(word_t *x) {
     __m256i *vec_x = (__m256i *)x;
     __m256i total = _mm256_setzero_si256();
@@ -71,19 +75,23 @@ bit_iter_t active_adder_avx2(word_t *x) {
 }
 
 #if __AVX512BW__
+/// @brief Count the number of set bits in the vector using vector popcnt (AVX-512 BITALG)
 bit_iter_t active_avx512(word_t *x) {
-    __m512i totals = _mm512_set1_epi64(0);
+    __m512i total = _mm512_set1_epi64(0);
 
     for (word_iter_t i = 0; i < WORDS; i += 8) {
         __m512i v = _mm512_loadu_si512((__m512i *)(x + i));
         __m512i cnts = _mm512_popcnt_epi64(v);
-        totals = _mm512_add_epi64(totals, cnts);
+        total = _mm512_add_epi64(total, cnts);
     }
 
+#if true // TODO figure out when reduce_add is available
+    return _mm512_reduce_add_epi64(total);
+#else
     uint64_t a [8];
     _mm512_storeu_si512((__m512i *)a, totals);
-
     return a[0] + a[1] + a[2] + a[3] + a[4] + a[5] + a[6] + a[7];
+#endif
 }
 #endif
 
@@ -93,6 +101,7 @@ bit_iter_t active_avx512(word_t *x) {
 #define active active_adder_avx2
 #endif
 
+/// @brief The hamming distance between two vectors, this is equivalent to active(xor(x, y)) but faster.
 bit_iter_t hamming(word_t *x, word_t *y) {
     bit_iter_t total = 0;
     for (word_iter_t i = 0; i < WORDS; ++i) {

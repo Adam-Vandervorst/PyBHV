@@ -192,14 +192,14 @@ float active_benchmark(bool display) {
     for (size_t i = 0; i < test_count; ++i) {
         word_t *m = hvs[i];
         observed_active[i] = bhv::active_avx512(m);
-//        observed_active[i] = bhv::active_reference(m);
+//        observed_active[i] = bhv::active_adder_avx2(m);
 //        observed_active[i] = bhv::active_reference(m);
     }
     auto t2 = chrono::high_resolution_clock::now();
 
     bool correct = true;
     for (size_t i = 0; i < test_count; ++i) {
-        correct &= observed_active[i] == bhv::active(hvs[i]);
+        correct &= observed_active[i] == bhv::active_reference(hvs[i]);
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
