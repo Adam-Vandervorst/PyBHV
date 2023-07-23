@@ -75,12 +75,12 @@ bit_iter_t active_avx512(word_t *x) {
     __m512i totals = _mm512_set1_epi64(0);
 
     for (word_iter_t i = 0; i < WORDS; i += 8) {
-        __m512i v = _mm512_loadu_si512((__m512i *)x);
-        __m512i cnts = _mm512_popcnt_epi16(v);
-        totals = _mm512_add_epi16(totals, cnts);
+        __m512i v = _mm512_loadu_si512((__m512i *)(x + i));
+        __m512i cnts = _mm512_popcnt_epi64(v);
+        totals = _mm512_add_epi64(totals, cnts);
     }
 
-    uint16_t a [8];
+    uint64_t a [8];
     _mm512_storeu_si512((__m512i *)a, totals);
 
     return a[0] + a[1] + a[2] + a[3] + a[4] + a[5] + a[6] + a[7];
