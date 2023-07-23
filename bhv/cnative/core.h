@@ -62,22 +62,6 @@ namespace bhv {
         }
     }
 
-    bit_iter_t active(word_t *x) {
-        bit_iter_t total = 0;
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            total += __builtin_popcountl(x[i]);
-        }
-        return total;
-    }
-
-    bit_iter_t hamming(word_t *x, word_t *y) {
-        bit_iter_t total = 0;
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            total += __builtin_popcountl(x[i] ^ y[i]);
-        }
-        return total;
-    }
-
     bool eq(word_t *x, word_t *y) {
         for (word_iter_t i = 0; i < WORDS; ++i) {
             if (x[i] != y[i])
@@ -115,6 +99,8 @@ namespace bhv {
             target[i] = when0[i] ^ (cond[i] & (when0[i] ^ when1[i]));
         }
     }
+
+    #include "distance.h"
 
     #include "random.h"
 

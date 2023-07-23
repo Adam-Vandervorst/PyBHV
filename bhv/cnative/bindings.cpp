@@ -54,20 +54,14 @@ static PyObject *BHV_swap_halves(BHV *x, PyObject *args);
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
 
-static PyObject *BHV_richcompare(PyObject * self, PyObject * other, int
-op) {
-switch (op) {
-case Py_EQ: if (
-bhv::eq(((BHV
-*)self)->data, ((BHV*)other)->data)) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-case Py_NE: if (
-bhv::eq(((BHV
-*)self)->data, ((BHV*)other)->data)) Py_RETURN_FALSE; else Py_RETURN_TRUE;
-default:
-PyErr_SetString(PyExc_NotImplementedError,
-"Can only compare BHVs with == and !=");
-return nullptr;
-}
+static PyObject *BHV_richcompare(PyObject *self, PyObject *other, int op) {
+    switch (op) {
+        case Py_EQ: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+        case Py_NE: if (bhv::eq(((BHV*)self)->data, ((BHV*)other)->data)) Py_RETURN_FALSE; else Py_RETURN_TRUE;
+        default:
+            PyErr_SetString(PyExc_NotImplementedError, "Can only compare BHVs with == and !=");
+            return nullptr;
+    }
 }
 
 static PyObject *BHV_xor(PyObject * v1, PyObject * v2);
@@ -202,7 +196,6 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
 }
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {
-    // TODO
     PyObject * vector_list;
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &vector_list))
@@ -217,8 +210,8 @@ static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {
         vs[i] = ((BHV *) v_i_py)->data;
     }
 
-    PyObject * ret = type->tp_alloc(type, 0);
-    ((BHV *) ret)->data = bhv::representative(vs, n_vectors);
+    PyObject * ret = BHV_new(type, nullptr, nullptr);
+    bhv::representative_into(vs, n_vectors, ((BHV *) ret)->data);
     return ret;
 }
 
@@ -276,8 +269,7 @@ static PyObject *BHV_eq(BHV * v1, PyObject * args) {
         return nullptr;
 
     if (bhv::eq(v1->data, v2->data)) Py_RETURN_TRUE;
-    else
-        Py_RETURN_FALSE;
+    else Py_RETURN_FALSE;
 }
 
 static PyObject *BHV_select(BHV * cond, PyObject * args) {
@@ -359,7 +351,7 @@ static PyObject *BHV_swap_halves(BHV * x, PyObject * args) {
 }
 
 static PyObject *BHV_to_bytes(BHV * x, PyObject * Py_UNUSED(ignored)) {
-return PyBytes_FromStringAndSize((char*)x->data, BYTES);
+    return PyBytes_FromStringAndSize((char*)x->data, BYTES);
 }
 
 static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args) {

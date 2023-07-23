@@ -6,7 +6,7 @@
 using namespace std;
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000000
-#define INPUT_HYPERVECTOR_COUNT 10000
+#define INPUT_HYPERVECTOR_COUNT 100000
 
 
 float majority_benchmark(int n, bool display, bool keep_in_cache) {
@@ -177,15 +177,56 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
     return mean_test_time;
 }
 
+float active_benchmark(bool display) {
+    const int test_count = INPUT_HYPERVECTOR_COUNT;
+
+    word_t *hvs [test_count];
+
+    for (size_t i = 0; i < test_count; ++i) {
+        hvs[i] = bhv::random((float)i/(float)test_count);
+    }
+
+    uint32_t observed_active[test_count];
+
+    auto t1 = chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < test_count; ++i) {
+        word_t *m = hvs[i];
+        observed_active[i] = bhv::active_avx512(m);
+//        observed_active[i] = bhv::active_reference(m);
+//        observed_active[i] = bhv::active_reference(m);
+    }
+    auto t2 = chrono::high_resolution_clock::now();
+
+    bool correct = true;
+    for (size_t i = 0; i < test_count; ++i) {
+        correct &= observed_active[i] == bhv::active(hvs[i]);
+    }
+
+    float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
+    if (display)
+        cout << "correct " << (correct ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+
+    return mean_test_time;
+}
+
 
 //#define MAJ
-#define RAND
+//#define RAND
 //#define RAND2
 //#define RANDOM
 //#define PERMUTE
+#define ACTIVE
 
 
 int main() {
+#ifdef ACTIVE
+    cout << "*-= ACTIVE =-*" << endl;
+    active_benchmark(false);
+
+    active_benchmark(true);
+    active_benchmark(true);
+    active_benchmark(true);
+#endif
 #ifdef PERMUTE
 
 #endif
