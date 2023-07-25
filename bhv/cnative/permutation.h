@@ -57,8 +57,8 @@ void permute_byte_bits_into_shuffle(word_t *x, int32_t perm_id, word_t *target) 
 uint64_t byte_bits_permutation_matrix(uint64_t packed_indices) {
     uint64_t r = 0;
 
-    for (uint8_t i = 0; i < 8; ++i)
-        r |= 1ULL << (8*i + ((packed_indices >> (i * 8)) & 0x07));
+    for (uint8_t i = 0; i < 64; i += 8)
+        r |= 1ULL << ((56 - i) + ((packed_indices >> i) & 0x07));
 
     return r;
 }
@@ -76,10 +76,10 @@ void permute_byte_bits_into_avx512(word_t *x, int32_t perm_id, word_t *target) {
     uint64_t byte_perm = rand_byte_bits_permutation(abs(perm_id));
     if (perm_id < 0) byte_perm = byte_bits_permutation_invert(byte_perm);
     uint64_t byte_perm_matrix = byte_bits_permutation_matrix(byte_perm);
-    __m512i byte_perm_matrices = _mm512_set1_epi64(byte_perm);
+    __m512i byte_perm_matrices = _mm512_set1_epi64(byte_perm_matrix);
 
     for (word_iter_t i = 0; i < BITS/512; ++i) {
-        __m512i vec = _mm512_loadu_si512(x + i);
+        __m512i vec = _mm512_loadu_si512(x_vec + i);
         __m512i permuted_vec = _mm512_gf2p8affine_epi64_epi8(vec, byte_perm_matrices, 0);
         _mm512_storeu_si512(target_vec + i, permuted_vec);
     }
