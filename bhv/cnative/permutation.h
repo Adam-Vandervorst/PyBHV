@@ -63,8 +63,8 @@ uint64_t byte_bits_permutation_matrix(uint64_t packed_indices) {
     return r;
 }
 
-#if __AVX512BW__
-void permute_byte_bits_into_avx512(word_t *x, int32_t perm_id, word_t *target) {
+#if __GFNI__
+void permute_byte_bits_into_gfni(word_t *x, int32_t perm_id, word_t *target) {
     if (perm_id == 0) {
         memcpy(target, x, BYTES);
         return;
@@ -86,8 +86,8 @@ void permute_byte_bits_into_avx512(word_t *x, int32_t perm_id, word_t *target) {
 }
 #endif
 
-#if __AVX512BW__
-#define permute_byte_bits_into permute_byte_bits_into_avx512
+#if __GFNI__
+#define permute_byte_bits_into permute_byte_bits_into_gfni
 #else
 #define permute_byte_bits_into permute_byte_bits_into_shuffle
 #endif
