@@ -38,7 +38,7 @@ uint64_t rand_byte_bits_permutation(uint32_t seed) {
     return *((uint64_t *) p);
 }
 
-void permute_byte_bits_into(word_t *x, int32_t perm_id, word_t *target) {
+void permute_byte_bits_into_shuffle(word_t *x, int32_t perm_id, word_t *target) {
     if (perm_id == 0) {
         memcpy(target, x, BYTES);
         return;
@@ -53,6 +53,41 @@ void permute_byte_bits_into(word_t *x, int32_t perm_id, word_t *target) {
     for (byte_iter_t i = 0; i < BYTES; ++i)
         target_bytes[i] = permute_single_byte_bits(x_bytes[i], byte_perm);
 }
+
+uint64_t byte_bits_permutation_matrix(uint64_t packed_indices) {
+    uint64_t r = 0;
+
+    for (uint8_t i = 0; i < 8; ++i)
+        r |= 1ULL << ((i * 8) + (packed_indices >> (i * 8)) & 0x07);
+
+    return r;
+}
+
+#if __AVX512BW__
+void permute_byte_bits_into_avx512(word_t *x, int32_t perm_id, word_t *target) {
+    if (perm_id == 0) {
+        memcpy(target, x, BYTES);
+        return;
+    }
+
+    __m512i *x_vec = (__m512i *) x;
+    __m512i *target_vec = (__m512i *) target;
+
+    uint64_t byte_perm = rand_byte_bits_permutation(abs(perm_id));
+    if (perm_id < 0) byte_perm = byte_bits_permutation_invert(byte_perm);
+    uint64_t byte_perm_matrix = byte_bits_permutation_matrix(byte_perm);
+    __m512i byte_perm_matrices = _mm512_set1_epi64(byte_perm);
+
+    for (word_iter_t i = 0; i < BITS/512; ++i)
+        target_vec[i] = _mm512_gf2p8affine_epi64_epi8(x_vec[i], byte_perm_matrices, 0);
+}
+#endif
+
+#if __AVX512BW__
+#define permute_byte_bits_into permute_byte_bits_into_avx512
+#else
+#define permute_byte_bits_into permute_byte_bits_into_shuffle
+#endif
 
 #if __AVX512BW__
 uint64_t permute_single_word_bits(uint64_t x, __m512i p) {
