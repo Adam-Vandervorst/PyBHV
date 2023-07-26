@@ -296,17 +296,83 @@ float hamming_benchmark(bool display) {
     return mean_test_time;
 }
 
+template <void F(word_t*, word_t*), void FC(word_t*, word_t*)>
+float unary_benchmark(bool display,  bool keep_in_cache) {
+    const int test_count = INPUT_HYPERVECTOR_COUNT;
+    const int input_output_count = (keep_in_cache ? 1 : test_count);
+
+    word_t *hvs [test_count];
+
+    word_t *result_buffer = (word_t *) malloc(input_output_count * BYTES);
+
+    for (size_t i = 0; i < test_count; ++i) {
+        hvs[i] = bhv::random((float)i/(float)test_count);
+    }
+
+    volatile word_t something = 0;
+    volatile word_t something_else = 0;
+
+    auto t1 = chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < test_count; ++i) {
+        const size_t io_buf_idx = (keep_in_cache ? 0 : i);
+
+        word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+
+        F(hvs[i], m);
+
+        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+    }
+    auto t2 = chrono::high_resolution_clock::now();
+
+    for (size_t i = 0; i < test_count; ++i) {
+        word_t *m = bhv::empty();
+
+        FC(hvs[i], m);
+
+        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+    }
+
+    float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
+    if (display)
+        cout << "equiv " << ((something == something_else) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+
+    return mean_test_time;
+}
+
 
 //#define MAJ
 //#define RAND
 //#define RAND2
 //#define RANDOM
-#define PERMUTE
+//#define PERMUTE
 //#define ACTIVE
 //#define HAMMING
+#define INVERT
 
 
 int main() {
+    cout << "*-= WARMUP =-*" << endl;
+    // burn some cycles to get the OS's attention
+    volatile uint64_t x = 0x7834d688d8827099ULL;
+    for (size_t i = 0; i < 50000000; ++i)
+        x += x % 7;
+
+    cout << "*-= STARTING (" << x << ") =-*" << endl;
+
+#ifdef INVERT
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(false, true);
+
+    cout << "*-= INVERT =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+#endif
 #ifdef HAMMING
     hamming_benchmark(false);
 
