@@ -347,7 +347,8 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 //#define PERMUTE
 //#define ACTIVE
 //#define HAMMING
-#define INVERT
+//#define INVERT
+#define SWAP_HALVES
 
 
 int main() {
@@ -358,7 +359,20 @@ int main() {
         x += x % 7;
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
+#ifdef SWAP_HALVES
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(false, true);
 
+    cout << "*-= SWAP_HALVES =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+#endif
 #ifdef INVERT
     unary_benchmark<bhv::invert_into, bhv::invert_into>(false, true);
 
