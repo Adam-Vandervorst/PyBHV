@@ -24,7 +24,7 @@ void logic_majority_into_avx512(word_t ** xs, word_t* target) {
             x = xs[i + j];
             __m512i chunk = _mm512_loadu_si512((__m512i*)(x + word_id));
 
-            grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j]));
+            grid[i][j] = _mm512_ternarylogic_epi64(chunk, grid[i + 1][j], grid[i][j + 1], 0xca); // select
         }
 
         _mm512_storeu_si512((__m512i*)(target + word_id), grid[0][0]);
@@ -59,7 +59,7 @@ void logic_majority_into_avx2(word_t **xs, word_t *target) {
                 x = xs[i + j];
                 __m256i chunk = _mm256_loadu_si256((__m256i *) (x + word_id));
 
-                grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j]));
+                grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j])); // select
             }
 
         _mm256_storeu_si256((__m256i *) (target + word_id), grid[0][0]);

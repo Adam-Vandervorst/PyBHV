@@ -31,6 +31,7 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
 
     // Gotta assign the result to a volatile, so the test operation doesn't get optimized away
     volatile word_t something = 0;
+    volatile word_t something_else = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; i++) {
@@ -46,9 +47,20 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
     }
     auto t2 = chrono::high_resolution_clock::now();
 
+    for (size_t i = 0; i < test_count; i++) {
+        const size_t io_buf_idx = (keep_in_cache ? 0 : i);
+
+        word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+        word_t **rs = inputs[io_buf_idx];
+
+        bhv::threshold_into_reference(rs, n, n/2, m);
+
+        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+    }
+
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
     if (display)
-        cout << n << " hypervectors, in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0
+        cout << n << " hypervectors, equiv " << ((something == something_else) ? "v" : "x") << ", in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0
              << "µs, normalized: " << mean_test_time / (float) n << "ns/vec" << endl;
 
     //Clean up our mess
@@ -340,7 +352,7 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 }
 
 
-//#define MAJ
+#define MAJ
 //#define RAND
 //#define RAND2
 //#define RANDOM
@@ -349,7 +361,7 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 //#define HAMMING
 //#define INVERT
 //#define SWAP_HALVES
-#define REHASH
+//#define REHASH
 
 
 int main() {
