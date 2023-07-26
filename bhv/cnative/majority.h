@@ -74,8 +74,8 @@ void logic_majority_into_avx2(word_t **xs, word_t *target) {
 #define logic_majority_into logic_majority_into_avx2
 #endif
 
-#if __AVX512BW__
-/// @brief AVX-512 version of majority3_into
+#if __AVX512F__
+/// @brief AVX-512 AND-OR version of majority3_into
 void majority3_into_avx512(word_t * x, word_t * y, word_t * z, word_t * target) {
     for (word_iter_t word_id = 0; word_id < WORDS; word_id += 8) {
         __m512i xi = _mm512_loadu_si512((__m512i*)(x + word_id));
@@ -87,7 +87,22 @@ void majority3_into_avx512(word_t * x, word_t * y, word_t * z, word_t * target) 
         _mm512_storeu_si512((__m512i*)(target + word_id), result);
     }
 }
-#endif //!__AVX512BW__
+
+/// @brief AVX-512 TERNARY version of majority3_into
+void majority3_into_ternary_avx512(word_t * x, word_t * y, word_t * z, word_t * target) {
+    __m512i *x_vec = (__m512i *)x;
+    __m512i *y_vec = (__m512i *)y;
+    __m512i *z_vec = (__m512i *)z;
+    __m512i *target_vec = (__m512i *)target;
+
+    for (word_iter_t i = 0; i < BITS/512; ++i) {
+        _mm512_storeu_si512(target_vec,
+                            _mm512_ternarylogic_epi64(_mm512_loadu_si512(x_vec + i),
+                                                      _mm512_loadu_si512(y_vec + i),
+                                                      _mm512_loadu_si512(z_vec + i), 0xe8));
+    }
+}
+#endif
 
 /// @brief AVX-2 version of majority3_into
 void majority3_into_avx2(word_t *x, word_t *y, word_t *z, word_t *target) {
@@ -110,7 +125,7 @@ void majority3_into_reference(word_t *x, word_t *y, word_t *z, word_t *target) {
 }
 
 #if __AVX512BW__
-#define majority3_into majority3_into_avx512
+#define majority3_into majority3_into_ternary_avx512
 #else
 #define majority3_into majority3_into_avx2
 #endif //#if __AVX512BW__
