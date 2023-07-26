@@ -473,32 +473,32 @@ int main() {
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
 #ifdef MAJ3
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(false, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(false, true);
 
     cout << "*-= MAJ3 =-*" << endl;
     cout << "*-= IN CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
 #endif
 #ifdef SELECT
-    ternary_benchmark<bhv::select_into, bhv::select_into>(false, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(false, true);
 
     cout << "*-= SELECT =-*" << endl;
     cout << "*-= IN CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
 #endif
 #ifdef XOR
     binary_benchmark<bhv::xor_into, bhv::xor_into>(false, true);
