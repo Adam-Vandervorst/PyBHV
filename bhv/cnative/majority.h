@@ -89,6 +89,7 @@ void majority3_into_avx512(word_t * x, word_t * y, word_t * z, word_t * target) 
 }
 
 /// @brief AVX-512 TERNARY version of majority3_into
+/// @note On GCC 13 majority3_into_avx512 gets compiled into two ternary instructions, this uses only one
 void majority3_into_ternary_avx512(word_t * x, word_t * y, word_t * z, word_t * target) {
     __m512i *x_vec = (__m512i *)x;
     __m512i *y_vec = (__m512i *)y;
@@ -96,7 +97,7 @@ void majority3_into_ternary_avx512(word_t * x, word_t * y, word_t * z, word_t * 
     __m512i *target_vec = (__m512i *)target;
 
     for (word_iter_t i = 0; i < BITS/512; ++i) {
-        _mm512_storeu_si512(target_vec,
+        _mm512_storeu_si512(target_vec + i,
                             _mm512_ternarylogic_epi64(_mm512_loadu_si512(x_vec + i),
                                                       _mm512_loadu_si512(y_vec + i),
                                                       _mm512_loadu_si512(z_vec + i), 0xe8));

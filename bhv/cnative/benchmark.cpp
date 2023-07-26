@@ -450,7 +450,7 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 //#define MAJ
 //#define RAND
 //#define RAND2
-//#define RANDOM
+#define RANDOM
 //#define PERMUTE
 //#define ACTIVE
 //#define HAMMING
@@ -460,8 +460,8 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 //#define AND
 //#define OR
 //#define XOR
-#define SELECT
-#define MAJ3
+//#define SELECT
+//#define MAJ3
 
 
 int main() {
