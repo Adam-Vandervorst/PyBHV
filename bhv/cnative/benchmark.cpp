@@ -348,7 +348,8 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 //#define ACTIVE
 //#define HAMMING
 //#define INVERT
-#define SWAP_HALVES
+//#define SWAP_HALVES
+#define REHASH
 
 
 int main() {
@@ -359,6 +360,20 @@ int main() {
         x += x % 7;
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
+#ifdef REHASH
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(false, true);
+
+    cout << "*-= REHASH =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+#endif
 #ifdef SWAP_HALVES
     unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(false, true);
 
