@@ -321,6 +321,39 @@ class SymbolicBHV(Symbolic, AbstractBHV):
             return v
 
     @classmethod
+    def synth_af_ternary(cls, af: float, depth=1, v_gen=lambda x: Rand(x), threshold=1e-6):
+        assert 0. < af < 1.
+        da = af - (1 / 2) ** depth
+        va = v_gen(depth)
+
+        if abs(da) < threshold:
+            return va
+
+        if da > 0:
+            af = da
+
+        depth += 1
+        db = af - (1 / 2) ** depth
+        vb = v_gen(depth)
+
+        if db > 0:
+            af = db
+
+        if abs(db) > threshold:
+            ternary_instr = {(True, True): [0,1,1,1,1,1,1,1],
+                             (True, False): [0,0,0,1,1,1,1,1],
+                             (False, True): [0,0,0,0,0,1,1,1],
+                             (False, False): [0,0,0,0,0,0,0,1]}[(da > 0, db > 0)]
+            # TODO implement Ternary op
+            vr = cls.synth_af_ternary(af, depth + 1, v_gen, threshold)
+            return cls.synth([va, vb, vr], ternary_instr)
+
+        if da > 0:
+            return va | vb
+        else:
+            return va & vb
+
+    @classmethod
     def rand(cls) -> Self:
         return Rand()
 

@@ -652,22 +652,46 @@ int main() {
         rand2_benchmark(true, true, p);
 #endif
 #ifdef RANDOM
-//    float ps[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
-//    float ps[13] = {.001, .01, .04, .2, .26, .48, .5, .52, .74,.8, .95, .99, .999};
-    float ps[99];
-    for (size_t i = 1; i < 100; ++i)
-        ps[i - 1] = (float) i / 100.f;
-
     random_benchmark(false, false, .1);
 
+    cout << "*-= COMMON =-*" << endl;
+    float common[13] = {.001, .01, .04, .2, .26, .48, .5, .52, .74,.8, .95, .99, .999};
     cout << "*-= IN CACHE TESTS =-*" << endl;
     double total = 0.;
-    for (float p: ps)
+    for (float p: common)
         total += random_benchmark(true, true, p);
     cout << "total: " << total << endl;
     total = 0;
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    for (float p: ps)
+    for (float p: common)
+        total += random_benchmark(true, true, p);
+    cout << "total: " << total << endl;
+
+    cout << "*-= SMALL =-*" << endl;
+    float small[9] = {1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2};
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    total = 0.;
+    for (float p: small)
+        total += random_benchmark(true, true, p);
+    cout << "total: " << total << endl;
+    total = 0;
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    for (float p: small)
+        total += random_benchmark(true, true, p);
+    cout << "total: " << total << endl;
+
+    cout << "*-= PERCENTAGES =-*" << endl;
+    float perc[99];
+    for (size_t i = 1; i < 100; ++i)
+        perc[i - 1] = (float) i / 100.f;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    total = 0.;
+    for (float p: perc)
+        total += random_benchmark(true, true, p);
+    cout << "total: " << total << endl;
+    total = 0;
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    for (float p: perc)
         total += random_benchmark(true, true, p);
     cout << "total: " << total << endl;
 #endif
