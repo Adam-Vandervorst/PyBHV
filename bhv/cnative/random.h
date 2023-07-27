@@ -21,7 +21,7 @@ void rand_into_aes(word_t *x) {
     }
 }
 
-avx2_pcg32_random_t key = {
+avx2_pcg32_random_t avx2_key = {
         .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc),
                   _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},
         .inc = {_mm256_set_epi64x(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640),
@@ -31,19 +31,26 @@ avx2_pcg32_random_t key = {
 
 void rand_into_avx2(word_t *x) {
     for (word_iter_t i = 0; i < WORDS; i += 4) {
-        _mm256_storeu_si256((__m256i *) (x + i), avx2_pcg32_random_r(&key));
+        _mm256_storeu_si256((__m256i *) (x + i), avx2_pcg32_random_r(&avx2_key));
     }
 }
 
 #if __AVX512BW__
-avx512_pcg32_random_t key512 = {
+avx512_pcg32_random_t avx512_narrow_key = {
     .state = _mm512_set_epi64(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc, 0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49),
     .inc = _mm512_set_epi64(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640, 0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e),
       .multiplier =  _mm512_set1_epi64(0x5851f42d4c957f2d)};
 
+avx512bis_pcg32_random_t avx512_key = {
+    .state = {_mm512_set_epi64(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc, 0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49),
+              _mm512_set_epi64(0xe4253e998046cdfb, 0x78a622340a6ad250, 0x5e414281f13fd909, 0x3015456ade10a4d0, 0x7294fe41ba737ee9, 0x36dc2d779e797897, 0x81228ea9c9bb25a2, 0xfbfca70842e57746)},
+    .inc = {_mm512_set_epi64(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640, 0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e),
+            _mm512_set_epi64(0x5e3cf9dbf6635b3c, 0x2a580d00dc0e34cd, 0xb2b1c52ab1c72ca6, 0x4a683d7ad57caba0, 0x76b85fc2d899c649, 0xf28e80cc844192ff, 0x40a357e9b7739d1e, 0xeb8aa949b57f75de)},
+      .multiplier = _mm512_set1_epi64(0x5851f42d4c957f2d)};
+
 void rand_into_avx512(word_t * x) {
-    for (word_iter_t i = 0; i < WORDS; i += 4) {
-        _mm256_storeu_si256((__m256i*)(x + i), avx512_pcg32_random_r(&key512));
+    for (word_iter_t i = 0; i < WORDS; i += 8) {
+        _mm512_storeu_si512((__m512i*)(x + i), avx512bis_pcg32_random_r(&avx512_key));
     }
 }
 #endif
@@ -202,6 +209,26 @@ void random_into_tree_avx2(word_t *x, float_t p) {
         _mm256_storeu_si256((__m256i *) (x + word_id), chunk);
     }
 }
+
+#if __AVX512BW__
+void random_into_tree_avx512(word_t *x, float_t p) {
+    uint8_t to;
+    float remaining;
+    uint64_t instr = instruction_upto(p, &to, &remaining, 2e-5);
+
+    for (word_iter_t word_id = 0; word_id < WORDS; word_id += 8) {
+        __m512i chunk = avx512bis_pcg32_random_r(&avx512_key);
+
+        for (uint8_t i = 0; i < to; ++i)
+            if ((instr & (1 << i)) >> i)
+                chunk = _mm512_or_si512(chunk, avx512bis_pcg32_random_r(&avx512_key));
+            else
+                chunk = _mm512_and_si512(chunk, avx512bis_pcg32_random_r(&avx512_key));
+
+        _mm512_storeu_si512((__m512i *) (x + word_id), chunk);
+    }
+}
+#endif
 
 #define random_into random_into_tree_sparse_avx2
 
