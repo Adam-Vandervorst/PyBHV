@@ -93,7 +93,7 @@ float rand_benchmark(bool display, bool keep_in_cache) {
 
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
-        bhv::rand_into_aes(m);
+        bhv::rand_into_reference(m);
 
         something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
     }
@@ -148,10 +148,10 @@ float rand2_benchmark(bool display, bool keep_in_cache, int pow) {
 }
 
 
-float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
+float random_benchmark(bool display, bool keep_in_cache, float base_frac, bool randomize = false) {
     const int test_count = INPUT_HYPERVECTOR_COUNT;
     const int input_output_count = (keep_in_cache ? 1 : test_count);
-    volatile double n = ((double) (rand() - RAND_MAX / 2) / (double) (RAND_MAX)) / 1000.;
+    volatile double n = randomize ? ((double) (rand() - RAND_MAX / 2) / (double) (RAND_MAX)) / 1000. : 0;
     float p = base_frac + n;
 
     //Allocate a buffer for TEST_COUNT results
@@ -165,10 +165,9 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac) {
 
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
-//        bhv::random_into(m, p); // baseline
-//        bhv::random_into_tree_avx2(m, p); // full tree expansion
-//        bhv::random_into_1tree_sparse(m, p); // 1 level of tree expansion into sparse
-        bhv::random_into_tree_sparse_avx2(m, p); // full tree expansion + sparse + some short-circuiting
+        bhv::random_into_reference(m, p);
+//        bhv::random_into_tree_sparse_avx2(m, p);
+//        bhv::random_into_buffer_avx2(m, p);
 
         // once runtime of random_into drops under 500ns, consider removing this
         observed_frac[i] = (double) bhv::active(m) / (double) BITS;

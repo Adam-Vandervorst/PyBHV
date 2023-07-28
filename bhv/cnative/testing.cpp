@@ -74,7 +74,61 @@ void test_instruction_upto() {
     std::cout << "active: " << (double) bhv::active(x) / (double) BITS << std::endl;
 }
 
+void test_ternary_instruction() {
+    uint8_t buffer [24];
+    uint8_t to = 0;
+//    int8_t finalizer = bhv::ternary_instruction(.0000001, buffer, &to, 1e-3);
+//    int8_t finalizer = bhv::ternary_instruction(.5, buffer, &to);
+//    buffer: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 0
+//    finalizer: -1
+
+//    int8_t finalizer = bhv::ternary_instruction(.25, buffer, &to);
+//    buffer: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 0
+//    finalizer: -1
+
+//    int8_t finalizer = bhv::ternary_instruction(.625, buffer, &to);
+//    buffer: 11111000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 1
+//    finalizer: -1
+
+//    int8_t finalizer = bhv::ternary_instruction(.375, buffer, &to, 1e-3);
+//    buffer: 11100000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 1
+//    finalizer: -1
+
+//    int8_t finalizer = bhv::ternary_instruction(.9, buffer, &to, .005);  // 1110
+//    buffer: 11111110 11111000 11100000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 3
+//    finalizer: -1
+
+//    uint64_t instruction = bhv::instruction_upto(.5625, &to, &remaining);  // 100
+
+    int8_t finalizer = bhv::ternary_instruction(123.f/256.f, buffer, &to);  // 0111101
+//    buffer: 11100000 11111110 11111000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+//    to: 3
+//    finalizer: 1
+
+//    uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
+//    uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
+
+    std::cout << "buffer: ";
+    for (uint8_t b : buffer)
+        std::cout << std::bitset<8>(b) << " ";
+    std::cout << std::endl;
+    std::cout << "to: " << (uint32_t) to << std::endl;
+    std::cout << "finalizer: " << (int32_t) finalizer << std::endl;
+
+//    word_t *x = bhv::empty();
+//    bhv::random_into_ternary_tree_avx512(x, .5);
+//    std::cout << "active: " << (double) bhv::active(x) / (double) BITS << std::endl;
+
+//    bhv::random_into_ternary_tree_avx512(x, 123.f/256.f);
+//    std::cout << "expected: " << 123.f/256.f << ", active: " << (double) bhv::active(x) / (double) BITS << std::endl;
+}
+
 
 int main() {
-    test_single_byte_permutation();
+    test_ternary_instruction();
 }
