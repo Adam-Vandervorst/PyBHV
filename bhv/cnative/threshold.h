@@ -19,41 +19,85 @@
     default: abort();\
 }\
 
+#if __AVX512BW__
 
-/// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 15 input hypervectors
+/// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 3 input hypervectors
 /// @param xs array of input hypervectors
 /// @param byte_offset offset (in bytes) into each hypervector.  Ideally this would be aligned to 64 Bytes
-/// @param num_vectors the number of vectors in xs.  Maximum value of 16
-/// @param out_counts Each counter is 4 bits, and there are 128 counters in each 512 bit AVX-512 vector, and there are 4 AVX-512 vectors
-inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
+/// @param num_vectors the number of vectors in xs.  Maximum value of 3
+/// @param out_counts Each counter is 2 bits, and there are 256 counters in each 512 bit AVX-512 vector, and there are 2 AVX-512 vectors
+inline void count_cacheline_for_3_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
     out_counts[0] = _mm512_set1_epi64(0);
     out_counts[1] = _mm512_set1_epi64(0);
-    out_counts[2] = _mm512_set1_epi64(0);
-    out_counts[3] = _mm512_set1_epi64(0);
     uint8_t** xs_bytes = (uint8_t**)xs;
 
     for (uint_fast8_t i = 0; i < num_vectors; i++) {
         uint8_t* input_vec_ptr = xs_bytes[i];
         __m512i input_bits = _mm512_stream_load_si512(input_vec_ptr + byte_offset);
 
-        for (uint_fast8_t out_i = 0; out_i < 4; out_i++) {
+        for (uint_fast8_t out_i = 0; out_i < 2; out_i++) {
             uint_fast8_t input_offset = out_i * 8;
 
             __m512i increments;
-            ((uint64_t*)&increments)[0] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 0], 0x1111111111111111);
-            ((uint64_t*)&increments)[1] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 1], 0x1111111111111111);
-            ((uint64_t*)&increments)[2] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 2], 0x1111111111111111);
-            ((uint64_t*)&increments)[3] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 3], 0x1111111111111111);
-            ((uint64_t*)&increments)[4] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 4], 0x1111111111111111);
-            ((uint64_t*)&increments)[5] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 5], 0x1111111111111111);
-            ((uint64_t*)&increments)[6] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 6], 0x1111111111111111);
-            ((uint64_t*)&increments)[7] = _pdep_u64(((uint16_t*)&input_bits)[input_offset + 7], 0x1111111111111111);
+            ((uint64_t*)&increments)[0] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 0], 0x5555555555555555);
+            ((uint64_t*)&increments)[1] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 1], 0x5555555555555555);
+            ((uint64_t*)&increments)[2] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 2], 0x5555555555555555);
+            ((uint64_t*)&increments)[3] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 3], 0x5555555555555555);
+            ((uint64_t*)&increments)[4] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 4], 0x5555555555555555);
+            ((uint64_t*)&increments)[5] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 5], 0x5555555555555555);
+            ((uint64_t*)&increments)[6] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 6], 0x5555555555555555);
+            ((uint64_t*)&increments)[7] = _pdep_u64(((uint32_t*)&input_bits)[input_offset + 7], 0x5555555555555555);
+
             out_counts[out_i] = _mm512_add_epi8(out_counts[out_i], increments);
         }
     }
 }
 
-#if __AVX512BW__
+/// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 15 input hypervectors
+/// @param xs array of input hypervectors
+/// @param byte_offset offset (in bytes) into each hypervector.  Ideally this would be aligned to 64 Bytes
+/// @param num_vectors the number of vectors in xs.  Maximum value of 15
+/// @param out_counts Each counter is 4 bits, and there are 128 counters in each 512 bit AVX-512 vector, and there are 4 AVX-512 vectors
+inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
+    out_counts[0] = _mm512_set1_epi64(0);
+    out_counts[1] = _mm512_set1_epi64(0);
+    out_counts[2] = _mm512_set1_epi64(0);
+    out_counts[3] = _mm512_set1_epi64(0);
+
+    for (uint_fast8_t i = 0; i < num_vectors; i+=3) {
+        __m512i inner_counts[2];
+        uint_fast16_t num_inputs = (i<num_vectors-2)? 3: num_vectors-i;
+
+        count_cacheline_for_3_input_hypervectors_avx512(xs + i, byte_offset, num_inputs, inner_counts);
+
+        //Expand the 2-bit counters into 4-bits, and add them to the running counters
+        for (int_fast8_t out_i = 0; out_i < 2; out_i++) {
+
+            __m512i increment0;
+            ((uint64_t*)&increment0)[0] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[0], 0x3333333333333333);
+            ((uint64_t*)&increment0)[1] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[1], 0x3333333333333333);
+            ((uint64_t*)&increment0)[2] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[2], 0x3333333333333333);
+            ((uint64_t*)&increment0)[3] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[3], 0x3333333333333333);
+            ((uint64_t*)&increment0)[4] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[4], 0x3333333333333333);
+            ((uint64_t*)&increment0)[5] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[5], 0x3333333333333333);
+            ((uint64_t*)&increment0)[6] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[6], 0x3333333333333333);
+            ((uint64_t*)&increment0)[7] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[7], 0x3333333333333333);
+            out_counts[out_i*2] = _mm512_add_epi8(out_counts[out_i*2], increment0);
+
+            __m512i increment1;
+            ((uint64_t*)&increment1)[0] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[8], 0x3333333333333333);
+            ((uint64_t*)&increment1)[1] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[9], 0x3333333333333333);
+            ((uint64_t*)&increment1)[2] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[10], 0x3333333333333333);
+            ((uint64_t*)&increment1)[3] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[11], 0x3333333333333333);
+            ((uint64_t*)&increment1)[4] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[12], 0x3333333333333333);
+            ((uint64_t*)&increment1)[5] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[13], 0x3333333333333333);
+            ((uint64_t*)&increment1)[6] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[14], 0x3333333333333333);
+            ((uint64_t*)&increment1)[7] = _pdep_u64(((uint32_t*)&inner_counts[out_i])[15], 0x3333333333333333);
+            out_counts[out_i*2+1] = _mm512_add_epi8(out_counts[out_i*2+1], increment1);
+        }
+    }
+}
+
 /// @brief AVX-512 implementation of threshold_into using a 2-Byte counter
 void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t threshold, word_t* dst) {
     __m512i threshold_simd = _mm512_set1_epi16(threshold);
@@ -77,48 +121,34 @@ void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t thres
             //Expand the 4-bit counters into 16-bits, and add them to the running counters
             for (int_fast8_t out_i = 0; out_i < 4; out_i++) {
 
-                __m512i increment0;
-                ((uint64_t*)&increment0)[0] = _pdep_u64(((uint16_t*)&out_counts[out_i])[0], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[1] = _pdep_u64(((uint16_t*)&out_counts[out_i])[1], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[2] = _pdep_u64(((uint16_t*)&out_counts[out_i])[2], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[3] = _pdep_u64(((uint16_t*)&out_counts[out_i])[3], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[4] = _pdep_u64(((uint16_t*)&out_counts[out_i])[4], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[5] = _pdep_u64(((uint16_t*)&out_counts[out_i])[5], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[6] = _pdep_u64(((uint16_t*)&out_counts[out_i])[6], 0x000F000F000F000F);
-                ((uint64_t*)&increment0)[7] = _pdep_u64(((uint16_t*)&out_counts[out_i])[7], 0x000F000F000F000F);
-                *(__m512i*)(&counters[out_i * 128 + 0]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 0]), increment0);
+                __m512i eight_bit_counters0;
+                ((uint64_t*)&eight_bit_counters0)[0] = _pdep_u64(((uint32_t*)&out_counts[out_i])[0], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[1] = _pdep_u64(((uint32_t*)&out_counts[out_i])[1], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[2] = _pdep_u64(((uint32_t*)&out_counts[out_i])[2], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[3] = _pdep_u64(((uint32_t*)&out_counts[out_i])[3], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[4] = _pdep_u64(((uint32_t*)&out_counts[out_i])[4], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[5] = _pdep_u64(((uint32_t*)&out_counts[out_i])[5], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[6] = _pdep_u64(((uint32_t*)&out_counts[out_i])[6], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters0)[7] = _pdep_u64(((uint32_t*)&out_counts[out_i])[7], 0x0F0F0F0F0F0F0F0F);
 
-                __m512i increment1;
-                ((uint64_t*)&increment1)[0] = _pdep_u64(((uint16_t*)&out_counts[out_i])[8], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[1] = _pdep_u64(((uint16_t*)&out_counts[out_i])[9], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[2] = _pdep_u64(((uint16_t*)&out_counts[out_i])[10], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[3] = _pdep_u64(((uint16_t*)&out_counts[out_i])[11], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[4] = _pdep_u64(((uint16_t*)&out_counts[out_i])[12], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[5] = _pdep_u64(((uint16_t*)&out_counts[out_i])[13], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[6] = _pdep_u64(((uint16_t*)&out_counts[out_i])[14], 0x000F000F000F000F);
-                ((uint64_t*)&increment1)[7] = _pdep_u64(((uint16_t*)&out_counts[out_i])[15], 0x000F000F000F000F);
+                __m512i increment0 = _mm512_cvtepu8_epi16(((__m256i*)&eight_bit_counters0)[0]);
+                __m512i increment1 = _mm512_cvtepu8_epi16(((__m256i*)&eight_bit_counters0)[1]);
+                *(__m512i*)(&counters[out_i * 128 + 0]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 0]), increment0);
                 *(__m512i*)(&counters[out_i * 128 + 32]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 32]), increment1);
 
-                __m512i increment2;
-                ((uint64_t*)&increment2)[0] = _pdep_u64(((uint16_t*)&out_counts[out_i])[16], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[1] = _pdep_u64(((uint16_t*)&out_counts[out_i])[17], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[2] = _pdep_u64(((uint16_t*)&out_counts[out_i])[18], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[3] = _pdep_u64(((uint16_t*)&out_counts[out_i])[19], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[4] = _pdep_u64(((uint16_t*)&out_counts[out_i])[20], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[5] = _pdep_u64(((uint16_t*)&out_counts[out_i])[21], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[6] = _pdep_u64(((uint16_t*)&out_counts[out_i])[22], 0x000F000F000F000F);
-                ((uint64_t*)&increment2)[7] = _pdep_u64(((uint16_t*)&out_counts[out_i])[23], 0x000F000F000F000F);
-                *(__m512i*)(&counters[out_i * 128 + 64]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 64]), increment2);
+                __m512i eight_bit_counters1;
+                ((uint64_t*)&eight_bit_counters1)[0] = _pdep_u64(((uint32_t*)&out_counts[out_i])[8], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[1] = _pdep_u64(((uint32_t*)&out_counts[out_i])[9], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[2] = _pdep_u64(((uint32_t*)&out_counts[out_i])[10], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[3] = _pdep_u64(((uint32_t*)&out_counts[out_i])[11], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[4] = _pdep_u64(((uint32_t*)&out_counts[out_i])[12], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[5] = _pdep_u64(((uint32_t*)&out_counts[out_i])[13], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[6] = _pdep_u64(((uint32_t*)&out_counts[out_i])[14], 0x0F0F0F0F0F0F0F0F);
+                ((uint64_t*)&eight_bit_counters1)[7] = _pdep_u64(((uint32_t*)&out_counts[out_i])[15], 0x0F0F0F0F0F0F0F0F);
 
-                __m512i increment3;
-                ((uint64_t*)&increment3)[0] = _pdep_u64(((uint16_t*)&out_counts[out_i])[24], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[1] = _pdep_u64(((uint16_t*)&out_counts[out_i])[25], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[2] = _pdep_u64(((uint16_t*)&out_counts[out_i])[26], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[3] = _pdep_u64(((uint16_t*)&out_counts[out_i])[27], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[4] = _pdep_u64(((uint16_t*)&out_counts[out_i])[28], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[5] = _pdep_u64(((uint16_t*)&out_counts[out_i])[29], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[6] = _pdep_u64(((uint16_t*)&out_counts[out_i])[30], 0x000F000F000F000F);
-                ((uint64_t*)&increment3)[7] = _pdep_u64(((uint16_t*)&out_counts[out_i])[31], 0x000F000F000F000F);
+                __m512i increment2 = _mm512_cvtepu8_epi16(((__m256i*)&eight_bit_counters1)[0]);
+                __m512i increment3 = _mm512_cvtepu8_epi16(((__m256i*)&eight_bit_counters1)[1]);
+                *(__m512i*)(&counters[out_i * 128 + 64]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 64]), increment2);
                 *(__m512i*)(&counters[out_i * 128 + 96]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 128 + 96]), increment3);
             }
         }
