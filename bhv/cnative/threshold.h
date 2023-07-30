@@ -237,11 +237,39 @@ void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t thres
         }
     }
 }
+
+/// @brief AVX-512 implementation of threshold_into using a 1-Byte counter
+void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
+    __m512i threshold_simd = _mm512_set1_epi8(threshold);
+    uint8_t* dst_bytes = (uint8_t*)dst;
+
+    for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 64) {
+
+        //Call (inline) the function to load one cache line of input bits from each input hypervector
+        __m512i scrambled_counts[8];
+        count_cacheline_for_255_input_hypervectors_avx512(xs, byte_offset, size, scrambled_counts);
+
+        //Unscramble the counters
+        //FUTURE OPTIMIZATION: Performance could be improved on average 15-20% by performing the
+        //threshold test first, and then unscrambling individual bits, rather than whole bytes.
+        __m512i out_counts[8];
+        unscramble_byte_counters_avx512(scrambled_counts, out_counts);
+
+        //Do the threshold test, and compose out output bits
+        __m512i out_bits;
+        for (int i=0; i<8; i++) {
+            __mmask64 maj_bits = _mm512_cmpgt_epu8_mask(out_counts[i], threshold_simd);
+            ((uint64_t*)&out_bits)[i] = maj_bits;
+        }
+
+        //Store the results
+        *((__m512i*)&(dst_bytes[byte_offset])) = out_bits;
+    }
+}
+
 #endif //__AVX512BW__
 
 /// @brief AVX-256 implementation of threshold_into using a 2-Byte counter
-/// @note The AVX-256 implementation is faster than threshold_into_short_avx512 for smaller
-/// values or N, even when AVX-512  is available, probably on account of less cache pressure.
 void threshold_into_short_avx2(word_t ** xs, uint16_t size, uint16_t threshold, word_t* dst) {
     __m256i threshold_simd = _mm256_set1_epi16(threshold);
     uint8_t** xs_bytes = (uint8_t**)xs;
@@ -274,37 +302,6 @@ void threshold_into_short_avx2(word_t ** xs, uint16_t size, uint16_t threshold, 
         dst_bytes[byte_id + 1] = (uint8_t)_pext_u64(maj_words[2], 0x0001000100010001) | (uint8_t)_pext_u64(maj_words[3], 0x0001000100010001) << 4;
     }
 }
-
-#if __AVX512BW__
-/// @brief AVX-512 implementation of threshold_into using a 1-Byte counter
-/// @note Experimentally, a native AVX-512 implementation isn't faster because it tends
-///  to stall waiting on the pdep instructions.  But there is some benefit to the 
-///  _mm256_cmpgt_epu8_mask instruction.
-void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
-    __m256i threshold_simd = _mm256_set1_epi8(threshold);
-    uint8_t** xs_bytes = (uint8_t**)xs;
-    uint8_t* dst_bytes = (uint8_t*)dst;
-
-    for (byte_iter_t byte_id = 0; byte_id < BYTES; byte_id += 4) {
-        __m256i total_simd = _mm256_set1_epi8(0);
-
-        for (u_int8_t i = 0; i < size; ++i) {
-            uint8_t* bytes_i = xs_bytes[i];
-            uint64_t spread_words[4] = {
-                _pdep_u64(bytes_i[byte_id], 0x0101010101010101),
-                _pdep_u64(bytes_i[byte_id + 1], 0x0101010101010101),
-                _pdep_u64(bytes_i[byte_id + 2], 0x0101010101010101),
-                _pdep_u64(bytes_i[byte_id + 3], 0x0101010101010101)
-            };
-
-            total_simd = _mm256_add_epi8(total_simd, *((__m256i *)spread_words));
-        }
-
-        __mmask32 maj_bits = _mm256_cmpgt_epu8_mask(total_simd, threshold_simd);
-        *((uint32_t*)&(dst_bytes[byte_id])) = maj_bits;
-    }
-}
-#endif //__AVX512BW__
 
 /// @brief AVX-256 implementation of threshold_into using a 1-Byte counter
 void threshold_into_byte_avx2(word_t ** xs, uint8_t size, uint8_t threshold, word_t* dst) {
