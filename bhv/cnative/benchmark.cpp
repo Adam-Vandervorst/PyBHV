@@ -9,15 +9,15 @@ using namespace std;
 #define INPUT_HYPERVECTOR_COUNT 1000
 
 
-float majority_benchmark(int n, bool display, bool keep_in_cache) {
+float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
     //For the simple cases, like 3 vectors, we want a lot of tests to get a reliable number
     //but allocating 2,000 vectors * 10,000 tests starts to exceed resident memory and we end
     //up paying disk swap penalties.  Therefore we do fewer tests in the case with more hypervectors
-    const int test_count = MAJ_INPUT_HYPERVECTOR_COUNT / n;
-    const int input_output_count = (keep_in_cache ? 1 : test_count);
+    const size_t test_count = MAJ_INPUT_HYPERVECTOR_COUNT / n;
+    const size_t input_output_count = (keep_in_cache ? 1 : test_count);
 
     //Init n random vectors for each test
-    word_t **inputs[input_output_count];
+    word_t ***inputs = (word_t***)malloc(sizeof(word_t**) * input_output_count);
     for (size_t i = 0; i < input_output_count; i++) {
         word_t **rs = (word_t **) malloc(sizeof(word_t **) * n);
         for (size_t j = 0; j < n; ++j) {
@@ -72,6 +72,7 @@ float majority_benchmark(int n, bool display, bool keep_in_cache) {
         free(rs);
     }
     free(result_buffer);
+    free(inputs);
 
     return mean_test_time;
 }
@@ -468,7 +469,7 @@ int main() {
     // burn some cycles to get the OS's attention
     volatile uint64_t x = 0x7834d688d8827099ULL;
     for (size_t i = 0; i < 50000000; ++i)
-        x += x % 7;
+        x = x + (x % 7);
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
 #ifdef MAJ3

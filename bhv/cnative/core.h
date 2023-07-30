@@ -8,10 +8,9 @@
 #include <algorithm>
 #include "shared.h"
 #include <immintrin.h>
-#include <ieee754.h>
 #include "TurboSHAKEopt/TurboSHAKE.h"
 #include "simdpcg.h"
-
+#include "platform_compatibility.h"
 
 namespace bhv {
     constexpr word_t ONE_WORD = std::numeric_limits<word_t>::max();
