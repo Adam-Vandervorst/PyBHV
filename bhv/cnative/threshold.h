@@ -1,3 +1,35 @@
+
+/// @brief A generic implementation for threshold_into, that can use any size counter
+template<typename N>
+void threshold_into_reference(word_t ** xs, size_t size, N threshold, word_t *dst) {
+
+    N totals[BITS];
+    memset(totals, 0, BITS*sizeof(N));
+
+    for (N i = 0; i < size; ++i) {
+        word_t * x = xs[i];
+
+        for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
+            bit_iter_t offset = word_id * BITS_PER_WORD;
+            word_t word = x[word_id];
+            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+                totals[offset + bit_id] += ((word >> bit_id) & 1);
+            }
+        }
+    }
+
+    for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
+        bit_iter_t offset = word_id * BITS_PER_WORD;
+        word_t word = 0;
+        for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+            if (threshold < totals[offset + bit_id])
+                word |= 1UL << bit_id;
+        }
+        dst[word_id] = word;
+    }
+}
+
+//GOAT, remember to delete this
 // This LUT is the exact same operation as `V = _pdep_u64(B, 0x0001000100010001);`
 #define pdep_lut(V, B) switch(B) {\
     case 0: V=0x0; break;\
@@ -20,7 +52,6 @@
 }\
 
 #if __AVX512BW__
-
 /// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 3 input hypervectors
 /// @param xs array of input hypervectors
 /// @param byte_offset offset (in bytes) into each hypervector.  Ideally this would be aligned to 64 Bytes
@@ -267,8 +298,21 @@ void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, w
     }
 }
 
+/// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
+/// @param xs array of `size` input vectors
+/// @param size number of input vectors in xs
+/// @param threshold threshold to count against
+/// @param dst the hypervector to write the results into
+void threshold_into_avx512(word_t ** xs, size_t size, size_t threshold, word_t* dst) {
+    //FUTURE OPTIMIZATION: Should we have a path for smaller sizes?  Currently the main user of
+    // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
+    if (size < 256) { threshold_into_byte_avx512(xs, size, threshold, dst); return; }
+    if (size < 65535) { threshold_into_short_avx512(xs, size, threshold, dst); return; }
+    threshold_into_reference<uint32_t>(xs, size, threshold, dst); return; //GOAT, integrate wide version
+}
 #endif //__AVX512BW__
 
+#ifdef __AVX2__
 /// @brief AVX-256 implementation of threshold_into using a 2-Byte counter
 void threshold_into_short_avx2(word_t ** xs, uint16_t size, uint16_t threshold, word_t* dst) {
     __m256i threshold_simd = _mm256_set1_epi16(threshold);
@@ -334,59 +378,27 @@ void threshold_into_byte_avx2(word_t ** xs, uint8_t size, uint8_t threshold, wor
     }
 }
 
-#if __AVX512BW__
-    #define threshold_into_byte threshold_into_byte_avx512
-#else
-    #define threshold_into_byte threshold_into_byte_avx2
-#endif //__AVX512BW__
-
-/// @brief A generic implementation for threshold_into, that can use any size counter
-template<typename N>
-void threshold_into_reference(word_t ** xs, size_t size, N threshold, word_t *dst) {
-
-    N totals[BITS];
-    memset(totals, 0, BITS*sizeof(N));
-
-    for (N i = 0; i < size; ++i) {
-        word_t * x = xs[i];
-
-        for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
-            bit_iter_t offset = word_id * BITS_PER_WORD;
-            word_t word = x[word_id];
-            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
-                totals[offset + bit_id] += ((word >> bit_id) & 1);
-            }
-        }
-    }
-
-    for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
-        bit_iter_t offset = word_id * BITS_PER_WORD;
-        word_t word = 0;
-        for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
-            if (threshold < totals[offset + bit_id])
-                word |= 1UL << bit_id;
-        }
-        dst[word_id] = word;
-    }
-}
-
-#if __AVX512BW__
-    #define threshold_into_short threshold_into_short_avx512
-#else
-    #define threshold_into_short threshold_into_reference<uint32_t>
-#endif //__AVX512BW__
-
 /// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
 /// @param xs array of `size` input vectors
 /// @param size number of input vectors in xs
 /// @param threshold threshold to count against
 /// @param dst the hypervector to write the results into
-void threshold_into(word_t ** xs, size_t size, size_t threshold, word_t* dst) {
-    //TODO: Should we have a path for small sizes?
-    if (size < 256) { threshold_into_byte(xs, size, threshold, dst); return; }
-    if (size < 65535) { threshold_into_short(xs, size, threshold, dst); return; }
-    threshold_into_reference<uint32_t>(xs, size, threshold, dst); return;
+void threshold_into_avx2(word_t ** xs, size_t size, size_t threshold, word_t* dst) {
+    //FUTURE OPTIMIZATION: Should we have a path for smaller sizes?  Currently the main user of
+    // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
+    if (size < 256) { threshold_into_byte_avx2(xs, size, threshold, dst); return; }
+    if (size < 65535) { threshold_into_short_avx2(xs, size, threshold, dst); return; }
+    threshold_into_reference<uint32_t>(xs, size, threshold, dst); return; //GOAT, integrate wide version
 }
+#endif //__AVX2__
+
+#if __AVX512BW__
+#define threshold_into threshold_into_avx512
+#elif __AVX2__
+#define threshold_into threshold_into_avx2
+#else
+#define threshold_into threshold_into_reference<uint32_t>
+#endif //#if __AVX512BW__
 
 /// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
 /// @param xs array of `size` input vectors
