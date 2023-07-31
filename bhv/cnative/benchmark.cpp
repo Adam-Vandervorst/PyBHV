@@ -265,9 +265,10 @@ float active_benchmark(bool display) {
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
         word_t *m = hvs[i];
-//        observed_active[i] = bhv::active_avx512(m);
-        observed_active[i] = bhv::active_adder_avx2(m);
-//        observed_active[i] = bhv::active_reference(m);
+        observed_active[i] = bhv::active(m);
+        // observed_active[i] = bhv::active_avx512(m);
+        // observed_active[i] = bhv::active_adder_avx2(m);
+        // observed_active[i] = bhv::active_reference(m);
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -298,9 +299,10 @@ float hamming_benchmark(bool display) {
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
-//        observed_distance[i] = bhv::hamming_reference(as[i], bs[i]);
-        observed_distance[i] = bhv::hamming_adder_avx2(as[i], bs[i]);
-//        observed_distance[i] = bhv::hamming_avx512(as[i], bs[i]);
+        observed_distance[i] = bhv::hamming(as[i], bs[i]);
+        // observed_distance[i] = bhv::hamming_reference(as[i], bs[i]);
+        // observed_distance[i] = bhv::hamming_adder_avx2(as[i], bs[i]);
+        // observed_distance[i] = bhv::hamming_avx512(as[i], bs[i]);
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -454,21 +456,20 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 }
 
 #define MAJ
-//#define RAND
-//#define RAND2
-//#define RANDOM
-//#define PERMUTE
-//#define ACTIVE
-//#define HAMMING
-//#define INVERT
-//#define SWAP_HALVES
-//#define REHASH
-//#define AND
-//#define OR
-//#define XOR
-//#define SELECT
-//#define MAJ3
-
+// #define RAND
+// #define RAND2
+// #define RANDOM
+// #define PERMUTE
+// #define ACTIVE
+// #define HAMMING
+// #define INVERT
+// #define SWAP_HALVES
+// #define REHASH
+// #define AND
+// #define OR
+// #define XOR
+// #define SELECT
+// #define MAJ3
 
 int main() {
     cout << "*-= WARMUP =-*" << endl;
