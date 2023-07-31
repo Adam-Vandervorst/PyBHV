@@ -23,6 +23,7 @@ void rand_into_aes(word_t *x) {
 }
 #endif
 
+#ifdef __AVX2__
 avx2_pcg32_random_t avx2_key = {
         .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc),
                   _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},
@@ -36,6 +37,7 @@ void rand_into_avx2(word_t *x) {
         _mm256_storeu_si256((__m256i *) (x + i), avx2_pcg32_random_r(&avx2_key));
     }
 }
+#endif //__AVX2__
 
 #if __AVX512BW__
 avx512_pcg32_random_t avx512_narrow_key = {
@@ -59,10 +61,11 @@ void rand_into_avx512(word_t * x) {
 
 #if __AVX512BW__
 #define rand_into rand_into_avx512
-#else
+#elif __AVX2__
 #define rand_into rand_into_avx2
-#endif //#if __AVX512BW__
-
+#else
+#define rand_into rand_into_reference
+#endif
 
 void rand2_into_reference(word_t *target, int8_t pow) {
     if (pow == 0)
@@ -139,6 +142,8 @@ uint64_t instruction_upto(float target, uint8_t *to, float *remaining, float thr
     return res;
 }
 
+#ifdef __AVX2__
+
 void random_into_tree_sparse_avx2(word_t *x, float p) {
     constexpr float sparse_faster_threshold = .002;
 
@@ -171,6 +176,7 @@ void random_into_tree_sparse_avx2(word_t *x, float p) {
     else if (correction < 0.)
         return sparse_random_switch_into<false>(x, -correction, x);
 }
+#endif //__AVX2__
 
 int8_t ternary_instruction(float af, uint8_t* instr, uint8_t *to, float threshold=1e-6) {
     if (af <= 0.) return -2;
@@ -244,8 +250,10 @@ void random_into_ternary_tree_avx512(word_t *x, float_t p) {
 
 #if __AVX512BW__
 #define random_into random_into_ternary_tree_avx512
-#else
+#elif __AVX2__
 #define random_into random_into_tree_sparse_avx2
+#else
+#define random_into random_into_reference
 #endif //#if __AVX512BW__
 
 

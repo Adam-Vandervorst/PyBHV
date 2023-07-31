@@ -8,6 +8,8 @@ bit_iter_t active_reference(word_t *x) {
     return total;
 }
 
+#ifdef __AVX2__
+
 void carry_save_adder(__m256i &h, __m256i &l, __m256i a, __m256i b, __m256i c) {
     __m256i u = _mm256_xor_si256(a, b);
     h = _mm256_or_si256(_mm256_and_si256(a, b), _mm256_and_si256(u, c));
@@ -73,6 +75,7 @@ bit_iter_t active_adder_avx2(word_t *x) {
             + _mm256_extract_epi64(total, 2)
             + _mm256_extract_epi64(total, 3));
 }
+#endif //__AVX2__
 
 #if __AVX512BW__
 /// @brief Count the number of set bits in the vector using vector popcnt (AVX-512 BITALG)
@@ -97,8 +100,10 @@ bit_iter_t active_avx512(word_t *x) {
 
 #if __AVX512BW__
 #define active active_avx512
-#else
+#elif __AVX2__
 #define active active_adder_avx2
+#else
+#define active active_reference
 #endif
 
 /// @brief The hamming distance between two vectors, this is equivalent to active(xor(x, y)) but faster.
@@ -109,6 +114,8 @@ bit_iter_t hamming_reference(word_t *x, word_t *y) {
     }
     return total;
 }
+
+#ifdef __AVX2__
 
 /// @brief The hamming distance between two vectors using an expanded AVX2 adder
 /// @note This follows https://github.com/JeWaVe/hamming_rs
@@ -180,6 +187,7 @@ uint64_t hamming_adder_avx2(word_t *x, word_t *y) {
         + _mm256_extract_epi64(total, 2)
         + _mm256_extract_epi64(total, 3));
 }
+#endif //__AVX2__
 
 #if __AVX512BW__
 /// @brief The hamming distance between two vectors using vector popcnt (AVX-512 BITALG)
@@ -206,6 +214,8 @@ bit_iter_t hamming_avx512(word_t *x, word_t *y) {
 
 #if __AVX512BW__
 #define hamming hamming_avx512
-#else
+#elif __AVX2__
 #define hamming hamming_adder_avx2
+#else
+#define hamming hamming_reference
 #endif
