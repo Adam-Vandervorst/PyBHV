@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define DO_VALIDATION false
+#define DO_VALIDATION true
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 1000
@@ -174,8 +174,8 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac, bool r
 
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
-        bhv::random_into_reference(m, p);
-//        bhv::random_into_tree_sparse_avx2(m, p);
+//        bhv::random_into_reference(m, p);
+        bhv::random_into_tree_sparse_avx2(m, p);
 //        bhv::random_into_buffer_avx2(m, p);
 
         // once runtime of random_into drops under 500ns, consider removing this
@@ -456,20 +456,20 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 }
 
 #define MAJ
-// #define RAND
-// #define RAND2
-// #define RANDOM
-// #define PERMUTE
-// #define ACTIVE
-// #define HAMMING
-// #define INVERT
-// #define SWAP_HALVES
-// #define REHASH
-// #define AND
-// #define OR
-// #define XOR
-// #define SELECT
-// #define MAJ3
+//#define RAND
+//#define RAND2
+//#define RANDOM
+//#define PERMUTE
+//#define ACTIVE
+//#define HAMMING
+//#define INVERT
+//#define SWAP_HALVES
+//#define REHASH
+//#define AND
+//#define OR
+//#define XOR
+//#define SELECT
+//#define MAJ3
 
 int main() {
     cout << "*-= WARMUP =-*" << endl;

@@ -46,7 +46,7 @@ inline void count_cacheline_for_3_input_hypervectors_avx512(word_t ** xs, size_t
 
     for (uint_fast8_t i = 0; i < num_vectors; i++) {
         uint8_t* input_vec_ptr = xs_bytes[i];
-        __m512i input_bits = _mm512_stream_load_si512(input_vec_ptr + byte_offset);
+        __m512i input_bits = _mm512_loadu_si512(input_vec_ptr + byte_offset);
 
         __m512i even_bits = _mm512_and_si512(input_bits, interleaved_bits);
         __m512i odd_bits = _mm512_and_si512(_mm512_srli_epi64(input_bits, 1), interleaved_bits);
@@ -272,7 +272,7 @@ void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, w
         }
 
         //Store the results
-        *((__m512i*)&(dst_bytes[byte_offset])) = out_bits;
+        _mm512_storeu_si512((__m512i*)(dst_bytes + byte_offset), out_bits);
     }
 }
 
@@ -332,7 +332,7 @@ void threshold_into_avx512(word_t ** xs, size_t size, size_t threshold, word_t* 
     // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
     if (size < 256) { threshold_into_byte_avx512(xs, size, threshold, dst); return; }
     if (size < 65536) { threshold_into_short_avx512(xs, size, threshold, dst); return; }
-    threshold_into_32bit_avx512(xs, size, threshold, dst); return;
+    threshold_into_32bit_avx512(xs, size, threshold, dst);
 }
 #endif //__AVX512BW__
 
@@ -351,7 +351,7 @@ inline void count_half_cacheline_for_3_input_hypervectors_avx2(word_t ** xs, siz
 
     for (uint_fast8_t i = 0; i < num_vectors; i++) {
         uint8_t* input_vec_ptr = xs_bytes[i];
-        __m256i input_bits = _mm256_stream_load_si256((__m256i*)(input_vec_ptr + byte_offset));
+        __m256i input_bits = _mm256_loadu_si256((__m256i*)(input_vec_ptr + byte_offset));
 
         __m256i even_bits = _mm256_and_si256(input_bits, interleaved_bits);
         __m256i odd_bits = _mm256_and_si256(_mm256_srli_epi64(input_bits, 1), interleaved_bits);
@@ -563,7 +563,7 @@ void threshold_into_byte_avx2(word_t ** xs, uint8_t size, uint8_t threshold, wor
         }
 
         //Store the results
-        *((__m256i*)&(dst_bytes[byte_offset])) = out_bits;
+        _mm256_storeu_si256((__m256i*)(dst_bytes + byte_offset), out_bits);
     }
 }
 
@@ -637,7 +637,7 @@ void threshold_into_avx2(word_t ** xs, size_t size, size_t threshold, word_t* ds
     // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
     if (size < 256) { threshold_into_byte_avx2(xs, size, threshold, dst); return; }
     if (size < 65536) { threshold_into_short_avx2(xs, size, threshold, dst); return; }
-    threshold_into_32bit_avx2(xs, size, threshold, dst); return;
+    threshold_into_32bit_avx2(xs, size, threshold, dst);
 }
 #endif //__AVX2__
 

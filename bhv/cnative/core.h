@@ -31,12 +31,14 @@ namespace bhv {
 
     std::mt19937_64 rng;
 
-    word_t *empty() {
-        return (word_t *) malloc(BYTES);
+    inline word_t *empty() {
+        return (word_t *) aligned_alloc(64, BYTES);
     }
 
     word_t *zero() {
-        return (word_t *) calloc(WORDS, sizeof(word_t));
+        word_t * e = empty();
+        memset(e, 0, BYTES);
+        return e;
     }
 
     word_t *one() {
