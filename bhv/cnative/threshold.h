@@ -209,20 +209,20 @@ inline void unscramble_byte_counters_avx512(__m512i* scrambled_counts, __m512i* 
 void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t threshold, word_t* dst) {
     __m512i threshold_simd = _mm512_set1_epi16(threshold);
     uint8_t* dst_bytes = (uint8_t*)dst;
-    uint16_t counters[512];
+    uint16_t counters[BITS];
 
-    for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 64) {
+    //Clear out 16-bit counters
+    memset(counters, 0, BITS * sizeof(uint16_t));
 
-        //Clear out 16-bit counter registers
-        memset(counters, 0, 512 * sizeof(uint16_t));
+    //Loop over all input vectors, 255 at a time
+    for (int_fast16_t i = 0; i < size; i += 255) {
+        uint_fast16_t num_inputs = (i<size-254)? 255: size-i;
 
-        //Loop over all input vectors, 255 at a time
-        int_fast16_t i;
-        for (i = 0; i < size; i += 255) {
+        size_t cur_counters = 0;
+        for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 64) {
 
             //Call (inline) the function to load one cache line of input bits from each input hypervector
             __m512i scrambled_counts[8];
-            uint_fast16_t num_inputs = (i<size-254)? 255: size-i;
             count_cacheline_for_255_input_hypervectors_avx512(xs + i, byte_offset, num_inputs, scrambled_counts);
 
             //Unscramble the counters
@@ -233,16 +233,17 @@ void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t thres
             for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
                 __m512i increment0 = _mm512_cvtepu8_epi16(((__m256i*)&out_counts[out_i])[0]);
                 __m512i increment1 = _mm512_cvtepu8_epi16(((__m256i*)&out_counts[out_i])[1]);
-                *(__m512i*)(&counters[out_i * 64 + 0]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 64 + 0]), increment0);
-                *(__m512i*)(&counters[out_i * 64 + 32]) = _mm512_add_epi16(*(__m512i*)(&counters[out_i * 64 + 32]), increment1);
+                *(__m512i*)(&counters[cur_counters + 0]) = _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 0]), increment0);
+                *(__m512i*)(&counters[cur_counters + 32]) = _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 32]), increment1);
+                cur_counters += 64;
             }
         }
+    }
 
-        //Now do thresholding, and output that block of 512bits of the output
-        for (int_fast8_t out_i = 0; out_i < 16; out_i ++) {
-            __mmask32 maj_bits = _mm512_cmpgt_epu16_mask(*(__m512i*)(&counters[out_i * 32]), threshold_simd);
-            *((uint32_t*)(dst_bytes + byte_offset + (out_i * 4))) = maj_bits;
-        }
+    //Now do thresholding and output
+    for (size_t i = 0; i < BITS/32; i++) {
+        __mmask32 maj_bits = _mm512_cmpgt_epu16_mask(*(__m512i*)(&counters[i * 32]), threshold_simd);
+        *((uint32_t*)(dst_bytes + (i * 4))) = maj_bits;
     }
 }
 
@@ -446,20 +447,20 @@ void threshold_into_short_avx2(word_t ** xs, int_fast16_t size, uint16_t thresho
     const __m256i signed_compare_adjustment = _mm256_set1_epi16(0x8000);
     __m256i threshold_simd = _mm256_set1_epi16((signed)threshold - 0x8000);
     uint8_t* dst_bytes = (uint8_t*)dst;
-    uint16_t counters[256];
+    uint16_t counters[BITS];
 
-    for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 32) {
+    //Clear out 16-bit counters
+    memset(counters, 0, BITS * sizeof(uint16_t));
 
-        //Clear out 16-bit counter registers
-        memset(counters, 0, 256 * sizeof(uint16_t));
+    //Loop over all input vectors, 255 at a time
+    for (int_fast16_t i = 0; i < size; i += 255) {
+        uint_fast16_t num_inputs = (i<size-254)? 255: size-i;
 
-        //Loop over all input vectors, 255 at a time
-        int_fast16_t i;
-        for (i = 0; i < size; i += 255) {
+        size_t cur_counters = 0;
+        for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 32) {
 
-            //Call (inline) the function to load one cache line of input bits from each input hypervector
+            //Call (inline) the function to load half a cache line of input bits from each input hypervector
             __m256i scrambled_counts[8];
-            uint_fast16_t num_inputs = (i<size-254)? 255: size-i;
             count_half_cacheline_for_255_input_hypervectors_avx2(xs + i, byte_offset, num_inputs, scrambled_counts);
 
             //Unscramble the counters
@@ -470,22 +471,23 @@ void threshold_into_short_avx2(word_t ** xs, int_fast16_t size, uint16_t thresho
             for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
                 __m256i increment0 = _mm256_cvtepu8_epi16(((__m128i*)&out_counts[out_i])[0]);
                 __m256i increment1 = _mm256_cvtepu8_epi16(((__m128i*)&out_counts[out_i])[1]);
-                *(__m256i*)(&counters[out_i * 32 + 0]) = _mm256_add_epi16(*(__m256i*)(&counters[out_i * 32 + 0]), increment0);
-                *(__m256i*)(&counters[out_i * 32 + 16]) = _mm256_add_epi16(*(__m256i*)(&counters[out_i * 32 + 16]), increment1);
+                *(__m256i*)(&counters[cur_counters + 0]) = _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 0]), increment0);
+                *(__m256i*)(&counters[cur_counters + 16]) = _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 16]), increment1);
+                cur_counters += 32;
             }
         }
+    }
 
-        //Now do thresholding, and output that block of 256bits of the output
-        for (int_fast8_t out_i = 0; out_i < 16; out_i ++) {
-            __m256i adjusted_counters = _mm256_sub_epi16(*(__m256i*)(&counters[out_i * 16]), signed_compare_adjustment);
-            uint64_t maj_words[4];
-            *(__m256i *) maj_words = _mm256_cmpgt_epi16(adjusted_counters, threshold_simd);
-            uint8_t maj_bytes[2];
-            maj_bytes[0] = (uint8_t)_pext_u64(maj_words[0], 0x0001000100010001) | (uint8_t)_pext_u64(maj_words[1], 0x0001000100010001) << 4;
-            maj_bytes[1] = (uint8_t)_pext_u64(maj_words[2], 0x0001000100010001) | (uint8_t)_pext_u64(maj_words[3], 0x0001000100010001) << 4;
+    //Now do thresholding, and output the final bits
+    for (size_t i = 0; i < BITS/16; i++) {
+        __m256i adjusted_counters = _mm256_sub_epi16(*(__m256i*)(&counters[i * 16]), signed_compare_adjustment);
+        uint64_t maj_words[4];
+        *(__m256i *) maj_words = _mm256_cmpgt_epi16(adjusted_counters, threshold_simd);
+        uint8_t maj_bytes[2];
+        maj_bytes[0] = (uint8_t)_pext_u64(maj_words[0], 0x0001000100010001) | (uint8_t)_pext_u64(maj_words[1], 0x0001000100010001) << 4;
+        maj_bytes[1] = (uint8_t)_pext_u64(maj_words[2], 0x0001000100010001) | (uint8_t)_pext_u64(maj_words[3], 0x0001000100010001) << 4;
 
-            *((uint16_t*)(dst_bytes + byte_offset + (out_i * 2))) = *((uint16_t*)maj_bytes);
-        }
+        *((uint16_t*)(dst_bytes + (i * 2))) = *((uint16_t*)maj_bytes);
     }
 }
 
