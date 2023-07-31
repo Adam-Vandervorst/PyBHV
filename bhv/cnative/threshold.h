@@ -276,6 +276,52 @@ void threshold_into_byte_avx512(word_t ** xs, uint8_t size, uint8_t threshold, w
     }
 }
 
+/// @brief AVX-512 implementation of threshold_into using a 4-Byte counter
+void threshold_into_32bit_avx512(word_t ** xs, uint32_t size, uint32_t threshold, word_t* dst) {
+    __m512i threshold_simd = _mm512_set1_epi32(threshold);
+    uint8_t* dst_bytes = (uint8_t*)dst;
+    uint32_t counters[BITS];
+
+    //Clear out the counters
+    memset(counters, 0, BITS * sizeof(uint32_t));
+
+    //Loop over all input vectors, 255 at a time
+    for (uint_fast32_t i = 0; i < size; i += 255) {
+        uint_fast32_t num_inputs = (i<size-254)? 255: size-i;
+
+        size_t cur_counters = 0;
+        for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 64) {
+
+            //Call (inline) the function to load one cache line of input bits from each input hypervector
+            __m512i scrambled_counts[8];
+            count_cacheline_for_255_input_hypervectors_avx512(xs + i, byte_offset, num_inputs, scrambled_counts);
+
+            //Unscramble the counters
+            __m512i out_counts[8];
+            unscramble_byte_counters_avx512(scrambled_counts, out_counts);
+
+            //Expand the 8-bit counters into 32-bits, and add them to the running counters
+            for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
+                __m512i increment0 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[0]);
+                __m512i increment1 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[1]);
+                __m512i increment2 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[2]);
+                __m512i increment3 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[3]);
+                *(__m512i*)(&counters[cur_counters + 0]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 0]), increment0);
+                *(__m512i*)(&counters[cur_counters + 16]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 16]), increment1);
+                *(__m512i*)(&counters[cur_counters + 32]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 32]), increment2);
+                *(__m512i*)(&counters[cur_counters + 48]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 48]), increment3);
+                cur_counters += 64;
+            }
+        }
+    }
+
+    //Now do thresholding and output
+    for (size_t i = 0; i < BITS/16; i++) {
+        __mmask16 maj_bits = _mm512_cmpgt_epu32_mask(*(__m512i*)(&counters[i * 16]), threshold_simd);
+        *((uint16_t*)(dst_bytes + (i * 2))) = maj_bits;
+    }
+}
+
 /// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
 /// @param xs array of `size` input vectors
 /// @param size number of input vectors in xs
@@ -286,7 +332,7 @@ void threshold_into_avx512(word_t ** xs, size_t size, size_t threshold, word_t* 
     // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
     if (size < 256) { threshold_into_byte_avx512(xs, size, threshold, dst); return; }
     if (size < 65536) { threshold_into_short_avx512(xs, size, threshold, dst); return; }
-    threshold_into_reference<uint32_t>(xs, size, threshold, dst); return; //GOAT, integrate wide version
+    threshold_into_32bit_avx512(xs, size, threshold, dst); return;
 }
 #endif //__AVX512BW__
 
@@ -521,6 +567,66 @@ void threshold_into_byte_avx2(word_t ** xs, uint8_t size, uint8_t threshold, wor
     }
 }
 
+/// @brief AVX2 implementation of threshold_into using a 4-Byte counter
+void threshold_into_32bit_avx2(word_t ** xs, uint32_t size, uint32_t threshold, word_t* dst) {
+    const __m256i signed_compare_adjustment = _mm256_set1_epi32(0x80000000);
+    __m256i threshold_simd = _mm256_set1_epi32((signed)threshold - 0x80000000);
+    uint8_t* dst_bytes = (uint8_t*)dst;
+    uint32_t counters[BITS];
+
+    //Clear out the counters
+    memset(counters, 0, BITS * sizeof(uint32_t));
+
+    //Loop over all input vectors, 255 at a time
+    for (size_t i = 0; i < size; i += 255) {
+        size_t num_inputs = (i<size-254)? 255: size-i;
+
+        size_t cur_counters = 0;
+        for (size_t byte_offset = 0; byte_offset < BYTES; byte_offset += 32) {
+
+            //Call (inline) the function to load half a cache line of input bits from each input hypervector
+            __m256i scrambled_counts[8];
+            count_half_cacheline_for_255_input_hypervectors_avx2(xs + i, byte_offset, num_inputs, scrambled_counts);
+
+            //Unscramble the counters
+            __m256i out_counts[8];
+            unscramble_byte_counters_avx2(scrambled_counts, out_counts);
+
+            //Expand the 8-bit counters into 32-bits, and add them to the running counters
+            for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
+                __m128i converted0 = _mm_set1_epi64(((__m64*)&out_counts[out_i])[0]);
+                __m128i converted1 = _mm_set1_epi64(((__m64*)&out_counts[out_i])[1]);
+                __m128i converted2 = _mm_set1_epi64(((__m64*)&out_counts[out_i])[2]);
+                __m128i converted3 = _mm_set1_epi64(((__m64*)&out_counts[out_i])[3]);
+
+                __m256i increment0 = _mm256_cvtepu8_epi32((__m128i) converted0);
+                __m256i increment1 = _mm256_cvtepu8_epi32((__m128i) converted1);
+                __m256i increment2 = _mm256_cvtepu8_epi32((__m128i) converted2);
+                __m256i increment3 = _mm256_cvtepu8_epi32((__m128i) converted3);
+                *(__m256i*)(&counters[cur_counters + 0]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 0]), increment0);
+                *(__m256i*)(&counters[cur_counters + 8]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 8]), increment1);
+                *(__m256i*)(&counters[cur_counters + 16]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 16]), increment2);
+                *(__m256i*)(&counters[cur_counters + 24]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 24]), increment3);
+                cur_counters += 32;
+            }
+        }
+    }
+
+    //Now do thresholding, and output the final bits
+    for (size_t i = 0; i < BITS/8; i++) {
+        __m256i adjusted_counters = _mm256_sub_epi32(*(__m256i*)(&counters[i * 8]), signed_compare_adjustment);
+        uint64_t maj_words[4];
+        *(__m256i *) maj_words = _mm256_cmpgt_epi32(adjusted_counters, threshold_simd);
+        uint8_t maj_bytes;
+        maj_bytes = (uint8_t)_pext_u64(maj_words[0], 0x0000000100000001) |
+            (uint8_t)_pext_u64(maj_words[1], 0x0000000100000001) << 2 |
+            (uint8_t)_pext_u64(maj_words[2], 0x0000000100000001) << 4 |
+            (uint8_t)_pext_u64(maj_words[3], 0x0000000100000001) << 6;
+
+        *((uint16_t*)(dst_bytes + i)) = maj_bytes;
+    }
+}
+
 /// @brief Sets each result bit high if there are more than threshold 1 bits in the corresponding bit of the input vectors
 /// @param xs array of `size` input vectors
 /// @param size number of input vectors in xs
@@ -531,7 +637,7 @@ void threshold_into_avx2(word_t ** xs, size_t size, size_t threshold, word_t* ds
     // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
     if (size < 256) { threshold_into_byte_avx2(xs, size, threshold, dst); return; }
     if (size < 65536) { threshold_into_short_avx2(xs, size, threshold, dst); return; }
-    threshold_into_reference<uint32_t>(xs, size, threshold, dst); return; //GOAT, integrate wide version
+    threshold_into_32bit_avx2(xs, size, threshold, dst); return;
 }
 #endif //__AVX2__
 
