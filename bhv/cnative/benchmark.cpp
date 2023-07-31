@@ -5,7 +5,9 @@
 
 using namespace std;
 
-#define MAJ_INPUT_HYPERVECTOR_COUNT 1000000
+#define DO_VALIDATION false
+
+#define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 1000
 
 
@@ -47,20 +49,26 @@ float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
     }
     auto t2 = chrono::high_resolution_clock::now();
 
-    for (size_t i = 0; i < test_count; i++) {
-        const size_t io_buf_idx = (keep_in_cache ? 0 : i);
+    const char* validation_status;
+    if (DO_VALIDATION) {
+        for (size_t i = 0; i < test_count; i++) {
+            const size_t io_buf_idx = (keep_in_cache ? 0 : i);
 
-        word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
-        word_t **rs = inputs[io_buf_idx];
+            word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+            word_t **rs = inputs[io_buf_idx];
 
-        bhv::threshold_into_reference(rs, n, n/2, m);
+            bhv::threshold_into_reference(rs, n, n/2, m);
 
-        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+            something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        }
+        validation_status = ((something == something_else) ? "equiv: √, " : "equiv: X, ");
+    } else {
+        validation_status = "";
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
     if (display)
-        cout << n << " hypervectors, equiv " << ((something == something_else) ? "v" : "x") << ", in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0
+        cout << n << " hypervectors, " << validation_status << "in_cache: " << keep_in_cache << ", total: " << mean_test_time / 1000.0
              << "µs, normalized: " << mean_test_time / (float) n << "ns/vec" << endl;
 
     //Clean up our mess
@@ -445,12 +453,10 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
     return mean_test_time;
 }
 
-
-
-//#define MAJ
+#define MAJ
 //#define RAND
 //#define RAND2
-#define RANDOM
+//#define RANDOM
 //#define PERMUTE
 //#define ACTIVE
 //#define HAMMING
@@ -704,6 +710,12 @@ int main() {
     majority_benchmark(7, true, true);
     majority_benchmark(9, true, true);
     majority_benchmark(11, true, true);
+    majority_benchmark(15, true, true);
+    majority_benchmark(17, true, true);
+    majority_benchmark(19, true, true);
+    majority_benchmark(21, true, true);
+    majority_benchmark(23, true, true);
+    majority_benchmark(25, true, true);
     majority_benchmark(27, true, true);
     majority_benchmark(39, true, true);
     majority_benchmark(47, true, true);
@@ -717,22 +729,24 @@ int main() {
     majority_benchmark(89, true, true);
     majority_benchmark(91, true, true);
     majority_benchmark(109, true, true);
-    // majority_benchmark(175, true, true);
-    // majority_benchmark(201, true, true);
-    // majority_benchmark(255, true, true);
-    // majority_benchmark(256, true, true);
-    // majority_benchmark(385, true, true);
-    // majority_benchmark(511, true, true);
-    // majority_benchmark(667, true, true);
-    // majority_benchmark(881, true, true);
-    // majority_benchmark(945, true, true);
-    // majority_benchmark(1021, true, true);
-    // majority_benchmark(2001, true, true);
-    // majority_benchmark(5001, true, true);
-    // majority_benchmark(9999, true, true);
-    // majority_benchmark(10003, true, true);
-    // majority_benchmark(20001, true, true);
-    // majority_benchmark(200001, true, true);
+    majority_benchmark(175, true, true);
+    majority_benchmark(201, true, true);
+    majority_benchmark(255, true, true);
+
+    majority_benchmark(257, true, true);
+    majority_benchmark(385, true, true);
+    majority_benchmark(511, true, true);
+    majority_benchmark(667, true, true);
+    majority_benchmark(881, true, true);
+    majority_benchmark(945, true, true);
+    majority_benchmark(1021, true, true);
+    majority_benchmark(2001, true, true);
+    majority_benchmark(5001, true, true);
+    majority_benchmark(9999, true, true);
+    majority_benchmark(10003, true, true);
+    majority_benchmark(20001, true, true);
+    majority_benchmark(200001, true, true);
+    majority_benchmark(1000001, true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     majority_benchmark(3, true, false);
@@ -770,5 +784,6 @@ int main() {
     majority_benchmark(10003, true, false);
     majority_benchmark(20001, true, false);
     majority_benchmark(200001, true, false);
+    majority_benchmark(1000001, true, false);
 #endif
 }
