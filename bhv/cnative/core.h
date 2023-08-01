@@ -95,34 +95,7 @@ namespace bhv {
         }
     }
 
-    void select_into_reference(word_t *cond, word_t *when1, word_t *when0, word_t *target) {
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            target[i] = when0[i] ^ (cond[i] & (when0[i] ^ when1[i]));
-        }
-    }
-
-#if __AVX512F__
-/// @note Under GCC -O3 the references implementation compiles into the same instruction
-    void select_into_ternary_avx512(word_t *cond, word_t *when1, word_t *when0, word_t *target) {
-        __m512i *cond_vec = (__m512i *)cond;
-        __m512i *when1_vec = (__m512i *)when1;
-        __m512i *when0_vec = (__m512i *)when0;
-        __m512i *target_vec = (__m512i *)target;
-
-        for (word_iter_t i = 0; i < BITS/512; ++i) {
-            _mm512_storeu_si512(target_vec + i,
-                                _mm512_ternarylogic_epi64(_mm512_loadu_si512(cond_vec + i),
-                                                          _mm512_loadu_si512(when1_vec + i),
-                                                          _mm512_loadu_si512(when0_vec + i), 0xca));
-        }
-    }
-#endif
-
-#if __AVX512F__
-#define select_into select_into_ternary_avx512
-#else
-#define select_into select_into_reference
-#endif
+    #include "ternary.h"
 
     #include "distance.h"
 

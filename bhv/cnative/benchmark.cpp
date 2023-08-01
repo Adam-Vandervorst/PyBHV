@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <functional>
 
 #include "core.h"
 
@@ -406,7 +407,9 @@ float binary_benchmark(bool display,  bool keep_in_cache) {
     return mean_test_time;
 }
 
-template <void F(word_t*, word_t*, word_t*, word_t*), void FC(word_t*, word_t*, word_t*, word_t*)>
+typedef void(*TernaryFunc)(word_t*, word_t*, word_t*, word_t*);
+
+template <TernaryFunc F, TernaryFunc FC>
 float ternary_benchmark(bool display,  bool keep_in_cache) {
     const int test_count = INPUT_HYPERVECTOR_COUNT;
     const int input_output_count = (keep_in_cache ? 1 : test_count);
@@ -455,7 +458,7 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
     return mean_test_time;
 }
 
-#define MAJ
+//#define MAJ
 //#define RAND
 //#define RAND2
 //#define RANDOM
@@ -470,6 +473,25 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 //#define XOR
 //#define SELECT
 //#define MAJ3
+#define TERNARY
+
+inline void simulated_select(word_t *x, word_t *y, word_t *z, word_t *target) {
+    bhv::dynamic_ternary_into_reference(x, y, z, target, 0xca);
+};
+
+inline void simulated_maj3(word_t *x, word_t *y, word_t *z, word_t *target) {
+    bhv::dynamic_ternary_into_reference(x, y, z, target, 0xe8);
+};
+
+inline void simulated_any(word_t *x, word_t *y, word_t *z, word_t *target) {
+    bhv::dynamic_ternary_into_reference(x, y, z, target, 0b11111110);
+};
+
+inline void any_via_threshold(word_t *x, word_t *y, word_t *z, word_t *target) {
+    word_t *xs [3] = {x, y, z};
+    bhv::threshold_into(xs, 3, 0, target);
+};
+
 
 int main() {
     cout << "*-= WARMUP =-*" << endl;
@@ -479,6 +501,21 @@ int main() {
         x = x + (x % 7);
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
+#ifdef TERNARY
+
+    ternary_benchmark<simulated_select, bhv::select_into_reference>(false, true);
+
+    cout << "*-= TERNARY =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    ternary_benchmark<simulated_select, bhv::select_into_reference>(true, true);
+    ternary_benchmark<simulated_maj3, bhv::majority3_into>(true, true);
+    ternary_benchmark<simulated_any, any_via_threshold>(true, true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    ternary_benchmark<simulated_select, bhv::select_into_reference>(true, true);
+    ternary_benchmark<simulated_maj3, bhv::majority3_into>(true, true);
+    ternary_benchmark<simulated_any, any_via_threshold>(true, true);
+#endif
 #ifdef MAJ3
     ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(false, true);
 
