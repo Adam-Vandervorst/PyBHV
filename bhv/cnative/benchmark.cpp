@@ -488,7 +488,7 @@ inline void simulated_any(word_t *x, word_t *y, word_t *z, word_t *target) {
     bhv::dynamic_ternary_into_reference(x, y, z, target, 0b11111110);
 };
 
-inline void any_via_threshold(word_t *x, word_t *y, word_t *z, word_t *target) {
+void __attribute__ ((noinline)) any_via_threshold(word_t *x, word_t *y, word_t *z, word_t *target) {
     word_t *xs [3] = {x, y, z};
     bhv::threshold_into(xs, 3, 0, target);
 };
