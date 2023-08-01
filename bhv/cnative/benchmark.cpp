@@ -11,6 +11,24 @@ using namespace std;
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 1000
 
+//#define MAJ
+//#define RAND
+//#define RAND2
+//#define RANDOM
+//#define PERMUTE
+//#define ACTIVE
+//#define HAMMING
+//#define INVERT
+//#define SWAP_HALVES
+#define REHASH
+//#define AND
+//#define OR
+//#define XOR
+//#define SELECT
+//#define MAJ3
+//#define TERNARY
+
+
 
 float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
     //For the simple cases, like 3 vectors, we want a lot of tests to get a reliable number
@@ -457,23 +475,6 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 
     return mean_test_time;
 }
-
-//#define MAJ
-//#define RAND
-//#define RAND2
-//#define RANDOM
-//#define PERMUTE
-//#define ACTIVE
-//#define HAMMING
-//#define INVERT
-//#define SWAP_HALVES
-//#define REHASH
-//#define AND
-//#define OR
-//#define XOR
-//#define SELECT
-//#define MAJ3
-#define TERNARY
 
 inline void simulated_select(word_t *x, word_t *y, word_t *z, word_t *target) {
     bhv::dynamic_ternary_into_reference(x, y, z, target, 0xca);

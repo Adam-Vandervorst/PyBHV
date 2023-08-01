@@ -8,9 +8,15 @@
 #include <algorithm>
 #include "shared.h"
 #include <immintrin.h>
-#include "TurboSHAKEopt/TurboSHAKE.h"
+#ifdef __AVX2__
 #include "simdpcg.h"
-#include "platform_compatibility.h"
+#endif
+#ifdef __AVX512__
+#include "TurboSHAKEAVX512/TurboSHAKE.h"
+#else
+#include "TurboSHAKEopt/TurboSHAKE.h"
+#endif
+
 
 namespace bhv {
     constexpr word_t ONE_WORD = std::numeric_limits<word_t>::max();
@@ -109,8 +115,6 @@ namespace bhv {
 
     #include "permutation.h"
 
-    void rehash_into(word_t *x, word_t *target) {
-        TurboSHAKE(512, (uint8_t *) x, BYTES, 0x1F, (uint8_t *) target, BYTES);
-    }
+    #include "hash.h"
 }
 #endif //BHV_CORE_H
