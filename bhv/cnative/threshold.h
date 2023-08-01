@@ -64,8 +64,7 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
     out_counts[3] = _mm512_set1_epi64(0);
 
     __m512i inner_counts[2];
-    uint_fast8_t i;
-    for (i = 0; i < num_vectors-2; i+=3) {
+    for (uint_fast8_t i = 0; i < num_vectors-2; i+=3) {
         inner_counts[0] = _mm512_set1_epi64(0);
         inner_counts[1] = _mm512_set1_epi64(0);
 
@@ -83,12 +82,12 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
         out_counts[2] = _mm512_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm512_add_epi8(out_counts[3], increment3);
     }
-    if (i==num_vectors) return;
+    if (num_vectors % 3 == 0) return;
 
     // Mop up the straggler bits
     inner_counts[0] = _mm512_set1_epi64(0);
     inner_counts[1] = _mm512_set1_epi64(0);
-    for (; i < num_vectors; i++) {
+    for (uint_fast8_t i = (num_vectors/3)*3; i < num_vectors; i++) {
         add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i, byte_offset, inner_counts);
     }
     //Expand the 2-bit counters into 4-bits, and add them to the running counters
@@ -379,8 +378,7 @@ inline void count_half_cacheline_for_15_input_hypervectors_avx2(word_t ** xs, si
     out_counts[3] = _mm256_set1_epi64x(0);
 
     __m256i inner_counts[2];
-    uint_fast8_t i;
-    for (i = 0; i < num_vectors-2; i+=3) {
+    for (uint_fast8_t i = 0; i < num_vectors-2; i+=3) {
         inner_counts[0] = _mm256_set1_epi64x(0);
         inner_counts[1] = _mm256_set1_epi64x(0);
 
@@ -398,12 +396,12 @@ inline void count_half_cacheline_for_15_input_hypervectors_avx2(word_t ** xs, si
         out_counts[2] = _mm256_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm256_add_epi8(out_counts[3], increment3);
     }
-    if (i==num_vectors) return;
+    if (num_vectors % 3 == 0) return;
 
     // Mop up the straggler bits
     inner_counts[0] = _mm256_set1_epi64x(0);
     inner_counts[1] = _mm256_set1_epi64x(0);
-    for (; i < num_vectors; i++) {
+    for (uint_fast8_t i = (num_vectors/3)*3; i < num_vectors; i++) {
         add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i, byte_offset, inner_counts);
     }
     //Expand the 2-bit counters into 4-bits, and add them to the running counters
