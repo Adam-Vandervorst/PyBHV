@@ -12,9 +12,9 @@
 #include "simdpcg.h"
 #endif
 #ifdef __AVX512__
-#include "TurboSHAKEAVX512/TurboSHAKE.h"
+#include "TurboSHAKE_AVX512/TurboSHAKE.h"
 #else
-#include "TurboSHAKEopt/TurboSHAKE.h"
+#include "TurboSHAKE_opt/TurboSHAKE.h"
 #endif
 
 

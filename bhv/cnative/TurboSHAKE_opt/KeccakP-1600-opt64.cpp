@@ -21,7 +21,7 @@ Please refer to SnP-documentation.h for more details.
 This implementation comes with KeccakP-1600-SnP.h in the same folder.
 Please refer to LowLevel.build for the exact list of other files it must be combined with.
 */
-
+#ifndef __AVX512BW__
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -563,3 +563,4 @@ size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount,
     copyToState(stateAsLanes, A)
     return originalDataByteLen - dataByteLen;
 }
+#endif
