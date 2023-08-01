@@ -11,24 +11,98 @@ using namespace std;
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 1000
 
-//#define MAJ
-//#define RAND
-//#define RAND2
-//#define RANDOM
-//#define PERMUTE
-//#define ACTIVE
-//#define HAMMING
-//#define INVERT
-//#define SWAP_HALVES
+#define THRESHOLD
+#define MAJ
+#define RAND
+#define RAND2
+#define RANDOM
+#define PERMUTE
+#define ACTIVE
+#define HAMMING
+#define INVERT
+#define SWAP_HALVES
 #define REHASH
-//#define AND
-//#define OR
-//#define XOR
-//#define SELECT
-//#define MAJ3
-//#define TERNARY
+#define AND
+#define OR
+#define XOR
+#define SELECT
+#define MAJ3
+#define TERNARY
 
 
+float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bool keep_in_cache) {
+    //For the simple cases, like 3 vectors, we want a lot of tests to get a reliable number
+    //but allocating 2,000 vectors * 10,000 tests starts to exceed resident memory and we end
+    //up paying disk swap penalties.  Therefore we do fewer tests in the case with more hypervectors
+    const size_t test_count = MAJ_INPUT_HYPERVECTOR_COUNT / n;
+    const size_t input_output_count = (keep_in_cache ? 1 : test_count);
+
+    //Init n random vectors for each test
+    word_t ***inputs = (word_t***)malloc(sizeof(word_t**) * input_output_count);
+    for (size_t i = 0; i < input_output_count; i++) {
+        word_t **rs = (word_t **) malloc(sizeof(word_t **) * n);
+        for (size_t j = 0; j < n; ++j) {
+            rs[j] = bhv::random(af);
+        }
+        inputs[i] = rs;
+    }
+
+    //Allocate a buffer for TEST_COUNT results
+    word_t *result_buffer = (word_t *) malloc(input_output_count * BYTES);
+
+    // Gotta assign the result to a volatile, so the test operation doesn't get optimized away
+    volatile word_t something = 0;
+    volatile word_t something_else = 0;
+
+    auto t1 = chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < test_count; i++) {
+        const size_t io_buf_idx = (keep_in_cache ? 0 : i);
+
+        word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+        word_t **rs = inputs[io_buf_idx];
+
+        bhv::threshold_into(rs, n, threshold, m);
+
+        // So the test operation doesn't get optimized away
+        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+    }
+    auto t2 = chrono::high_resolution_clock::now();
+
+    const char* validation_status;
+    if (DO_VALIDATION) {
+        for (size_t i = 0; i < test_count; i++) {
+            const size_t io_buf_idx = (keep_in_cache ? 0 : i);
+
+            word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
+            word_t **rs = inputs[io_buf_idx];
+
+            bhv::threshold_into_reference(rs, n, threshold, m);
+
+            something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        }
+        validation_status = ((something == something_else) ? "equiv: √, " : "equiv: X, ");
+    } else {
+        validation_status = "";
+    }
+
+    float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
+    if (display)
+        cout << n << " hypervectors, " << threshold << " threshold, " << validation_status << "in_cache: " << keep_in_cache
+            << ", total: " << mean_test_time / 1000.0 << "µs, normalized: " << mean_test_time / (float) n << "ns/vec" << endl;
+
+    //Clean up our mess
+    for (size_t i = 0; i < input_output_count; i++) {
+        word_t **rs = inputs[i];
+        for (size_t j = 0; j < n; ++j) {
+            free(rs[j]);
+        }
+        free(rs);
+    }
+    free(result_buffer);
+    free(inputs);
+
+    return mean_test_time;
+}
 
 float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
     //For the simple cases, like 3 vectors, we want a lot of tests to get a reliable number
@@ -513,9 +587,9 @@ int main() {
     ternary_benchmark<simulated_any, any_via_threshold>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    ternary_benchmark<simulated_select, bhv::select_into_reference>(true, true);
-    ternary_benchmark<simulated_maj3, bhv::majority3_into>(true, true);
-    ternary_benchmark<simulated_any, any_via_threshold>(true, true);
+    ternary_benchmark<simulated_select, bhv::select_into_reference>(true, false);
+    ternary_benchmark<simulated_maj3, bhv::majority3_into>(true, false);
+    ternary_benchmark<simulated_any, any_via_threshold>(true, false);
 #endif
 #ifdef MAJ3
     ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(false, true);
@@ -527,9 +601,9 @@ int main() {
     ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
-    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, true);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, false);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, false);
+    ternary_benchmark<bhv::majority3_into, bhv::majority3_into_reference>(true, false);
 #endif
 #ifdef SELECT
     ternary_benchmark<bhv::select_into, bhv::select_into_reference>(false, true);
@@ -541,9 +615,9 @@ int main() {
     ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
-    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, true);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, false);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, false);
+    ternary_benchmark<bhv::select_into, bhv::select_into_reference>(true, false);
 #endif
 #ifdef XOR
     binary_benchmark<bhv::xor_into, bhv::xor_into>(false, true);
@@ -555,9 +629,9 @@ int main() {
     binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
 #endif
 #ifdef XOR
     binary_benchmark<bhv::xor_into, bhv::xor_into>(false, true);
@@ -569,9 +643,9 @@ int main() {
     binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
-    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, true);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
+    binary_benchmark<bhv::xor_into, bhv::xor_into>(true, false);
 #endif
 #ifdef OR
     binary_benchmark<bhv::or_into, bhv::or_into>(false, true);
@@ -583,9 +657,9 @@ int main() {
     binary_benchmark<bhv::or_into, bhv::or_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    binary_benchmark<bhv::or_into, bhv::or_into>(true, true);
-    binary_benchmark<bhv::or_into, bhv::or_into>(true, true);
-    binary_benchmark<bhv::or_into, bhv::or_into>(true, true);
+    binary_benchmark<bhv::or_into, bhv::or_into>(true, false);
+    binary_benchmark<bhv::or_into, bhv::or_into>(true, false);
+    binary_benchmark<bhv::or_into, bhv::or_into>(true, false);
 #endif
 #ifdef AND
     binary_benchmark<bhv::and_into, bhv::and_into>(false, true);
@@ -597,9 +671,9 @@ int main() {
     binary_benchmark<bhv::and_into, bhv::and_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    binary_benchmark<bhv::and_into, bhv::and_into>(true, true);
-    binary_benchmark<bhv::and_into, bhv::and_into>(true, true);
-    binary_benchmark<bhv::and_into, bhv::and_into>(true, true);
+    binary_benchmark<bhv::and_into, bhv::and_into>(true, false);
+    binary_benchmark<bhv::and_into, bhv::and_into>(true, false);
+    binary_benchmark<bhv::and_into, bhv::and_into>(true, false);
 #endif
 #ifdef REHASH
     unary_benchmark<bhv::rehash_into, bhv::rehash_into>(false, true);
@@ -611,9 +685,9 @@ int main() {
     unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
-    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
-    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, true);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, false);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, false);
+    unary_benchmark<bhv::rehash_into, bhv::rehash_into>(true, false);
 #endif
 #ifdef SWAP_HALVES
     unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(false, true);
@@ -625,9 +699,9 @@ int main() {
     unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
-    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
-    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, true);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, false);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, false);
+    unary_benchmark<bhv::swap_halves_into, bhv::swap_halves_into>(true, false);
 #endif
 #ifdef INVERT
     unary_benchmark<bhv::invert_into, bhv::invert_into>(false, true);
@@ -639,9 +713,9 @@ int main() {
     unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
-    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
-    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
-    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, true);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, false);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, false);
+    unary_benchmark<bhv::invert_into, bhv::invert_into>(true, false);
 #endif
 #ifdef HAMMING
     hamming_benchmark(false);
@@ -670,6 +744,7 @@ int main() {
 #ifdef RAND
     rand_benchmark(false, false);
 
+    cout << "*-= RAND =-*" << endl;
     cout << "*-= IN CACHE TESTS =-*" << endl;
     rand_benchmark(true, true);
     rand_benchmark(true, true);
@@ -686,6 +761,7 @@ int main() {
         pws[i + 16] = i;
 
     rand2_benchmark(false, false, 4);
+    cout << "*-= RAND2 =-*" << endl;
 
     cout << "*-= IN CACHE TESTS =-*" << endl;
     for (float p : pws)
@@ -693,11 +769,12 @@ int main() {
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     for (float p : pws)
-        rand2_benchmark(true, true, p);
+        rand2_benchmark(true, false, p);
 #endif
 #ifdef RANDOM
     random_benchmark(false, false, .1);
 
+    cout << "*-= RANDOM =-*" << endl;
     cout << "*-= COMMON =-*" << endl;
     float common[13] = {.001, .01, .04, .2, .26, .48, .5, .52, .74,.8, .95, .99, .999};
     cout << "*-= IN CACHE TESTS =-*" << endl;
@@ -721,7 +798,7 @@ int main() {
     total = 0;
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     for (float p: small)
-        total += random_benchmark(true, true, p);
+        total += random_benchmark(true, false, p);
     cout << "total: " << total << endl;
 
     cout << "*-= PERCENTAGES =-*" << endl;
@@ -731,12 +808,12 @@ int main() {
     cout << "*-= IN CACHE TESTS =-*" << endl;
     total = 0.;
     for (float p: perc)
-        total += random_benchmark(true, true, p);
+        total += random_benchmark(true, false, p);
     cout << "total: " << total << endl;
     total = 0;
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     for (float p: perc)
-        total += random_benchmark(true, true, p);
+        total += random_benchmark(true, false, p);
     cout << "total: " << total << endl;
 #endif
 #ifdef MAJ
@@ -824,5 +901,43 @@ int main() {
     majority_benchmark(20001, true, false);
     majority_benchmark(200001, true, false);
     majority_benchmark(1000001, true, false);
+#endif
+#ifdef THRESHOLD
+    threshold_benchmark(3, 0, .5, false, false);
+
+    cout << "*-= THRESHOLD =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    threshold_benchmark(3, 0, .5, true, true);
+    threshold_benchmark(10, 2, .3, true, true);
+    threshold_benchmark(30, 20, .7, true, true);
+
+
+    threshold_benchmark(100, 48, .5, true, true);
+    threshold_benchmark(200, 50, .25, true, true);
+
+    threshold_benchmark(3000, 1502, .5, true, true);
+    threshold_benchmark(4000, 1000, .25, true, true);
+
+    threshold_benchmark(200001, 0, .5, true, true);
+    threshold_benchmark(200001, 200000, .5, true, true);
+
+    threshold_benchmark(1000001, 498384, .5, true, true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    threshold_benchmark(3, 0, .5, true, false);
+    threshold_benchmark(10, 2, .3, true, false);
+    threshold_benchmark(30, 20, .7, true, false);
+
+
+    threshold_benchmark(100, 48, .5, true, false);
+    threshold_benchmark(200, 50, .25, true, false);
+
+    threshold_benchmark(3000, 1502, .5, true, false);
+    threshold_benchmark(4000, 1000, .25, true, false);
+
+    threshold_benchmark(200001, 0, .5, true, false);
+    threshold_benchmark(200001, 200000, .5, true, false);
+
+    threshold_benchmark(1000001, 498384, .5, true, false);
 #endif
 }

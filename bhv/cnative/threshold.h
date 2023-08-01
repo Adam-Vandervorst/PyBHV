@@ -64,8 +64,7 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
     out_counts[3] = _mm512_set1_epi64(0);
 
     __m512i inner_counts[2];
-    uint_fast8_t i;
-    for (i = 0; i < num_vectors-2; i+=3) {
+    for (uint_fast8_t i = 0; i < num_vectors-2; i+=3) {
         inner_counts[0] = _mm512_set1_epi64(0);
         inner_counts[1] = _mm512_set1_epi64(0);
 
@@ -83,12 +82,12 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
         out_counts[2] = _mm512_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm512_add_epi8(out_counts[3], increment3);
     }
-    if (i==num_vectors) return;
+    if (num_vectors % 3 == 0) return;
 
     // Mop up the straggler bits
     inner_counts[0] = _mm512_set1_epi64(0);
     inner_counts[1] = _mm512_set1_epi64(0);
-    for (; i < num_vectors; i++) {
+    for (uint_fast8_t i = (num_vectors/3)*3; i < num_vectors; i++) {
         add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i, byte_offset, inner_counts);
     }
     //Expand the 2-bit counters into 4-bits, and add them to the running counters
@@ -245,8 +244,8 @@ void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t thres
             for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
                 __m512i increment0 = _mm512_cvtepu8_epi16(((__m256i*)&out_counts[out_i])[0]);
                 __m512i increment1 = _mm512_cvtepu8_epi16(((__m256i*)&out_counts[out_i])[1]);
-                *(__m512i*)(&counters[cur_counters + 0]) = _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 0]), increment0);
-                *(__m512i*)(&counters[cur_counters + 32]) = _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 32]), increment1);
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 0]), _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 0]), increment0));
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 32]), _mm512_add_epi16(*(__m512i*)(&counters[cur_counters + 32]), increment1));
                 cur_counters += 64;
             }
         }
@@ -318,10 +317,10 @@ void threshold_into_32bit_avx512(word_t ** xs, uint32_t size, uint32_t threshold
                 __m512i increment1 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[1]);
                 __m512i increment2 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[2]);
                 __m512i increment3 = _mm512_cvtepu8_epi32(((__m128i*)&out_counts[out_i])[3]);
-                *(__m512i*)(&counters[cur_counters + 0]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 0]), increment0);
-                *(__m512i*)(&counters[cur_counters + 16]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 16]), increment1);
-                *(__m512i*)(&counters[cur_counters + 32]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 32]), increment2);
-                *(__m512i*)(&counters[cur_counters + 48]) = _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 48]), increment3);
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 0]), _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 0]), increment0));
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 16]), _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 16]), increment1));
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 32]), _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 32]), increment2));
+                _mm512_storeu_si512((__m512i*)(&counters[cur_counters + 48]), _mm512_add_epi32(*(__m512i*)(&counters[cur_counters + 48]), increment3));
                 cur_counters += 64;
             }
         }
@@ -379,8 +378,7 @@ inline void count_half_cacheline_for_15_input_hypervectors_avx2(word_t ** xs, si
     out_counts[3] = _mm256_set1_epi64x(0);
 
     __m256i inner_counts[2];
-    uint_fast8_t i;
-    for (i = 0; i < num_vectors-2; i+=3) {
+    for (uint_fast8_t i = 0; i < num_vectors-2; i+=3) {
         inner_counts[0] = _mm256_set1_epi64x(0);
         inner_counts[1] = _mm256_set1_epi64x(0);
 
@@ -398,12 +396,12 @@ inline void count_half_cacheline_for_15_input_hypervectors_avx2(word_t ** xs, si
         out_counts[2] = _mm256_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm256_add_epi8(out_counts[3], increment3);
     }
-    if (i==num_vectors) return;
+    if (num_vectors % 3 == 0) return;
 
     // Mop up the straggler bits
     inner_counts[0] = _mm256_set1_epi64x(0);
     inner_counts[1] = _mm256_set1_epi64x(0);
-    for (; i < num_vectors; i++) {
+    for (uint_fast8_t i = (num_vectors/3)*3; i < num_vectors; i++) {
         add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i, byte_offset, inner_counts);
     }
     //Expand the 2-bit counters into 4-bits, and add them to the running counters
@@ -541,8 +539,8 @@ void threshold_into_short_avx2(word_t ** xs, int_fast16_t size, uint16_t thresho
             for (int_fast8_t out_i = 0; out_i < 8; out_i++) {
                 __m256i increment0 = _mm256_cvtepu8_epi16(((__m128i*)&out_counts[out_i])[0]);
                 __m256i increment1 = _mm256_cvtepu8_epi16(((__m128i*)&out_counts[out_i])[1]);
-                *(__m256i*)(&counters[cur_counters + 0]) = _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 0]), increment0);
-                *(__m256i*)(&counters[cur_counters + 16]) = _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 16]), increment1);
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 0]), _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 0]), increment0));
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 16]), _mm256_add_epi16(*(__m256i*)(&counters[cur_counters + 16]), increment1));
                 cur_counters += 32;
             }
         }
@@ -627,10 +625,10 @@ void threshold_into_32bit_avx2(word_t ** xs, uint32_t size, uint32_t threshold, 
                 __m256i increment1 = _mm256_cvtepu8_epi32((__m128i) converted1);
                 __m256i increment2 = _mm256_cvtepu8_epi32((__m128i) converted2);
                 __m256i increment3 = _mm256_cvtepu8_epi32((__m128i) converted3);
-                *(__m256i*)(&counters[cur_counters + 0]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 0]), increment0);
-                *(__m256i*)(&counters[cur_counters + 8]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 8]), increment1);
-                *(__m256i*)(&counters[cur_counters + 16]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 16]), increment2);
-                *(__m256i*)(&counters[cur_counters + 24]) = _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 24]), increment3);
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 0]), _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 0]), increment0));
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 8]), _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 8]), increment1));
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 16]), _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 16]), increment2));
+                _mm256_storeu_si256((__m256i*)(&counters[cur_counters + 24]), _mm256_add_epi32(*(__m256i*)(&counters[cur_counters + 24]), increment3));
                 cur_counters += 32;
             }
         }
