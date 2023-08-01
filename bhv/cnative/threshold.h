@@ -30,30 +30,22 @@ void threshold_into_reference(word_t ** xs, size_t size, N threshold, word_t *ds
 }
 
 #if __AVX512BW__
-/// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 3 input hypervectors
-/// @param xs array of input hypervectors
-/// @param byte_offset offset (in bytes) into each hypervector.  Ideally this would be aligned to 64 Bytes
-/// @param num_vectors the number of vectors in xs.  Maximum value of 3
+/// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for 1 input hypervector
+/// @param xs pointer to pointer to the input hypervector data
+/// @param byte_offset offset (in bytes) into each hypervector.  This must be aligned to 64 Bytes
 /// @param out_counts Each counter is 2 bits, and there are 256 counters in each 512 bit AVX-512 vector, and there are 2 AVX-512 vectors.
 ///   Counters are interleaved between the output vectors.  For example, input bit positions indicateded by letters: H G F E D C B A,
 ///   lead to output bit positions: out_counts[0]: G  E  C  A, and out_counts[1]: H  F  D  B
-inline void count_cacheline_for_3_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
+inline void add_counts_from_cacheline_for_1_input_hypervector_avx512(word_t ** xs, size_t byte_offset, __m512i* out_counts) {
     const __m512i interleaved_bits = _mm512_set1_epi8(0x55);
+    uint8_t* xs_bytes = *((uint8_t**)xs);
+    __m512i input_bits = _mm512_loadu_si512(xs_bytes + byte_offset);
 
-    out_counts[0] = _mm512_set1_epi64(0);
-    out_counts[1] = _mm512_set1_epi64(0);
-    uint8_t** xs_bytes = (uint8_t**)xs;
+    __m512i even_bits = _mm512_and_si512(input_bits, interleaved_bits);
+    __m512i odd_bits = _mm512_and_si512(_mm512_srli_epi64(input_bits, 1), interleaved_bits);
 
-    for (uint_fast8_t i = 0; i < num_vectors; i++) {
-        uint8_t* input_vec_ptr = xs_bytes[i];
-        __m512i input_bits = _mm512_loadu_si512(input_vec_ptr + byte_offset);
-
-        __m512i even_bits = _mm512_and_si512(input_bits, interleaved_bits);
-        __m512i odd_bits = _mm512_and_si512(_mm512_srli_epi64(input_bits, 1), interleaved_bits);
-
-        out_counts[0] = _mm512_add_epi8(out_counts[0], even_bits);
-        out_counts[1] = _mm512_add_epi8(out_counts[1], odd_bits);
-    }
+    out_counts[0] = _mm512_add_epi8(out_counts[0], even_bits);
+    out_counts[1] = _mm512_add_epi8(out_counts[1], odd_bits);
 }
 
 /// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 15 input hypervectors
@@ -62,7 +54,7 @@ inline void count_cacheline_for_3_input_hypervectors_avx512(word_t ** xs, size_t
 /// @param num_vectors the number of vectors in xs.  Maximum value of 15
 /// @param out_counts Each counter is 4 bits, and there are 128 counters in each 512 bit AVX-512 vector, and there are 4 AVX-512 vectors
 ///  Counters are interleaved between output vectors, in a way that extends the interleaving described in
-///   count_cacheline_for_3_input_hypervectors_avx512
+///   add_counts_from_cacheline_for_1_input_hypervector_avx512
 inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
     const __m512i interleaved_pairs = _mm512_set1_epi8(0x33);
 
@@ -71,23 +63,43 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
     out_counts[2] = _mm512_set1_epi64(0);
     out_counts[3] = _mm512_set1_epi64(0);
 
-    for (uint_fast8_t i = 0; i < num_vectors; i+=3) {
-        __m512i inner_counts[2];
-        uint_fast16_t num_inputs = (i<num_vectors-2)? 3: num_vectors-i;
+    __m512i inner_counts[2];
+    uint_fast8_t i;
+    for (i = 0; i < num_vectors-2; i+=3) {
+        inner_counts[0] = _mm512_set1_epi64(0);
+        inner_counts[1] = _mm512_set1_epi64(0);
 
-        count_cacheline_for_3_input_hypervectors_avx512(xs + i, byte_offset, num_inputs, inner_counts);
+        add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i, byte_offset, inner_counts);
+        add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i + 1, byte_offset, inner_counts);
+        add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i + 2, byte_offset, inner_counts);
 
         //Expand the 2-bit counters into 4-bits, and add them to the running counters
         __m512i increment0 = _mm512_and_si512(inner_counts[0], interleaved_pairs);
         __m512i increment1 = _mm512_and_si512(inner_counts[1], interleaved_pairs);
         __m512i increment2 = _mm512_and_si512(_mm512_srli_epi64(inner_counts[0], 2), interleaved_pairs);
         __m512i increment3 = _mm512_and_si512(_mm512_srli_epi64(inner_counts[1], 2), interleaved_pairs);
-
         out_counts[0] = _mm512_add_epi8(out_counts[0], increment0);
         out_counts[1] = _mm512_add_epi8(out_counts[1], increment1);
         out_counts[2] = _mm512_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm512_add_epi8(out_counts[3], increment3);
     }
+    if (i==num_vectors) return;
+
+    // Mop up the straggler bits
+    inner_counts[0] = _mm512_set1_epi64(0);
+    inner_counts[1] = _mm512_set1_epi64(0);
+    for (; i < num_vectors; i++) {
+        add_counts_from_cacheline_for_1_input_hypervector_avx512(xs + i, byte_offset, inner_counts);
+    }
+    //Expand the 2-bit counters into 4-bits, and add them to the running counters
+    __m512i increment0 = _mm512_and_si512(inner_counts[0], interleaved_pairs);
+    __m512i increment1 = _mm512_and_si512(inner_counts[1], interleaved_pairs);
+    __m512i increment2 = _mm512_and_si512(_mm512_srli_epi64(inner_counts[0], 2), interleaved_pairs);
+    __m512i increment3 = _mm512_and_si512(_mm512_srli_epi64(inner_counts[1], 2), interleaved_pairs);
+    out_counts[0] = _mm512_add_epi8(out_counts[0], increment0);
+    out_counts[1] = _mm512_add_epi8(out_counts[1], increment1);
+    out_counts[2] = _mm512_add_epi8(out_counts[2], increment2);
+    out_counts[3] = _mm512_add_epi8(out_counts[3], increment3);
 }
 
 /// @brief INTERNAL Counts an input cacheline worth of bits (64 Bytes = 512 bits) for up to 255 input hypervectors
@@ -96,7 +108,7 @@ inline void count_cacheline_for_15_input_hypervectors_avx512(word_t ** xs, size_
 /// @param num_vectors the number of vectors in xs.  Maximum value of 255
 /// @param out_counts Each counter is 8 bits, and there are 64 counters in each 512 bit AVX-512 vector, and there
 ///  are 8 AVX-512 vectors.  Output counters are interleaved in a way that extends the interleaving described in
-///  count_cacheline_for_3_input_hypervectors_avx512.  Counters can be un-scrambled with unscramble_byte_counters_avx512
+///  add_counts_from_cacheline_for_1_input_hypervector_avx512.  Counters can be un-scrambled with unscramble_byte_counters_avx512
 inline void count_cacheline_for_255_input_hypervectors_avx512(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m512i* out_counts) {
     const __m512i nibble_mask = _mm512_set1_epi8(0xF);
 
@@ -337,28 +349,20 @@ void threshold_into_avx512(word_t ** xs, size_t size, size_t threshold, word_t* 
 #endif //__AVX512BW__
 
 #ifdef __AVX2__
-/// @brief INTERNAL Counts 256 input bits (32 Bytes) for up to 3 input hypervectors
-/// @param xs array of input hypervectors
+/// @brief INTERNAL Counts 256 input bits (32 Bytes) for 1 input hypervector
+/// @param xs pointer to pointer to input hypervector data
 /// @param byte_offset offset (in bytes) into each hypervector.  Must be aligned to 32 Bytes
-/// @param num_vectors the number of vectors in xs.  Maximum value of 3
 /// @param out_counts Each counter is 2 bits, and there are 128 counters in each 256 bit AVX2 vector, so there are 2 AVX2 vectors.
-inline void count_half_cacheline_for_3_input_hypervectors_avx2(word_t ** xs, size_t byte_offset, uint_fast8_t num_vectors, __m256i* out_counts) {
+inline void add_counts_from_half_cacheline_for_1_input_hypervector_avx2(word_t ** xs, size_t byte_offset, __m256i* out_counts) {
     const __m256i interleaved_bits = _mm256_set1_epi8(0x55);
+    uint8_t* xs_bytes = *((uint8_t**)xs);
+    __m256i input_bits = _mm256_loadu_si256((__m256i*)(xs_bytes + byte_offset));
 
-    out_counts[0] = _mm256_set1_epi64x(0);
-    out_counts[1] = _mm256_set1_epi64x(0);
-    uint8_t** xs_bytes = (uint8_t**)xs;
+    __m256i even_bits = _mm256_and_si256(input_bits, interleaved_bits);
+    __m256i odd_bits = _mm256_and_si256(_mm256_srli_epi64(input_bits, 1), interleaved_bits);
 
-    for (uint_fast8_t i = 0; i < num_vectors; i++) {
-        uint8_t* input_vec_ptr = xs_bytes[i];
-        __m256i input_bits = _mm256_loadu_si256((__m256i*)(input_vec_ptr + byte_offset));
-
-        __m256i even_bits = _mm256_and_si256(input_bits, interleaved_bits);
-        __m256i odd_bits = _mm256_and_si256(_mm256_srli_epi64(input_bits, 1), interleaved_bits);
-
-        out_counts[0] = _mm256_add_epi8(out_counts[0], even_bits);
-        out_counts[1] = _mm256_add_epi8(out_counts[1], odd_bits);
-    }
+    out_counts[0] = _mm256_add_epi8(out_counts[0], even_bits);
+    out_counts[1] = _mm256_add_epi8(out_counts[1], odd_bits);
 }
 
 /// @brief INTERNAL Counts 256 input bits (32 Bytes) for up to 15 input hypervectors
@@ -374,23 +378,43 @@ inline void count_half_cacheline_for_15_input_hypervectors_avx2(word_t ** xs, si
     out_counts[2] = _mm256_set1_epi64x(0);
     out_counts[3] = _mm256_set1_epi64x(0);
 
-    for (uint_fast8_t i = 0; i < num_vectors; i+=3) {
-        __m256i inner_counts[2];
-        uint_fast16_t num_inputs = (i<num_vectors-2)? 3: num_vectors-i;
+    __m256i inner_counts[2];
+    uint_fast8_t i;
+    for (i = 0; i < num_vectors-2; i+=3) {
+        inner_counts[0] = _mm256_set1_epi64x(0);
+        inner_counts[1] = _mm256_set1_epi64x(0);
 
-        count_half_cacheline_for_3_input_hypervectors_avx2(xs + i, byte_offset, num_inputs, inner_counts);
+        add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i, byte_offset, inner_counts);
+        add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i + 1, byte_offset, inner_counts);
+        add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i + 2, byte_offset, inner_counts);
 
         //Expand the 2-bit counters into 4-bits, and add them to the running counters
         __m256i increment0 = _mm256_and_si256(inner_counts[0], interleaved_pairs);
         __m256i increment1 = _mm256_and_si256(inner_counts[1], interleaved_pairs);
         __m256i increment2 = _mm256_and_si256(_mm256_srli_epi64(inner_counts[0], 2), interleaved_pairs);
         __m256i increment3 = _mm256_and_si256(_mm256_srli_epi64(inner_counts[1], 2), interleaved_pairs);
-
         out_counts[0] = _mm256_add_epi8(out_counts[0], increment0);
         out_counts[1] = _mm256_add_epi8(out_counts[1], increment1);
         out_counts[2] = _mm256_add_epi8(out_counts[2], increment2);
         out_counts[3] = _mm256_add_epi8(out_counts[3], increment3);
     }
+    if (i==num_vectors) return;
+
+    // Mop up the straggler bits
+    inner_counts[0] = _mm256_set1_epi64x(0);
+    inner_counts[1] = _mm256_set1_epi64x(0);
+    for (; i < num_vectors; i++) {
+        add_counts_from_half_cacheline_for_1_input_hypervector_avx2(xs + i, byte_offset, inner_counts);
+    }
+    //Expand the 2-bit counters into 4-bits, and add them to the running counters
+    __m256i increment0 = _mm256_and_si256(inner_counts[0], interleaved_pairs);
+    __m256i increment1 = _mm256_and_si256(inner_counts[1], interleaved_pairs);
+    __m256i increment2 = _mm256_and_si256(_mm256_srli_epi64(inner_counts[0], 2), interleaved_pairs);
+    __m256i increment3 = _mm256_and_si256(_mm256_srli_epi64(inner_counts[1], 2), interleaved_pairs);
+    out_counts[0] = _mm256_add_epi8(out_counts[0], increment0);
+    out_counts[1] = _mm256_add_epi8(out_counts[1], increment1);
+    out_counts[2] = _mm256_add_epi8(out_counts[2], increment2);
+    out_counts[3] = _mm256_add_epi8(out_counts[3], increment3);
 }
 
 /// @brief INTERNAL Counts 256 input bits (32 Bytes) for up to 255 input hypervectors
