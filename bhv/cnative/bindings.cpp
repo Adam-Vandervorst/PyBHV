@@ -38,6 +38,8 @@ static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_select(BHV *cond, PyObject *args);
 
+static PyObject *BHV_ternary(BHV *x, PyObject *args);
+
 static PyObject *BHV_roll_words(BHV *x, PyObject *args);
 
 static PyObject *BHV_roll_word_bits(BHV *x, PyObject *args);
@@ -96,6 +98,8 @@ static PyMethodDef BHV_methods[] = {
                 "Random representative of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
+        {"ternary",            (PyCFunction) BHV_ternary,            METH_VARARGS,
+                "Ternary logic operation"},
         {"roll_words",        (PyCFunction) BHV_roll_words,        METH_VARARGS,
                 "Word-level rotation"},
         {"roll_word_bits",    (PyCFunction) BHV_roll_word_bits,    METH_VARARGS,
@@ -281,6 +285,19 @@ static PyObject *BHV_select(BHV * cond, PyObject * args) {
 
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
     bhv::select_into(cond->data, when1->data, when0->data, ((BHV *) ret)->data);
+    return ret;
+}
+
+static PyObject *BHV_ternary(BHV * x, PyObject * args) {
+    BHV * y;
+    BHV * z;
+    uint8_t op;
+
+    if (!PyArg_ParseTuple(args, "O!O!i", &BHVType, &y, &BHVType, &z, &op))
+        return nullptr;
+
+    PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::dynamic_ternary_into(x->data, y->data, z->data, ((BHV *) ret)->data, op);
     return ret;
 }
 

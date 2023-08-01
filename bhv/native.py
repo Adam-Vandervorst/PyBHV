@@ -31,6 +31,9 @@ class NativePackedBHV(AbstractBHV):
     def select(self, when1, when0):
         return NativePackedBHV(self.ins.select(when1.ins, when0.ins))
 
+    def ternary(self, y, z, op):
+        return NativePackedBHV(self.ins.ternary(y.ins, z.ins, op))
+
     @classmethod
     def majority(cls, xs):
         return NativePackedBHV(CNativePackedBHV.majority([x.ins for x in xs]))
