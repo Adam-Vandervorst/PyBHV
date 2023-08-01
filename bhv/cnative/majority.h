@@ -85,7 +85,6 @@ void true_majority_into_avx512(word_t **xs, size_t size, word_t *target) {
         case 15: logic_majority_into_avx512<15>(xs, target); return;
         case 17: logic_majority_into_avx512<17>(xs, target); return;
         case 19: logic_majority_into_avx512<19>(xs, target); return;
-        case 21: logic_majority_into_avx512<21>(xs, target); return;
         default: threshold_into_avx512(xs, size, size/2, target); return;
     }
 }
@@ -152,8 +151,6 @@ void true_majority_into_avx2(word_t **xs, size_t size, word_t *target) {
         case 11: logic_majority_into_avx2<11>(xs, target); return;
         case 13: logic_majority_into_avx2<13>(xs, target); return;
         case 15: logic_majority_into_avx2<15>(xs, target); return;
-        case 17: logic_majority_into_avx2<17>(xs, target); return;
-        case 19: logic_majority_into_avx2<19>(xs, target); return;
         default: threshold_into_avx2(xs, size, size/2, target); return;
     }
 }
