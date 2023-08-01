@@ -8,9 +8,15 @@
 #include <algorithm>
 #include "shared.h"
 #include <immintrin.h>
-#include "TurboSHAKEopt/TurboSHAKE.h"
+#ifdef __AVX2__
 #include "simdpcg.h"
-#include "platform_compatibility.h"
+#endif
+#ifdef __AVX512__
+#include "TurboSHAKE_AVX512/TurboSHAKE.h"
+#else
+#include "TurboSHAKE_opt/TurboSHAKE.h"
+#endif
+
 
 namespace bhv {
     constexpr word_t ONE_WORD = std::numeric_limits<word_t>::max();
@@ -31,12 +37,14 @@ namespace bhv {
 
     std::mt19937_64 rng;
 
-    word_t *empty() {
-        return (word_t *) malloc(BYTES);
+    inline word_t *empty() {
+        return (word_t *) aligned_alloc(64, BYTES);
     }
 
     word_t *zero() {
-        return (word_t *) calloc(WORDS, sizeof(word_t));
+        word_t * e = empty();
+        memset(e, 0, BYTES);
+        return e;
     }
 
     word_t *one() {
@@ -93,34 +101,7 @@ namespace bhv {
         }
     }
 
-    void select_into_reference(word_t *cond, word_t *when1, word_t *when0, word_t *target) {
-        for (word_iter_t i = 0; i < WORDS; ++i) {
-            target[i] = when0[i] ^ (cond[i] & (when0[i] ^ when1[i]));
-        }
-    }
-
-#if __AVX512F__
-/// @note Under GCC -O3 the references implementation compiles into the same instruction
-    void select_into_ternary_avx512(word_t *cond, word_t *when1, word_t *when0, word_t *target) {
-        __m512i *cond_vec = (__m512i *)cond;
-        __m512i *when1_vec = (__m512i *)when1;
-        __m512i *when0_vec = (__m512i *)when0;
-        __m512i *target_vec = (__m512i *)target;
-
-        for (word_iter_t i = 0; i < BITS/512; ++i) {
-            _mm512_storeu_si512(target_vec + i,
-                                _mm512_ternarylogic_epi64(_mm512_loadu_si512(cond_vec + i),
-                                                          _mm512_loadu_si512(when1_vec + i),
-                                                          _mm512_loadu_si512(when0_vec + i), 0xca));
-        }
-    }
-#endif
-
-#if __AVX512F__
-#define select_into select_into_ternary_avx512
-#else
-#define select_into select_into_reference
-#endif
+    #include "ternary.h"
 
     #include "distance.h"
 
@@ -134,8 +115,6 @@ namespace bhv {
 
     #include "permutation.h"
 
-    void rehash_into(word_t *x, word_t *target) {
-        TurboSHAKE(512, (uint8_t *) x, BYTES, 0x1F, (uint8_t *) target, BYTES);
-    }
+    #include "hash.h"
 }
 #endif //BHV_CORE_H

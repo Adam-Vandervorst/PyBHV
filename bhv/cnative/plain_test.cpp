@@ -8,6 +8,10 @@ using namespace std;
 int main() {
     constexpr unsigned long N = 201;
 
+    // burn some cycles to get the OS's attention
+    volatile uint64_t x = 0x7834d688d8827099ULL;
+    for (size_t i = 0; i < 50000000; ++i)
+        x = x + (x % 7);
 
     auto t0 = chrono::high_resolution_clock::now();
 
@@ -22,7 +26,7 @@ int main() {
     word_t *ps[N];
     for (size_t i = 0; i < N; ++i) {
         ps[i] = bhv::empty();
-        bhv::permute_into(rs[i], 42, ps[i]);
+        bhv::roll_word_bits_into(rs[i], 42, ps[i]);
     }
 
     auto t2 = chrono::high_resolution_clock::now();
@@ -30,7 +34,7 @@ int main() {
 
     for (size_t i = 0; i < N; ++i) {
         word_t tmp [WORDS];
-        bhv::permute_into(ps[i], -42, tmp);
+        bhv::roll_word_bits_into(ps[i], -42, tmp);
         assert(bhv::eq(rs[i], tmp));
     }
 
