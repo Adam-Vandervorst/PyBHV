@@ -293,7 +293,7 @@ static PyObject *BHV_ternary(BHV * x, PyObject * args) {
     BHV * z;
     uint8_t op;
 
-    if (!PyArg_ParseTuple(args, "O!O!i", &BHVType, &y, &BHVType, &z, &op))
+    if (!PyArg_ParseTuple(args, "O!O!b", &BHVType, &y, &BHVType, &z, &op))
         return nullptr;
 
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);

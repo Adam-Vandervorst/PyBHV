@@ -38,6 +38,10 @@ class NativePackedBHV(AbstractBHV):
     def majority(cls, xs):
         return NativePackedBHV(CNativePackedBHV.majority([x.ins for x in xs]))
 
+    @classmethod
+    def representative(cls, xs):
+        return NativePackedBHV(CNativePackedBHV.representative([x.ins for x in xs]))
+
     def active(self):
         return self.ins.active()
 
