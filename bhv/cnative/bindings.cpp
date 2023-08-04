@@ -74,13 +74,13 @@ static PyObject *BHV_invert(PyObject * v);
 static PyObject *BHV_hamming(BHV * v1, PyObject * args);
 
 static PyObject *BHV_to_bytes(BHV * x, PyObject * Py_UNUSED(ignored));
-
 static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args);
 
+static PyObject *__getstate__(BHV *x, PyObject *Py_UNUSED(ignored));
+static PyObject *__setstate__(BHV *x, PyObject *args);
+
 static PyObject *BHV_active(BHV * v, PyObject * Py_UNUSED(ignored)) {
-return Py_BuildValue("i",
-bhv::active(v
-->data));
+    return Py_BuildValue("i", bhv::active(v->data));
 }
 
 static PyMemberDef BHV_members[] = {
@@ -124,6 +124,10 @@ static PyMethodDef BHV_methods[] = {
                 "Bytes normalized form"},
         {"from_bytes",        (PyCFunction) BHV_from_bytes,        METH_CLASS | METH_VARARGS,
                 "Construct from bytes normalized form"},
+        {"__getstate__",      (PyCFunction) __getstate__,          METH_NOARGS,
+                "Pickle the vector"},
+        {"__setstate__",      (PyCFunction) __setstate__,          METH_VARARGS,
+                "Un-pickle the vector"},
         {nullptr}
 };
 
@@ -136,7 +140,7 @@ static PyNumberMethods BHV_nb_methods = {
 
 static PyTypeObject BHVType = {
         .ob_base = PyVarObject_HEAD_INIT(nullptr, 0)
-        .tp_name = "bhv.CNativePackedBHV",
+        .tp_name = "bhv.cnative.CNativePackedBHV",
         .tp_basicsize = sizeof(BHV),
         .tp_itemsize = 0,
         .tp_dealloc = (destructor) BHV_dealloc,
@@ -386,6 +390,26 @@ static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args) {
 
     memcpy(((BHV *) ret)->data, buf, BYTES);
     return ret;
+}
+
+static PyObject *__getstate__(BHV *x, PyObject *Py_UNUSED(ignored)) {
+    return PyBytes_FromStringAndSize((char*)x->data, BYTES);
+}
+
+static PyObject *__setstate__(BHV *x, PyObject *args) {
+    char *buf;
+    size_t size;
+
+    if (!PyArg_ParseTuple(args, "s#", &buf, &size))
+        return nullptr;
+
+    if (size != BYTES) {
+        PyErr_SetString(PyExc_TypeError, "Bytes object didn't have the right size");
+        return nullptr;
+    }
+
+    memcpy(x->data, buf, BYTES);
+    Py_RETURN_NONE;
 }
 
 static PyObject *dimension(PyObject * self, PyObject * args, PyObject * kwds) {

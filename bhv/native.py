@@ -87,6 +87,12 @@ class NativePackedBHV(AbstractBHV):
     def to_bytes(self):
         return self.ins.to_bytes()
 
+    def __getstate__(self):
+        return self.to_bytes()
+
+    def __setstate__(self, state):
+        self.ins = CNativePackedBHV.from_bytes(state)
+
 NativePackedBHV.ZERO = NativePackedBHV(CNativePackedBHV.ZERO)
 NativePackedBHV.ONE = NativePackedBHV(CNativePackedBHV.ONE)
 NativePackedBHV.HALF = NativePackedBHV(CNativePackedBHV.HALF)

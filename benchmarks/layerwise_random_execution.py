@@ -57,11 +57,11 @@ for _ in range(repeat_pipeline):
     value = [BHV.rand() for _ in range(I)]
     values = [value]
 
-    # with Pool() as p:
-    #     for size in sizes:
-    #         values.append(p.map(execute, range(size)))
-    for size in sizes:
-        values.append(list(map(execute, range(size))))
+    with Pool() as p:
+        for size in sizes:
+            values.append(p.map(execute, range(size)))
+    # for size in sizes:
+    #     values.append(list(map(execute, range(size))))
 
     result = values[-1]
 
