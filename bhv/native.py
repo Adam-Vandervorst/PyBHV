@@ -31,15 +31,28 @@ class NativePackedBHV(AbstractBHV):
     def select(self, when1, when0):
         return NativePackedBHV(self.ins.select(when1.ins, when0.ins))
 
+    def ternary(self, y, z, op):
+        return NativePackedBHV(self.ins.ternary(y.ins, z.ins, op))
+
     @classmethod
     def majority(cls, xs):
         return NativePackedBHV(CNativePackedBHV.majority([x.ins for x in xs]))
+
+    @classmethod
+    def representative(cls, xs):
+        return NativePackedBHV(CNativePackedBHV.representative([x.ins for x in xs]))
 
     def active(self):
         return self.ins.active()
 
     def hamming(self, other):
         return self.ins.hamming(other.ins)
+
+    def permute_words(self, permutation_id: int):
+        return NativePackedBHV(self.ins.permute_words(permutation_id))
+
+    def permute_byte_bits(self, permutation_id: int):
+        return NativePackedBHV(self.ins.permute_byte_bits(permutation_id))
 
     def roll_words(self, d: int):
         return NativePackedBHV(self.ins.roll_words(d))
@@ -73,6 +86,12 @@ class NativePackedBHV(AbstractBHV):
 
     def to_bytes(self):
         return self.ins.to_bytes()
+
+    def __getstate__(self):
+        return self.to_bytes()
+
+    def __setstate__(self, state):
+        self.ins = CNativePackedBHV.from_bytes(state)
 
 NativePackedBHV.ZERO = NativePackedBHV(CNativePackedBHV.ZERO)
 NativePackedBHV.ONE = NativePackedBHV(CNativePackedBHV.ONE)

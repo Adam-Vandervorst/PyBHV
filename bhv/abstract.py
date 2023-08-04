@@ -160,10 +160,6 @@ class BooleanAlgBHV(BaseBHV):
     def __invert__(self) -> Self:
         return self ^ self.ONE
 
-    # recall
-    # information_entropy(p) = -p*log2(p) - (1 - p)*log2(1 - p)
-    # so for some active fractions, it should be a lot cheaper than for others
-    # hence a specialized method for 2^-n
     @classmethod
     def rand2(cls, power: int) -> Self:
         assert power >= 0
