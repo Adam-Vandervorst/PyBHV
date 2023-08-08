@@ -195,7 +195,7 @@ float rand_benchmark(bool display, bool keep_in_cache) {
 
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
-        bhv::rand_into_reference(m);
+        bhv::rand_into(m);
 
         something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
     }
@@ -268,7 +268,7 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac, bool r
         word_t *m = result_buffer + (io_buf_idx * BYTES / sizeof(word_t));
 
 //        bhv::random_into_reference(m, p);
-        bhv::random_into_tree_sparse_avx2(m, p);
+        bhv::random_into(m, p);
 //        bhv::random_into_buffer_avx2(m, p);
 
         // once runtime of random_into drops under 500ns, consider removing this
