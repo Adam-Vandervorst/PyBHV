@@ -960,6 +960,7 @@ int main() {
     //Run one throw-away test to make sure the OS is ready to give us full resource
     majority_benchmark(3, false, false);
 
+    cout << "*-= MAJ =-*" << endl;
     cout << "*-= IN CACHE TESTS =-*" << endl;
     majority_benchmark(3, true, true);
     majority_benchmark(5, true, true);

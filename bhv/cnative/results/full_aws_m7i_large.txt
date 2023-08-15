@@ -486,6 +486,7 @@ total: 79918.3
 0.98frac, observed: 0.000547038, in_cache: 0, total: 0.706607µs
 0.99frac, observed: 0.00018401, in_cache: 0, total: 0.826184µs
 total: 79877.6
+*-= MAJ =-*
 *-= IN CACHE TESTS =-*
 3 hypervectors, equiv: √, in_cache: 1, total: 0.0107897µs, normalized: 3.59655ns/vec
 5 hypervectors, equiv: √, in_cache: 1, total: 0.0243742µs, normalized: 4.87484ns/vec
