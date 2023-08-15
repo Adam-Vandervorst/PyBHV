@@ -1,3 +1,12 @@
+void roll_bytes_into(word_t *x, int32_t d, word_t *target) {
+    uint8_t *x_bytes = (uint8_t *)x;
+    uint8_t *target_bytes = (uint8_t *)target;
+    int32_t offset = ((d % BYTES) + BYTES) % BYTES;
+
+    memcpy(target_bytes, x_bytes + offset, BYTES - offset);
+    memcpy(target_bytes + BYTES - offset, x_bytes, offset);
+}
+
 void roll_words_into(word_t *x, int32_t d, word_t *target) {
     int32_t offset = ((d % WORDS) + WORDS) % WORDS;
 
@@ -153,6 +162,7 @@ void rand_word_permutation_into(uint32_t seed, word_iter_t *p) {
 }
 
 void permute_words_into(word_t *x, int32_t perm, word_t *target) {
+    assert(x != target);
     if (perm == 0) {
         memcpy(target, x, BYTES);
         return;
@@ -189,6 +199,7 @@ void rand_byte_permutation_into(uint32_t seed, byte_iter_t *p) {
 }
 
 void permute_bytes_into(word_t *x, int32_t perm, word_t *target) {
+    assert(x != target);
     if (perm == 0) {
         memcpy(target, x, BYTES);
         return;
