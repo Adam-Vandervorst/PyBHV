@@ -253,7 +253,7 @@ void threshold_into_short_avx512(word_t ** xs, int_fast16_t size, uint16_t thres
 
     //Now do thresholding and output
     for (size_t i = 0; i < BITS/32; i++) {
-        __mmask32 maj_bits = _mm512_cmpgt_epu16_mask(*(__m512i*)(&counters[i * 32]), threshold_simd);
+        __mmask32 maj_bits = _mm512_cmpgt_epu16_mask(_mm512_loadu_si512(counters + i * 32), threshold_simd);
         *((uint32_t*)(dst_bytes + (i * 4))) = maj_bits;
     }
 }
@@ -328,7 +328,7 @@ void threshold_into_32bit_avx512(word_t ** xs, uint32_t size, uint32_t threshold
 
     //Now do thresholding and output
     for (size_t i = 0; i < BITS/16; i++) {
-        __mmask16 maj_bits = _mm512_cmpgt_epu32_mask(*(__m512i*)(&counters[i * 16]), threshold_simd);
+        __mmask16 maj_bits = _mm512_cmpgt_epu32_mask(_mm512_loadu_si512(counters + i * 16), threshold_simd);
         *((uint16_t*)(dst_bytes + (i * 2))) = maj_bits;
     }
 }

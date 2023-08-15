@@ -10,32 +10,37 @@ from statistics import pstdev, fmean
 
 repeat_pipeline = 5
 
-sizes = list(range(1, 2000))
+sizes = list(range(1, 2000, 2))
+sizes += list(range(2001, 20000, 20))
+sizes += list(range(20001, 200000, 200))
+sizes += list(range(200001, 1000001, 2000))
 
 
 distances = {s: [] for s in sizes}
 execution_times = {s: [] for s in sizes}
 
-for _ in range(repeat_pipeline):
+rs = [BHV.rand() for _ in range(1000001)]
+
+for i in range(repeat_pipeline):
+    print(f"repetition {i + 1}/{repeat_pipeline}")
     for size in sizes:
-        rs = [BHV.rand() for _ in range(size)]
+        s = rs[:size]
 
         t_exec = monotonic()
 
-        maj = BHV.majority(rs)
+        maj = BHV.majority(s)
 
         execution_times[size].append(monotonic() - t_exec)
 
-        distances[size].append([AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION, invert=True) for r in rs])
+        distances[size].append(fmean(AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION, invert=True) for r in s))
+
+        del s
 
 
 with open("results/majority_2000_native_simd.csv", 'w') as f:
     f.write("size,mean_distance,std_distance,time\n")
     for size in sizes:
         print(size)
-        md = [fmean(ds) for ds in distances[size]]
-        sd = [pstdev(ds) for ds in distances[size]]
-        print("mean distance:", fmean(md), "+-", pstdev(md))
-        print("stdev distance:", fmean(sd), "+-", pstdev(sd))
+        print("mean distance:", fmean(distances[size]), "+-", pstdev(distances[size]))
         print("timing:", fmean(execution_times[size]), "+-", pstdev(execution_times[size]))
-        f.write(f"{size},{fmean(md)},{fmean(sd)},{fmean(execution_times[size])}\n")
+        f.write(f"{size},{fmean(distances[size])},{fmean(execution_times[size])}\n")
