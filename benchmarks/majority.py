@@ -38,7 +38,7 @@ for i in range(repeat_pipeline):
 
 
 with open("results/majority_2000_native_simd.csv", 'w') as f:
-    f.write("size,mean_distance,std_distance,time\n")
+    f.write("size,distance,time\n")
     for size in sizes:
         print(size)
         print("mean distance:", fmean(distances[size]), "+-", pstdev(distances[size]))
