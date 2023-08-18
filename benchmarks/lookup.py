@@ -8,11 +8,11 @@ from random import shuffle, random, randrange, sample
 from statistics import pstdev, fmean
 
 
-repeat_pipeline = 1
+repeat_pipeline = 5
 repeat_lookup = 10
 thresholds = [0, 3, 6]
 deviations = [0, 1, 2, 4]
-sizes = [20, 1000]
+sizes = [20, 200, 2000, 20000]
 
 # e.g.
 # hvs=[10, 20, 30, 50, 100]
