@@ -5,6 +5,15 @@ void majority3_into_reference(word_t *x, word_t *y, word_t *z, word_t *target) {
     }
 }
 
+void true_majority_into_reference(word_t **xs, size_t size, word_t *target) {
+    assert(size % 2 == 1 && "true majority must be given an odd number of input hypervectors");
+    switch (size) {
+        case 1: memcpy(target, xs[0], BYTES); return;
+        case 3: majority3_into_reference(xs[0], xs[1], xs[2], target); return;
+        default: threshold_into(xs, size, size/2, target); return;
+    }
+}
+
 #if __AVX512BW__
 
 /// @brief AVX-512 implementation of Decision-Tree-Majority algorithm
@@ -157,17 +166,14 @@ void true_majority_into_avx2(word_t **xs, size_t size, word_t *target) {
 #endif //__AVX2__
 
 #if __AVX512BW__
-#define logic_majority_into logic_majority_into_avx512
 #define majority3_into majority3_into_ternary_avx512
 #define true_majority_into true_majority_into_avx512
 #elif __AVX2__
 #define majority3_into majority3_into_avx2
-#define logic_majority_into logic_majority_into_avx2
 #define true_majority_into true_majority_into_avx2
 #else
 #define majority3_into majority3_into_reference
-#define logic_majority_into logic_majority_into_avx2 //GOAT, need a straight C impl
-#define true_majority_into true_majority_into_avx2 //GOAT, need a straight C impl
+#define true_majority_into true_majority_into_reference
 #endif
 
 /// @brief Computes the majority value for each bit among all corresponding bits in the input vectors
