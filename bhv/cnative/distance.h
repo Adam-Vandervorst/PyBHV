@@ -2,9 +2,8 @@
 /// @note This implementation is within 30% of AVX-2 and AVX-512 on Ice-Lake
 bit_iter_t active_reference(word_t *x) {
     bit_iter_t total = 0;
-    for (word_iter_t i = 0; i < WORDS; ++i) {
-        total += __builtin_popcountl(x[i]);
-    }
+    for (word_iter_t i = 0; i < WORDS; ++i)
+        total += std::popcount(x[i]);
     return total;
 }
 
