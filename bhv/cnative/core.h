@@ -2,7 +2,6 @@
 #define BHV_CORE_H
 
 #include <bit>
-#include <execution>
 #include <random>
 #include <cstring>
 #include <cassert>
@@ -102,64 +101,26 @@ namespace bhv {
         }
     }
 
-#define get(d, i) ((d[(i)/64] >> ((i) % 64)) & 1)
-#define toggle(d, i) d[(i)/64] = d[(i)/64] ^ (1ULL << ((i) % 64))
-    void bfwht(word_t *data) {
-        for (bit_iter_t i = 0; i < BIT_POW - 1; ++i )
-            for (bit_iter_t j = 0; j < BITS; j += (1 << (i+1)) )
-                for (bit_iter_t k = 0; k < (unsigned)(1 << i); ++k ) {
-                    bit_iter_t loc1 = j + k;
-                    bit_iter_t loc2 = j + k + (unsigned)(1 << i);
-                    if (get(data, loc1) != get(data, loc2)) {
-                        toggle(data, loc1);
-                        toggle(data, loc2);
-                    }
-                }
-    }
-
-    void bstep(uint8_t *buf, bit_iter_t i) {
-        for (bit_iter_t j = 0; j < BITS; j += (1 << (i+1)))
-            for (bit_iter_t k = 0; k < (unsigned)(1 << i); ++k) {
-                bit_iter_t loc1 = j + k;
-                bit_iter_t loc2 = j + k + (unsigned)(1 << i);
-                if (buf[loc1] != buf[loc2]) {
-                    buf[loc1] ^= 1;
-                    buf[loc2] ^= 1;
-                }
+    void unpack_into(word_t *data, bool *target) {
+        for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
+            bit_iter_t offset = word_id * BITS_PER_WORD;
+            word_t word = data[word_id];
+            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
+                target[offset + bit_id] = word & (1ULL << bit_id);
             }
+        }
     }
 
-    void pack_into(uint8_t *data, word_t *target) {
+    void pack_into(bool *data, word_t *target) {
         for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
             bit_iter_t offset = word_id * BITS_PER_WORD;
             word_t word = 0;
             for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
                 if (data[offset + bit_id])
-                    word |= 1UL << bit_id;
+                    word |= 1ULL << bit_id;
             }
             target[word_id] = word;
         }
-    }
-
-    void unpack_into(word_t *data, uint8_t *target) {
-        for (word_iter_t word_id = 0; word_id < WORDS; ++word_id) {
-            bit_iter_t offset = word_id * BITS_PER_WORD;
-            word_t word = data[word_id];
-            for (bit_word_iter_t bit_id = 0; bit_id < BITS_PER_WORD; ++bit_id) {
-                target[offset + bit_id] = word & (1UL << bit_id);
-            }
-        }
-    }
-
-
-    void nd_bfwht(word_t *data, word_t *target) {
-        uint8_t buf[BITS];
-        unpack_into(data, buf);
-
-        for (bit_iter_t i = 0; i < BIT_POW - 1; ++i)
-            bstep(buf, i);
-
-        pack_into(buf, target);
     }
 
     #include "ternary.h"

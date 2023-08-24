@@ -634,13 +634,13 @@ int main() {
     cout << "*-= STARTING (" << x << ") =-*" << endl;
 
 #ifdef BWHT
-    unary_benchmark<nondestructive_unary<bhv::bfwht>, nondestructive_unary<bhv::bfwht>>(false, true);
+    unary_benchmark<bhv::bfwht_into, bhv::bfwht_into>(false, true);
 
     cout << "*-= Boolean Walsh-Hadamard transform =-*" << endl;
 
-    unary_benchmark<bhv::nd_bfwht, bhv::nd_bfwht>(true, true);
-    unary_benchmark<nondestructive_unary<bhv::bfwht>, bhv::nd_bfwht>(true, true);
-    unary_benchmark<nondestructive_unary<bhv::bfwht>, nondestructive_unary<bhv::bfwht>>(true, true);
+    unary_benchmark<bhv::bfwht_into, bhv::bfwht_into>(true, true);
+    unary_benchmark<nondestructive_unary<bhv::bfwht_destructive>, bhv::bfwht_into>(true, true);
+    unary_benchmark<nondestructive_unary<bhv::bfwht_destructive>, nondestructive_unary<bhv::bfwht_destructive>>(true, true);
 #endif
 #ifdef TERNARY
     ternary_benchmark<simulated_select, bhv::select_into_reference>(false, true);
