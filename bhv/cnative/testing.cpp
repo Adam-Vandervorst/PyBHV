@@ -3,21 +3,23 @@
 #include <bitset>
 #include "core.h"
 
+using namespace std;
+
 
 void print_bits(int64_t w) {
-    std::bitset<64> x(w);
-    std::cout << x << std::endl;
+    bitset<64> x(w);
+    cout << x << endl;
 }
 
 
 void print_byte(int8_t w) {
-    std::bitset<8> x(w);
-    std::cout << x << std::endl;
+    bitset<8> x(w);
+    cout << x << endl;
 }
 
 
 void test_single_byte_permutation() {
-    std::mt19937_64 rng;
+    mt19937_64 rng;
 
     uint64_t r = rng();
 
@@ -60,18 +62,18 @@ void test_instruction_upto() {
 //    uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
 //    uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
 
-    std::cout << "to: " << (uint32_t) to << std::endl;
-    std::cout << "rem: " << remaining << std::endl;
+    cout << "to: " << (uint32_t) to << endl;
+    cout << "rem: " << remaining << endl;
     print_bits(instruction);
 
     for (uint8_t i = to - 1; i < to; --i)
-        std::cout << ((instruction & (1 << i)) >> i);
+        cout << ((instruction & (1 << i)) >> i);
 
-    std::cout << std::endl;
+    cout << endl;
 
     word_t *x = bhv::empty();
     bhv::random_into_tree_sparse_avx2(x, .5);
-    std::cout << "active: " << (double) bhv::active(x) / (double) BITS << std::endl;
+    cout << "active: " << (double) bhv::active(x) / (double) BITS << endl;
 }
 
 void test_ternary_instruction() {
@@ -113,22 +115,44 @@ void test_ternary_instruction() {
 //    uint64_t instruction = bhv::instruction_upto(.5625001, &to, &remaining);  // 100
 //    uint64_t instruction = bhv::instruction_upto(.5624999, &to, &remaining);  // 100
 
-    std::cout << "buffer: ";
+    cout << "buffer: ";
     for (uint8_t b : buffer)
-        std::cout << std::bitset<8>(b) << " ";
-    std::cout << std::endl;
-    std::cout << "to: " << (uint32_t) to << std::endl;
-    std::cout << "finalizer: " << (int32_t) finalizer << std::endl;
+        cout << bitset<8>(b) << " ";
+    cout << endl;
+    cout << "to: " << (uint32_t) to << endl;
+    cout << "finalizer: " << (int32_t) finalizer << endl;
 
 //    word_t *x = bhv::empty();
 //    bhv::random_into_ternary_tree_avx512(x, .5);
-//    std::cout << "active: " << (double) bhv::active(x) / (double) BITS << std::endl;
+//    cout << "active: " << (double) bhv::active(x) / (double) BITS << endl;
 
 //    bhv::random_into_ternary_tree_avx512(x, 123.f/256.f);
-//    std::cout << "expected: " << 123.f/256.f << ", active: " << (double) bhv::active(x) / (double) BITS << std::endl;
+//    cout << "expected: " << 123.f/256.f << ", active: " << (double) bhv::active(x) / (double) BITS << endl;
+}
+
+void test_bfwht() {
+    auto v1 = bhv::random(.95);
+    bhv::rehash_into(v1, v1);
+
+    cout << bhv::active(v1) << " initial af" << endl;
+
+    auto v1_t = bhv::empty();
+    bhv::bfwht_into(v1, v1_t);
+
+    cout << bhv::active(v1_t) << " initial transformed af" << endl;
+
+    cout << bhv::hamming(v1, v1_t) << " |v,v_t|" << endl;
+
+    auto v1_t_t = bhv::empty();
+    bhv::bfwht_into(v1_t, v1_t_t);
+
+    cout << bhv::active(v1_t_t) << " twice transformed af" << endl;
+
+    cout << bhv::hamming(v1, v1_t_t) << " |v,v_t_t|" << endl;
+    cout << bhv::hamming(v1_t, v1_t_t) << " |v_t,v_t_t|" << endl;
 }
 
 
 int main() {
-    test_ternary_instruction();
+    test_bfwht();
 }
