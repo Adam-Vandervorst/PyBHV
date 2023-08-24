@@ -11,24 +11,25 @@ using namespace std;
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 1000
 
-#define THRESHOLD
-#define MAJ
-#define RAND
-#define RAND2
-#define RANDOM
-#define PERMUTE
-#define ROLL
-#define ACTIVE
-#define HAMMING
-#define INVERT
-#define SWAP_HALVES
-#define REHASH
-#define AND
-#define OR
-#define XOR
-#define SELECT
-#define MAJ3
-#define TERNARY
+//#define THRESHOLD
+//#define MAJ
+//#define RAND
+//#define RAND2
+//#define RANDOM
+//#define PERMUTE
+//#define ROLL
+//#define ACTIVE
+//#define HAMMING
+//#define INVERT
+//#define SWAP_HALVES
+//#define REHASH
+//#define AND
+//#define OR
+//#define XOR
+//#define SELECT
+//#define MAJ3
+//#define TERNARY
+#define BWHT
 
 
 float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bool keep_in_cache) {
@@ -616,6 +617,12 @@ void __attribute__ ((noinline)) any_via_threshold(word_t *x, word_t *y, word_t *
     bhv::threshold_into(xs, 3, 0, target);
 };
 
+template <void F(word_t*)>
+void nondestructive_unary(word_t *x, word_t *target) {
+    memcpy(target, x, BYTES);
+    F(target);
+}
+
 
 int main() {
     cout << "*-= WARMUP =-*" << endl;
@@ -625,8 +632,17 @@ int main() {
         x = x + (x % 7);
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
-#ifdef TERNARY
 
+#ifdef BWHT
+    unary_benchmark<nondestructive_unary<bhv::bfwht>, nondestructive_unary<bhv::bfwht>>(false, true);
+
+    cout << "*-= Boolean Walsh-Hadamard transform =-*" << endl;
+
+    unary_benchmark<bhv::nd_bfwht, bhv::nd_bfwht>(true, true);
+    unary_benchmark<nondestructive_unary<bhv::bfwht>, bhv::nd_bfwht>(true, true);
+    unary_benchmark<nondestructive_unary<bhv::bfwht>, nondestructive_unary<bhv::bfwht>>(true, true);
+#endif
+#ifdef TERNARY
     ternary_benchmark<simulated_select, bhv::select_into_reference>(false, true);
 
     cout << "*-= TERNARY =-*" << endl;
