@@ -123,6 +123,14 @@ namespace bhv {
         }
     }
 
+    inline bool get(word_t *d, bit_iter_t i) {
+        return (d[i/BITS_PER_WORD] >> (i % BITS_PER_WORD)) & 1;
+    }
+
+    inline void toggle(word_t *d, bit_iter_t i) {
+        d[i/BITS_PER_WORD] ^= (1ULL << (i % BITS_PER_WORD));
+    }
+
     #include "ternary.h"
 
     #include "distance.h"
