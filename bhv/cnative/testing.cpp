@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <bitset>
+#include <functional>
 #include "core.h"
 
 using namespace std;
@@ -153,6 +154,25 @@ void test_bfwht() {
 }
 
 
+void test_independent_opt() {
+    auto v_ref = bhv::rand();
+    auto v = bhv::rand();
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,initial|" << endl;
+
+    auto close_to_ref = [v_ref](word_t *x) { return bhv::hamming(x, v_ref); };
+    bhv::opt_independent<uint64_t>(v, close_to_ref);
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,final|" << endl;
+
+    auto full = bhv::one();
+
+    auto half = [](word_t *x) { return abs(bhv::active(x) - BITS/2); };
+    bhv::opt_independent<uint64_t>(full, half);
+
+    cout << bhv::active(full) << " |full_opt|  (" << BITS/2 << ")" << endl;
+}
+
 int main() {
-    test_bfwht();
+    test_independent_opt();
 }
