@@ -22,9 +22,14 @@ class Store(Generic[K]):
 
 
 class StoreList(Store):
+    def not_unrelated(self, v: AbstractBHV, threshold=6) -> Iterator[K]:
+        for k, v_ in self.hvs.items():
+            if not v_.unrelated(v, threshold):
+                yield k
+
     def related(self, v: AbstractBHV, threshold=6) -> Iterator[K]:
         for k, v_ in self.hvs.items():
-            if v_.std_apart(v) <= threshold:
+            if v_.related(v, threshold):
                 yield k
 
     def closest(self, v: AbstractBHV) -> Optional[K]:
