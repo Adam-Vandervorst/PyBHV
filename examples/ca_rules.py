@@ -1,5 +1,5 @@
 from bhv.symbolic import SymbolicBHV, Var
-from bhv.np import NumPyBoolBHV as BHV, DIMENSION
+from bhv.vanilla import VanillaBHV as BHV, DIMENSION
 from bhv.visualization import Image
 
 
