@@ -113,6 +113,11 @@ class NumPyBoolBHV(AbstractBHV):
         return (self.data.astype(np.uint8) + b).tobytes().decode('ascii')
 
     @classmethod
+    def from_bitstream(cls, bits_s: 'Iterator[bool]') -> Self:
+        data = np.fromiter(bits_s, dtype=np.bool_, count=DIMENSION)
+        return cls(data)
+
+    @classmethod
     def from_bitstring(cls, s: str) -> str:
         b = ord('0')
         return cls((np.frombuffer(bytes(s, 'ascii'), dtype=np.uint8) - b).astype(np.bool_))
