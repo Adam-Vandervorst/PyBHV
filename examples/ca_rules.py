@@ -20,12 +20,10 @@ rule = make_rule(RULE)
 # last_v = BHV.rand()
 
 # low fraction of on bits
-last_v = BHV.random(.03)
+# last_v = BHV.random(.03)
 
 # single on bit
-# initial = np.zeros(DIMENSION, dtype=np.bool_)
-# initial[64] = np.bool_(1)
-# last_v = BHV(initial)
+last_v = BHV.from_bitstream(i == 420 for i in range(DIMENSION))
 
 vs = [last_v]
 
