@@ -234,9 +234,6 @@ word_t * permute(word_t *x, int32_t perm) {
     return r;
 }
 
-
-#define get(d, i) ((d[(i)/64] >> ((i) % 64)) & 1)
-#define toggle(d, i) d[(i)/64] = d[(i)/64] ^ (1ULL << ((i) % 64))
 void bfwht_destructive(word_t *data) {
     for (bit_iter_t i = 0; i < BIT_POW - 1; ++i )
         for (bit_iter_t j = 0; j < BITS; j += (1 << (i+1)) )
