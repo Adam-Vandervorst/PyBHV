@@ -1,5 +1,6 @@
+from random import random
 from bhv.abstract import AbstractBHV
-from typing import Generic, TypeVar, Type, Optional
+from typing import Generic, TypeVar, Type, Optional, Iterable
 
 T = TypeVar('T')
 
@@ -12,7 +13,7 @@ class Embedding(Generic[T]):
         raise NotImplementedError()
 
 
-class Random(Embedding):
+class Random(Embedding[T]):
     def __init__(self, hvt: Type[AbstractBHV]):
         self.hvt = hvt
         self.hvs = {}
@@ -27,16 +28,18 @@ class Random(Embedding):
 
     def back(self, input_hv: AbstractBHV, threshold=.1) -> Optional[T]:
         best_x = None
-        best_score = 1.
+        best_distance = 1.
         for x, hv in self.hvs.items():
-            score = input_hv.bit_error_rate(hv)
-            if score < best_score and score < threshold:
-                best_score = score
+            distance = input_hv.bit_error_rate(hv)
+            if distance < best_distance:
+                best_distance = distance
                 best_x = x
-        return best_x
+
+        if best_distance < threshold:
+            return best_x
 
 
-class InterpolateBetween(Embedding):
+class InterpolateBetween(Embedding[float]):
     def __init__(self, hvt: Type[AbstractBHV], begin: AbstractBHV = None, end: AbstractBHV = None):
         self.hvt = hvt
         self.begin = hvt.rand() if begin is None else begin
@@ -53,23 +56,14 @@ class InterpolateBetween(Embedding):
             return beginh/totalh
 
 
+class Collapse(Embedding[Iterable[float]]):
+    def __init__(self, hvt: Type[AbstractBHV]):
+        self.hvt = hvt
 
-def make_mask(on, n):
-    ar = torch.zeros(n, dtype=torch.bool)
-    ar[:on] = True
-    perm = torch.randperm(n)
-    return ar[perm]
+    def forward(self, x: Iterable[float]) -> AbstractBHV:
+        return self.hvt.from_bitstream(random() < v for v in x)
 
-def binarize_3(x, n):
-    on = int(float(x)*(n+1))
-    if x == 1.0:
-        return torch.ones(n, dtype=torch.bool)
-    ar = torch.zeros(n, dtype=torch.bool)
-    ar[:on] = True
-    return ar
-
-def filln(xs, n):
-    ar = torch.empty(len(xs)*n, dtype=torch.bool)
-    for i, x in enumerate(xs):
-        ar[i*n:(i + 1)*n] = binarize_3(x, n)
-    return ar
+    def back(self, input_hv: AbstractBHV, soft=.1) -> Optional[Iterable[float]]:
+        i = 1. - soft
+        o = soft
+        return (i if b else o for b in input_hv.bits())
