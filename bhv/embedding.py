@@ -1,8 +1,9 @@
 from random import random, uniform
 from bhv.abstract import AbstractBHV
-from typing import Generic, TypeVar, Type, Optional, Iterable
+from typing import Generic, TypeVar, Type, Optional, Iterable, Callable
 
 T = TypeVar('T')
+S = TypeVar('S')
 
 
 class Embedding(Generic[T]):
@@ -56,20 +57,7 @@ class InterpolateBetween(Embedding[float]):
             return beginh/totalh
 
 
-class Collapse(Embedding[Iterable[float]]):
-    def __init__(self, hvt: Type[AbstractBHV]):
-        self.hvt = hvt
-
-    def forward(self, x: Iterable[float]) -> AbstractBHV:
-        return self.hvt.from_bitstream(random() < v for v in x)
-
-    def back(self, input_hv: AbstractBHV, soft=.1) -> Optional[Iterable[float]]:
-        i = 1. - soft
-        o = soft
-        return (i if b else o for b in input_hv.bits())
-
-
-class Intervals:
+class Intervals(Embedding[float]):
     @staticmethod
     def _perfect_overlap(low: float, high: float, divisions: int, overlap: int, ends: bool):
         """
@@ -113,11 +101,11 @@ class Intervals:
         self.span = (min(ls), max(hs))
         self.hvs = [hvt.rand() for _ in intervals]
 
-    def forward(self, x: float):
+    def forward(self, x: float) -> AbstractBHV:
         matching = [hv for hv, (l, h) in zip(self.hvs, self.intervals) if l <= x <= h]
         return self.hvt.majority(matching)
 
-    def back(self, input_hv, threshold=4):
+    def back(self, input_hv: AbstractBHV, threshold=4) -> Optional[float]:
         L, H = self.span
         for hv, (l, h) in zip(self.hvs, self.intervals):
             if not hv.unrelated(input_hv, threshold):
@@ -126,3 +114,152 @@ class Intervals:
                 if L > H:
                     return
         return uniform(L, H)
+
+
+class BeanMachine(Embedding[float]):
+    def __init__(self, hvt, ncolumns, kernel, border: '"wrap" | "cut" | "bunch"' = "cut"):
+        assert len(kernel) <= ncolumns
+        self.hvt = hvt
+        self.ncolumns = ncolumns
+        self.kernel = kernel
+        self.border = border
+        self.hvs = [hvt.rand() for _ in range(ncolumns)]
+
+    @staticmethod
+    def _discrete_sample(data: list[S], point: float, kernel: list[int], border: '"wrap" | "cut" | "bunch"') -> list[S]:
+        """
+        Samples data points from a list based on a center point and a kernel.
+
+        Parameters:
+        - data: List of data points to sample from.
+        - point: Center point as a float between 0 and 1.
+        - kernel: List of integers representing the multipliers for each data point around the center.
+        - border: How to handle edge cases. Can be "wrap", "cut", or "bunch".
+
+        Returns:
+        - List[X]: List of sampled data points.
+
+        Examples (doctest):
+        >>> BeanMachine._discrete_sample(list('abcde'), 0.5, [1, 2, 1])
+        ['b', 'c', 'c', 'd']
+
+        >>> BeanMachine._discrete_sample(list('abc'), 0.0, [1, 1, 1], border="wrap")
+        ['c', 'a', 'b']
+
+        >>> BeanMachine._discrete_sample(list('abc'), 0.0, [1, 1, 1], border="cut")
+        ['a', 'b']
+
+        >>> BeanMachine._discrete_sample(list('abc'), 0.0, [1, 1, 1], border="bunch")
+        ['a', 'a', 'b']
+        """
+        n = len(data)
+        center_idx = int(point * n)
+
+        # Calculate half-length of the kernel and whether it's even or odd
+        k_len = len(kernel)
+        half_k_len = k_len // 2
+        is_even_kernel = k_len % 2 == 0
+
+        result = []
+        for i in range(-half_k_len, half_k_len + 1):
+            if is_even_kernel and i == half_k_len:
+                break  # Skip the last element for even-length kernels
+
+            idx = center_idx + i
+
+            if idx < 0:
+                if border == "wrap":
+                    idx = n + idx
+                elif border == "cut":
+                    continue
+                else:  # "bunch"
+                    idx = 0
+            elif idx >= n:
+                if border == "wrap":
+                    idx = idx - n
+                elif border == "cut":
+                    continue
+                else:  # "bunch"
+                    idx = n - 1
+
+            # Add the data point as many times as specified by the kernel
+            result.extend([data[idx]] * kernel[i + half_k_len])
+
+        return result
+
+    def forward(self, x: float) -> AbstractBHV:
+        return self.hvt.majority(self._discrete_sample(self.hvs, x, self.kernel, self.border))
+
+    @staticmethod
+    def _position_infer(ds: list[float], kernel: list[int], border: '"wrap" | "cut" | "bunch"') -> int:
+        """
+        Infers the center point in the data list that most closely matches the given data point `x` based on a kernel.
+
+        Parameters:
+        - data: List of data points to sample from.
+        - x: The data point to find in the data list.
+        - kernel: List of integers representing the multipliers for each data point around the center.
+        - distance_metric: A function to compute the distance between two data points. Defaults to the example `d`.
+        - border: How to handle edge cases. Can be "wrap", "cut", or "bunch".
+
+        Returns:
+        - int: Inferred index of kernel optimal kernel application.
+
+        Examples:
+        >>> BeanMachine._position_infer([0, 3, 2, 4, 1, 5, 2, 6, 3, 7], 1.5, [1, 3, 1], border="cut")
+        0  # Distance: 5.5
+
+        >>> BeanMachine._position_infer([6, 4, 2, 0, 2, 4, 6], 5.5, [1, 3, 1], border="wrap")
+        6  # Distance: 3.5
+
+        >>> BeanMachine._position_infer([0, 2, 4, 6, 4, 2, 0], 5.5, [1, 3, 1], border="bunch")
+        6  # Distance: 4.5
+        """
+
+        # [Function body remains the same]
+        min_distance = float('inf')
+        best_center_idx = 0
+        n = len(ds)
+        k_len = len(kernel)
+        half_k_len = k_len // 2
+
+        for i in range(n):
+            weighted_distance = 0.0
+            for j in range(-half_k_len, half_k_len + 1):
+                idx = i + j
+                if idx < 0:
+                    if border == "wrap":
+                        idx = n + idx
+                    elif border == "cut":
+                        continue
+                    else:
+                        idx = 0
+                elif idx >= n:
+                    if border == "wrap":
+                        idx = idx - n
+                    elif border == "cut":
+                        continue
+                    else:
+                        idx = n - 1
+                weighted_distance += ds[idx] * kernel[j + half_k_len]
+            if weighted_distance < min_distance:
+                min_distance = weighted_distance
+                best_center_idx = i
+        return best_center_idx
+
+    def back(self, input_hv: AbstractBHV, threshold=4) -> float:
+        ds = [1. - hv.bit_error_rate(input_hv) for hv in self.hvs]
+        return self._position_infer(ds, self.kernel, self.border)/(self.ncolumns - 1)
+
+
+class Collapse(Embedding[Iterable[float]]):
+    def __init__(self, hvt: Type[AbstractBHV]):
+        self.hvt = hvt
+
+    def forward(self, x: Iterable[float]) -> AbstractBHV:
+        return self.hvt.from_bitstream(random() < v for v in x)
+
+    def back(self, input_hv: AbstractBHV, soft=.1) -> Optional[Iterable[float]]:
+        i = 1. - soft
+        o = soft
+        return (i if b else o for b in input_hv.bits())
