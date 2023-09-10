@@ -50,6 +50,11 @@ class VanillaBHV(AbstractBHV):
         assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return VanillaBHV(self.data[n:] + self.data[:n])
 
+    def roll_bits(self, n: int) -> 'VanillaBHV':
+        assert abs(n) < DIMENSION, "only supports DIMENSION rolls"
+        n = (DIMENSION + n) % DIMENSION
+        return self.from_int(((self.to_int() << (DIMENSION - n)) & self.ONE.to_int()) | (self.to_int() >> n))
+
     def swap_halves(self) -> 'VanillaBHV':
         return self.roll_bytes(DIMENSION//16)
 

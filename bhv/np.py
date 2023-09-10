@@ -41,8 +41,11 @@ class NumPyBoolBHV(AbstractBHV):
         assert 0. <= active <= 1.
         return NumPyBoolBHV(np.random.binomial(1, active, DIMENSION))
 
-    def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
-        return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
+    # FIXME, neither conforms to the default implementation
+    # Breadcrumbs: It doesn't seem *that* off, maybe unpackbits order, maybe
+    # def select(self, when1: 'NumPyBoolBHV', when0: 'NumPyBoolBHV') -> 'NumPyBoolBHV':
+    #     return self.pack64().select(when1.pack64(), when0.pack64()).unpack()
+    #     # return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
     def swap_halves(self) -> 'NumPyBoolBHV':
         return self.roll_bits(DIMENSION//2)
@@ -108,6 +111,11 @@ class NumPyBoolBHV(AbstractBHV):
     def bitstring(self) -> str:
         b = ord('0')
         return (self.data.astype(np.uint8) + b).tobytes().decode('ascii')
+
+    @classmethod
+    def from_bitstream(cls, bits_s: 'Iterator[bool]') -> Self:
+        data = np.fromiter(bits_s, dtype=np.bool_, count=DIMENSION)
+        return cls(data)
 
     @classmethod
     def from_bitstring(cls, s: str) -> str:

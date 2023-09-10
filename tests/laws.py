@@ -242,6 +242,14 @@ def run():
     word_bit_rot_neg_native = [r.roll_word_bits(-12) for r in rs_native]
     assert [r == NumPyPacked64BHV.from_bytes(r_.to_bytes()) for r, r_ in zip(word_bit_rot_neg_np, word_bit_rot_neg_native)]
 
+    print("Testing bit-level roll equivalence")
+    rs_np_bool = NumPyBoolBHV.nrand(10)
+    rs_vanilla = [VanillaBHV.from_bytes(r.to_bytes()) for r in rs_np_bool]
+
+    bit_rot_neg_np = [r.roll_bits(-12) for r in rs_np_bool]
+    bit_rot_neg_vanilla = [r.roll_bits(-12) for r in rs_vanilla]
+    assert [r == NumPyBoolBHV.from_bytes(r_.to_bytes()) for r, r_ in zip(bit_rot_neg_np, bit_rot_neg_vanilla)]
+
 
     print("Testing NumPyPacked64BHV majority equivalence")
     run_for(NumPyPacked64BHV, [
