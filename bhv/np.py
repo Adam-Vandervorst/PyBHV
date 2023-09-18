@@ -308,6 +308,29 @@ class NumPyPacked64BHV(AbstractBHV):
     # rolled by 1, -2 for example results in
     # ((γ δ α β) (3 4 1 2) (c d a b))
 
+    def roll_bits(self, o):
+        # roll 5
+        # x  = abcd|efgh|ijkl|
+        # l  = ijkl|abcd|efgh|
+        # h  = efgh|ijkl|abcd|
+        # lo = -ijk|-abc|-efg|
+        # ho = h---|l---|d---|
+        # res  hijk|labc|defg|
+
+        b = o // 64
+        e = o % 64
+
+        l = self.roll_words(b)
+        h = self.roll_words(b - 1)
+
+        lo = l.roll_word_bits(e)
+        ho = h.roll_word_bits(e)
+
+        # equiv: NumPyPacked64BHV.from_bitstream((i % 64) >= e for i in range(DIMENSION))
+        c = NumPyPacked64BHV(np.full(DIMENSION//64, -1 << e, dtype=np.uint64))
+
+        return c.select(lo, ho)
+
     def permute_words(self, permutation: 'NumPyWordPermutation') -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(self.data[permutation.data])
 
