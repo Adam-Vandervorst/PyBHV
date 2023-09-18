@@ -60,6 +60,9 @@ class NativePackedBHV(AbstractBHV):
     def roll_word_bits(self, d: int):
         return NativePackedBHV(self.ins.roll_word_bits(d))
 
+    def roll_bits(self, d: int):
+        return NativePackedBHV(self.ins.roll_bits(d))
+
     def _permute_composite(self, permutation_id: 'tuple'):
         v = self
         for e in permutation_id:

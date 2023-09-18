@@ -309,14 +309,6 @@ class NumPyPacked64BHV(AbstractBHV):
     # ((γ δ α β) (3 4 1 2) (c d a b))
 
     def roll_bits(self, o):
-        # roll 5
-        # x  = abcd|efgh|ijkl|
-        # l  = ijkl|abcd|efgh|
-        # h  = efgh|ijkl|abcd|
-        # lo = -ijk|-abc|-efg|
-        # ho = h---|l---|d---|
-        # res  hijk|labc|defg|
-
         b = o // 64
         e = o % 64
 

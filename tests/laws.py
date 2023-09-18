@@ -246,12 +246,15 @@ def run():
     rs_np_bool = NumPyBoolBHV.nrand(10)
     rs_np_packed = [NumPyPacked64BHV.from_bytes(r.to_bytes()) for r in rs_np_bool]
     rs_vanilla = [VanillaBHV.from_bytes(r.to_bytes()) for r in rs_np_bool]
+    rs_native = [NativePackedBHV.from_bytes(r.to_bytes()) for r in rs_np_bool]
 
-    bit_rot_neg_bool = [r.roll_bits(-12) for r in rs_np_bool]
-    bit_rot_neg_packed = [r.roll_bits(-12) for r in rs_np_packed]
-    bit_rot_neg_vanilla = [r.roll_bits(-12) for r in rs_vanilla]
+    bit_rot_neg_bool = [r.roll_bits(-112) for r in rs_np_bool]
+    bit_rot_neg_packed = [r.roll_bits(-112) for r in rs_np_packed]
+    bit_rot_neg_vanilla = [r.roll_bits(-112) for r in rs_vanilla]
+    bit_rot_neg_native = [r.roll_bits(-112) for r in rs_native]
     assert [r == NumPyBoolBHV.from_bytes(r_.to_bytes()) for r, r_ in zip(bit_rot_neg_bool, bit_rot_neg_vanilla)]
     assert [r == NumPyBoolBHV.from_bytes(r_.to_bytes()) for r, r_ in zip(bit_rot_neg_bool, bit_rot_neg_packed)]
+    assert [r == NumPyBoolBHV.from_bytes(r_.to_bytes()) for r, r_ in zip(bit_rot_neg_bool, bit_rot_neg_native)]
 
 
     print("Testing NumPyPacked64BHV majority equivalence")
