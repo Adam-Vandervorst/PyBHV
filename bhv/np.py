@@ -93,10 +93,10 @@ class NumPyBoolBHV(AbstractBHV):
         return int(np.sum(self.data))
 
     def pack8(self) -> 'NumPyPacked8BHV':
-        return NumPyPacked8BHV(np.packbits(self.data))
+        return NumPyPacked8BHV(np.packbits(self.data, bitorder='little'))
 
     def pack64(self) -> 'NumPyPacked64BHV':
-        return NumPyPacked64BHV(np.packbits(self.data).view(dtype=np.uint64))
+        return NumPyPacked64BHV(np.packbits(self.data, bitorder='little').view(dtype=np.uint64))
 
     def to_bytes(self):
         return self.pack8().to_bytes()
@@ -106,11 +106,11 @@ class NumPyBoolBHV(AbstractBHV):
         return NumPyPacked8BHV.from_bytes(bs).unpack()
 
     def bits(self):
-        return iter(self.data.astype(np.uint8))
+        return iter(self.data.view(np.uint8))
 
     def bitstring(self) -> str:
         b = ord('0')
-        return (self.data.astype(np.uint8) + b).tobytes().decode('ascii')
+        return (self.data.view(np.uint8) + b).tobytes().decode('ascii')
 
     @classmethod
     def from_bitstream(cls, bits_s: 'Iterator[bool]') -> Self:
@@ -118,9 +118,9 @@ class NumPyBoolBHV(AbstractBHV):
         return cls(data)
 
     @classmethod
-    def from_bitstring(cls, s: str) -> str:
+    def from_bitstring(cls, s: str) -> Self:
         b = ord('0')
-        return cls((np.frombuffer(bytes(s, 'ascii'), dtype=np.uint8) - b).astype(np.bool_))
+        return cls((np.frombuffer(bytes(s, 'ascii'), dtype=np.uint8, count=DIMENSION) - b).view(np.bool_))
 
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
@@ -201,7 +201,7 @@ class NumPyPacked8BHV(AbstractBHV):
     def __invert__(self) -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(np.bitwise_not(self.data))
 
-    if version_info[2] >= 10:
+    if version_info[1] >= 10:
         def active(self) -> int:
             return int.from_bytes(self.data.tobytes(), byteorder).bit_count()
     else:
@@ -211,7 +211,7 @@ class NumPyPacked8BHV(AbstractBHV):
             return self.lookup[self.data].sum()
 
     def unpack(self) -> 'NumPyBoolBHV':
-        return NumPyBoolBHV(np.unpackbits(self.data))
+        return NumPyBoolBHV(np.unpackbits(self.data, bitorder="little"))
 
     def repack64(self) -> 'NumPyPacked64BHV':
         return NumPyPacked64BHV(self.data.view(dtype=np.uint64))
@@ -221,7 +221,7 @@ class NumPyPacked8BHV(AbstractBHV):
 
     @classmethod
     def from_bytes(cls, bs):
-        return cls(np.frombuffer(bs, dtype=np.uint8))
+        return cls(np.frombuffer(bs, dtype=np.uint8, count=DIMENSION//8))
 
 
 NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
@@ -337,10 +337,10 @@ class NumPyPacked64BHV(AbstractBHV):
             return self.repack8().active()
 
     def unpack(self) -> 'NumPyBoolBHV':
-        return NumPyBoolBHV(np.unpackbits(self.data.view(np.uint8)))
+        return NumPyBoolBHV(np.unpackbits(self.data.view(np.uint8), count=DIMENSION, bitorder='little'))
 
     def repack8(self) -> 'NumPyPacked8BHV':
-        return NumPyPacked8BHV(self.data.view(dtype=np.uint8))
+        return NumPyPacked8BHV(self.data.view(np.uint8))
 
     def to_bytes(self):
         return self.repack8().to_bytes()

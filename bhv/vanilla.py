@@ -1,6 +1,6 @@
 from .abstract import *
 import random
-from sys import byteorder, version_info
+from sys import version_info
 
 
 class VanillaPermutation(MemoizedPermutation):
@@ -79,7 +79,7 @@ class VanillaBHV(AbstractBHV):
     def __or__(self, other: 'VanillaBHV') -> 'VanillaBHV':
         return self.from_int(self.to_int() | other.to_int())
 
-    if version_info[2] >= 10:
+    if version_info[1] >= 10:
         def active(self) -> int:
             return self.to_int().bit_count()
     else:
@@ -87,11 +87,11 @@ class VanillaBHV(AbstractBHV):
             return bin(self.to_int()).count("1")
 
     def to_int(self) -> int:
-        return int.from_bytes(self.data, "big", signed=False)
+        return int.from_bytes(self.data, "little", signed=False)
 
     @classmethod
     def from_int(cls, i: int):
-        return VanillaBHV(i.to_bytes(DIMENSION//8, "big", signed=False))
+        return VanillaBHV(i.to_bytes(DIMENSION//8, "little", signed=False))
 
     def to_bytes(self):
         return self.data
@@ -101,11 +101,11 @@ class VanillaBHV(AbstractBHV):
         return cls(bs)
 
     def bitstring(self) -> str:
-        return bin(self.to_int())[2:].rjust(DIMENSION, "0")
+        return bin(self.to_int())[2:].rjust(DIMENSION, "0")[::-1]
 
     @classmethod
     def from_bitstring(cls, s: str) -> Self:
-        return cls.from_int(int(s, 2))
+        return cls.from_int(int(s[::-1], 2))
 
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
 VanillaBHV.ONE = VanillaBHV(bytes([0xff for _ in range(DIMENSION//8)]))

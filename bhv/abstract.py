@@ -9,7 +9,7 @@ from .shared import *
 
 
 class StoreBHV:
-    def __deepcopy__(self, memodict={}):
+    def __deepcopy__(self, memodict=None):
         return self.from_bytes(self.to_bytes())
 
     def to_bytes(self):
@@ -21,20 +21,20 @@ class StoreBHV:
 
     def bits(self):
         for b in self.to_bytes():
-            yield (b >> 7) & 0x1
-            yield (b >> 6) & 0x1
-            yield (b >> 5) & 0x1
-            yield (b >> 4) & 0x1
-            yield (b >> 3) & 0x1
-            yield (b >> 2) & 0x1
-            yield (b >> 1) & 0x1
             yield b & 0x1
+            yield (b >> 1) & 0x1
+            yield (b >> 2) & 0x1
+            yield (b >> 3) & 0x1
+            yield (b >> 4) & 0x1
+            yield (b >> 5) & 0x1
+            yield (b >> 6) & 0x1
+            yield (b >> 7) & 0x1
 
     @classmethod
     def from_bitstream(cls, bits_s: 'Iterator[bool]') -> Self:
         it = iter(bits_s)
         bs = bytes(
-            (next(it) << 7) | (next(it) << 6) | (next(it) << 5) | (next(it) << 4) | (next(it) << 3) | (next(it) << 2) | (next(it) << 1) | next(it)
+            next(it) | (next(it) << 1) | (next(it) << 2) | (next(it) << 3) | (next(it) << 4) | (next(it) << 5) | (next(it) << 6) | next(it)  << 7
             for _ in range(DIMENSION//8)
         )
         return cls.from_bytes(bs)
@@ -85,6 +85,7 @@ class BaseBHV(StoreBHV):
     def bit_error_rate(self, other: Self) -> float:
         return self.hamming(other)/DIMENSION
 
+    EXPECTED_RAND_APART: float = NormalDist(0, (DIMENSION/4)**.5).zscore(DIMENSION/2)
     def std_apart(self, other: Self, invert=False) -> float:
         return self.frac_to_std(self.bit_error_rate(other), invert)
 
