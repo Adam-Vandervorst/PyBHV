@@ -7,9 +7,10 @@
 using namespace std;
 
 #define DO_VALIDATION true
+#define SLOPPY_VALIDATION false
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
-#define INPUT_HYPERVECTOR_COUNT 1000
+#define INPUT_HYPERVECTOR_COUNT 100
 
 //#define THRESHOLD
 //#define MAJ
@@ -30,6 +31,30 @@ using namespace std;
 //#define MAJ3
 //#define TERNARY
 //#define BWHT
+
+uint64_t hash_combine(uint64_t h, uint64_t k) {
+    static constexpr uint64_t kM = 0xc6a4a7935bd1e995ULL;
+    static constexpr int kR = 47;
+
+    k *= kM;
+    k ^= k >> kR;
+    k *= kM;
+
+    h ^= k;
+    h *= kM;
+
+    h += 0xe6546b64;
+
+    return h;
+}
+
+#if SLOPPY_VALIDATION
+#define summary(m) ((m)[0] + 3 * (m)[4] + 5 * (m)[WORDS / 2] + 7 * (m)[WORDS - 1])
+#define integrate(t, h) ((t) ^ (h))
+#else
+#define summary(m) bhv::hash(m)
+#define integrate(t, h) hash_combine((t), (h))
+#endif
 
 
 float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bool keep_in_cache) {
@@ -52,9 +77,8 @@ float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bo
     //Allocate a buffer for TEST_COUNT results
     word_t *result_buffer = (word_t *) malloc(input_output_count * BYTES);
 
-    // Gotta assign the result to a volatile, so the test operation doesn't get optimized away
-    volatile word_t something = 0;
-    volatile word_t something_else = 0;
+    volatile uint64_t checksum = 0;
+    volatile uint64_t val_checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; i++) {
@@ -65,8 +89,7 @@ float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bo
 
         bhv::threshold_into(rs, n, threshold, m);
 
-        // So the test operation doesn't get optimized away
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -80,9 +103,9 @@ float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bo
 
             bhv::threshold_into_reference(rs, n, threshold, m);
 
-            something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+            val_checksum = integrate(val_checksum, summary(m));
         }
-        validation_status = ((something == something_else) ? "equiv: √, " : "equiv: X, ");
+        validation_status = ((checksum == val_checksum) ? "equiv: √, " : "equiv: X, ");
     } else {
         validation_status = "";
     }
@@ -127,8 +150,8 @@ float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
     word_t *result_buffer = (word_t *) malloc(input_output_count * BYTES);
 
     // Gotta assign the result to a volatile, so the test operation doesn't get optimized away
-    volatile word_t something = 0;
-    volatile word_t something_else = 0;
+    volatile uint64_t checksum = 0;
+    volatile uint64_t val_checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; i++) {
@@ -139,8 +162,7 @@ float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
 
         bhv::true_majority_into(rs, n, m);
 
-        // So the test operation doesn't get optimized away
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -154,9 +176,9 @@ float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
 
             bhv::threshold_into_reference(rs, n, n/2, m);
 
-            something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+            val_checksum = integrate(val_checksum, summary(m));
         }
-        validation_status = ((something == something_else) ? "equiv: √, " : "equiv: X, ");
+        validation_status = ((checksum == val_checksum) ? "equiv: √, " : "equiv: X, ");
     } else {
         validation_status = "";
     }
@@ -188,8 +210,7 @@ float rand_benchmark(bool display, bool keep_in_cache) {
     //Allocate a buffer for TEST_COUNT results
     word_t *result_buffer = (word_t *) malloc(input_output_count * BYTES);
 
-    // Gotta assign the result to a volatile, so the test operation doesn't get optimized away
-    volatile word_t something = 0;
+    volatile uint64_t checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
@@ -199,7 +220,7 @@ float rand_benchmark(bool display, bool keep_in_cache) {
 
         bhv::rand_into(m);
 
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -473,8 +494,8 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
     for (size_t i = 0; i < test_count; ++i)
         hvs[i] = bhv::random((float)i/(float)test_count);
 
-    volatile word_t something = 0;
-    volatile word_t something_else = 0;
+    volatile uint64_t checksum = 0;
+    volatile uint64_t val_checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
@@ -484,7 +505,7 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 
         F(hvs[i], m);
 
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -493,12 +514,12 @@ float unary_benchmark(bool display,  bool keep_in_cache) {
 
         FC(hvs[i], m);
 
-        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        val_checksum = integrate(val_checksum, summary(m));
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
     if (display)
-        cout << "equiv " << ((something == something_else) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+        cout << "equiv " << ((checksum == val_checksum) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
 
     return mean_test_time;
 }
@@ -519,8 +540,8 @@ float binary_benchmark(bool display,  bool keep_in_cache) {
     memcpy(hvs1, hvs0, test_count * sizeof(word_t *));
     std::shuffle(hvs1, hvs1 + test_count, bhv::rng);
 
-    volatile word_t something = 0;
-    volatile word_t something_else = 0;
+    volatile uint64_t checksum = 0;
+    volatile uint64_t val_checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
@@ -530,7 +551,7 @@ float binary_benchmark(bool display,  bool keep_in_cache) {
 
         F(hvs0[i], hvs1[i], m);
 
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -539,12 +560,12 @@ float binary_benchmark(bool display,  bool keep_in_cache) {
 
         FC(hvs0[i], hvs1[i], m);
 
-        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        val_checksum = integrate(val_checksum, summary(m));
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
     if (display)
-        cout << "equiv " << ((something == something_else) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+        cout << "equiv " << ((checksum == val_checksum) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
 
     return mean_test_time;
 }
@@ -570,8 +591,8 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
     memcpy(hvs2, hvs0, test_count * sizeof(word_t *));
     std::shuffle(hvs2, hvs2 + test_count, bhv::rng);
 
-    volatile word_t something = 0;
-    volatile word_t something_else = 0;
+    volatile uint64_t checksum = 0;
+    volatile uint64_t val_checksum = 0;
 
     auto t1 = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < test_count; ++i) {
@@ -581,7 +602,7 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 
         F(hvs0[i], hvs1[i], hvs2[i], m);
 
-        something = something ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        checksum = integrate(checksum, summary(m));
     }
     auto t2 = chrono::high_resolution_clock::now();
 
@@ -590,12 +611,12 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
 
         FC(hvs0[i], hvs1[i], hvs2[i], m);
 
-        something_else = something_else ^ m[0] + 3 * m[4] + 5 * m[WORDS / 2] + 7 * m[WORDS - 1];
+        val_checksum = integrate(val_checksum, summary(m));
     }
 
     float mean_test_time = (float) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (float) test_count;
     if (display)
-        cout << "equiv " << ((something == something_else) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
+        cout << "equiv " << ((checksum == val_checksum) ? "v" : "x") << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
 
     return mean_test_time;
 }
@@ -905,17 +926,16 @@ int main() {
     cout << "*-= ROLL BITS =-*" << endl;
     cout << "*-= IN CACHE TESTS =-*" << endl;
     permute_benchmark<bhv::roll_bits_into_reference, true, 100>(true);
-    permute_benchmark<bhv::roll_bits_into_single_pass, true, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_composite, true, 100>(true);
     permute_benchmark<bhv::roll_bits_into_single_pass, true, 100>(true);
 
     cout << "*-= OUT OF CACHE TESTS =-*" << endl;
     permute_benchmark<bhv::roll_bits_into_reference, false, 100>(true);
-    permute_benchmark<bhv::roll_bits_into_single_pass, false, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_composite, false, 100>(true);
     permute_benchmark<bhv::roll_bits_into_single_pass, false, 100>(true);
 
-    unary_benchmark<fixed_roll<113, bhv::roll_bits_into_reference>, fixed_roll<113, bhv::roll_bits_into_single_pass>>(true, true);
-    unary_benchmark<fixed_roll<1, bhv::roll_bits_into_reference>, fixed_roll<1, bhv::roll_bits_into_single_pass>>(true, true);
-    unary_benchmark<fixed_roll<-1022, bhv::roll_bits_into_reference>, fixed_roll<-1022, bhv::roll_bits_into_single_pass>>(true, true);
+    unary_benchmark<fixed_roll<-1022, bhv::roll_bits_into_reference>, fixed_roll<-1022, bhv::roll_bits_into_composite>>(true, false);
+    unary_benchmark<fixed_roll<-1022, bhv::roll_bits_into_reference>, fixed_roll<-1022, bhv::roll_bits_into_single_pass>>(true, false);
 #endif
 #ifdef RAND
     rand_benchmark(false, false);
