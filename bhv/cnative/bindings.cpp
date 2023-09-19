@@ -44,6 +44,8 @@ static PyObject *BHV_roll_words(BHV *x, PyObject *args);
 
 static PyObject *BHV_roll_word_bits(BHV *x, PyObject *args);
 
+static PyObject *BHV_roll_bits(BHV *x, PyObject *args);
+
 static PyObject *BHV_permute_byte_bits(BHV *x, PyObject *args);
 
 static PyObject *BHV_permute_words(BHV *x, PyObject *args);
@@ -98,12 +100,14 @@ static PyMethodDef BHV_methods[] = {
                 "Random representative of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
-        {"ternary",            (PyCFunction) BHV_ternary,            METH_VARARGS,
+        {"ternary",            (PyCFunction) BHV_ternary,          METH_VARARGS,
                 "Ternary logic operation"},
         {"roll_words",        (PyCFunction) BHV_roll_words,        METH_VARARGS,
                 "Word-level rotation"},
         {"roll_word_bits",    (PyCFunction) BHV_roll_word_bits,    METH_VARARGS,
                 "Word-level rotation of bits"},
+        {"roll_bits",         (PyCFunction) BHV_roll_bits,         METH_VARARGS,
+                "A proper roll of bits"},
         {"permute_byte_bits", (PyCFunction) BHV_permute_byte_bits, METH_VARARGS,
                 "Permutes the bits of every byte"},
         {"permute_words",     (PyCFunction) BHV_permute_words,     METH_VARARGS,
@@ -322,6 +326,16 @@ static PyObject *BHV_roll_word_bits(BHV * x, PyObject * args) {
 
     PyObject * v = BHV_new(&BHVType, nullptr, nullptr);
     bhv::roll_word_bits_into(x->data, p, ((BHV *) v)->data);
+    return v;
+}
+
+static PyObject *BHV_roll_bits(BHV * x, PyObject * args) {
+    int32_t p;
+    if (!PyArg_ParseTuple(args, "i", &p))
+        return nullptr;
+
+    PyObject * v = BHV_new(&BHVType, nullptr, nullptr);
+    bhv::roll_bits_into(x->data, p, ((BHV *) v)->data);
     return v;
 }
 

@@ -17,7 +17,7 @@ using namespace std;
 //#define RAND2
 //#define RANDOM
 //#define PERMUTE
-//#define ROLL
+#define ROLL
 //#define ACTIVE
 //#define HAMMING
 //#define INVERT
@@ -29,7 +29,7 @@ using namespace std;
 //#define SELECT
 //#define MAJ3
 //#define TERNARY
-#define BWHT
+//#define BWHT
 
 
 float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bool keep_in_cache) {
@@ -600,6 +600,12 @@ float ternary_benchmark(bool display,  bool keep_in_cache) {
     return mean_test_time;
 }
 
+
+template<int32_t o, void roll(word_t*, int32_t, word_t*)>
+void fixed_roll(word_t *x, word_t *target) {
+    return roll(x, o, target);
+}
+
 inline void simulated_select(word_t *x, word_t *y, word_t *z, word_t *target) {
     bhv::dynamic_ternary_into_reference(x, y, z, target, 0xca);
 };
@@ -896,6 +902,20 @@ int main() {
     permute_benchmark<bhv::roll_word_bits_into, false, 100>(true);
     permute_benchmark<bhv::roll_word_bits_into, false, 100>(true);
 
+    cout << "*-= ROLL BITS =-*" << endl;
+    cout << "*-= IN CACHE TESTS =-*" << endl;
+    permute_benchmark<bhv::roll_bits_into_reference, true, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_single_pass, true, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_single_pass, true, 100>(true);
+
+    cout << "*-= OUT OF CACHE TESTS =-*" << endl;
+    permute_benchmark<bhv::roll_bits_into_reference, false, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_single_pass, false, 100>(true);
+    permute_benchmark<bhv::roll_bits_into_single_pass, false, 100>(true);
+
+    unary_benchmark<fixed_roll<113, bhv::roll_bits_into_reference>, fixed_roll<113, bhv::roll_bits_into_single_pass>>(true, true);
+    unary_benchmark<fixed_roll<1, bhv::roll_bits_into_reference>, fixed_roll<1, bhv::roll_bits_into_single_pass>>(true, true);
+    unary_benchmark<fixed_roll<-1022, bhv::roll_bits_into_reference>, fixed_roll<-1022, bhv::roll_bits_into_single_pass>>(true, true);
 #endif
 #ifdef RAND
     rand_benchmark(false, false);

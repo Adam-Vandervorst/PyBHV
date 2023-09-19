@@ -1,26 +1,98 @@
+constexpr uint32_t smod(int32_t x, uint32_t m) {
+    return ((x % m) + m) % m;
+}
+
+
 void roll_bytes_into(word_t *x, int32_t d, word_t *target) {
     uint8_t *x_bytes = (uint8_t *)x;
     uint8_t *target_bytes = (uint8_t *)target;
-    int32_t offset = ((d % BYTES) + BYTES) % BYTES;
+    int32_t offset = smod(d, BYTES);
 
     memcpy(target_bytes, x_bytes + offset, BYTES - offset);
     memcpy(target_bytes + BYTES - offset, x_bytes, offset);
 }
 
 void roll_words_into(word_t *x, int32_t d, word_t *target) {
-    int32_t offset = ((d % WORDS) + WORDS) % WORDS;
+    int32_t offset = smod(d, WORDS);
 
     memcpy(target, x + offset, (WORDS - offset) * sizeof(word_t));
     memcpy(target + WORDS - offset, x, offset * sizeof(word_t));
 }
 
 void roll_word_bits_into(word_t *x, int32_t d, word_t *target) {
-    int32_t offset = d % BITS_PER_WORD;
+    int32_t offset = smod(d, BITS_PER_WORD);
 
     for (word_iter_t i = 0; i < WORDS; ++i) {
         target[i] = std::rotl(x[i], offset);
     }
 }
+
+void roll_bits_into_reference(word_t *x, int32_t o, word_t *target) {
+    if (o < 0) {
+        roll_bits_into_reference(x, BITS - o, target);
+        return;
+    }
+    if (o == 0) {
+        memcpy(target, x, BYTES);
+        return;
+    }
+
+    int32_t b = o / BITS_PER_WORD;
+    int32_t e = o % BITS_PER_WORD;
+
+    bool cs [BITS];
+    word_t c [WORDS];
+    word_t l [WORDS];
+    word_t h [WORDS];
+
+    roll_words_into(x, b, l);
+    roll_words_into(x, b + 1, h);
+
+    roll_word_bits_into(l, e, l);
+    roll_word_bits_into(h, BITS_PER_WORD-e, h);
+
+    for (bit_iter_t i = 0; i < BITS; ++i)
+        cs[i] = (i % BITS_PER_WORD) >= e;
+    pack_into(cs, c);
+
+    select_into(c, l, h, target);
+}
+
+void roll_bits_into_single_pass(word_t *x, int32_t o, word_t *target) {
+    if (o < 0) {
+        roll_bits_into_single_pass(x, BITS - o, target);
+        return;
+    }
+    if (o == 0) {
+        memcpy(target, x, BYTES);
+        return;
+    }
+
+    // say BITS_PER_WORD=4 and WORDS=3
+    // roll 5 would look like
+    // x  = abcd|efgh|ijkl|
+    // l  = ijkl|abcd|efgh|   roll 1 word
+    // h  = efgh|ijkl|abcd|   roll 2 words
+    // lo = -ijk|-abc|-efg|   shift right 1 bit
+    // ho = h---|l---|d---|   shift left 4-1 bits
+    // res  hijk|labc|defg|   union intermediates
+
+    // TODO smod can be optimized out by splitting the loop on b
+
+    int32_t b = o / BITS_PER_WORD;
+    int32_t e = o % BITS_PER_WORD;
+
+    for (word_iter_t i = 0; i < WORDS; ++i) {
+        word_t l = x[smod(b + i, WORDS)];
+        word_t h = x[smod(b + i + 1, WORDS)];
+        word_t lo = l >> e;
+        word_t ho = h << (BITS_PER_WORD - e);
+        word_t res = lo | ho;
+        target[i] = res;
+    }
+}
+
+#define roll_bits_into roll_bits_into_reference
 
 uint8_t permute_single_byte_bits(uint8_t x, uint64_t p) {
     uint64_t w = _pdep_u64(x, 0x0101010101010101);
