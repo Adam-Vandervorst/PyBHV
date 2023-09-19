@@ -4,6 +4,11 @@ constexpr uint32_t smod(int32_t x, uint32_t m) {
 
 
 void roll_bytes_into(word_t *x, int32_t d, word_t *target) {
+    if (d == 0) {
+        memcpy(target, x, BYTES);
+        return;
+    }
+
     uint8_t *x_bytes = (uint8_t *)x;
     uint8_t *target_bytes = (uint8_t *)target;
     int32_t offset = smod(d, BYTES);
@@ -28,8 +33,23 @@ void roll_word_bits_into(word_t *x, int32_t d, word_t *target) {
 }
 
 void roll_bits_into_reference(word_t *x, int32_t o, word_t *target) {
+    int32_t offset = smod(o, BITS);
+
+    bool cx [BITS];
+    bool ctarget [BITS];
+
+    unpack_into(x, cx);
+
+    memcpy(ctarget, cx + offset, BITS - offset);
+    memcpy(ctarget + BITS - offset, cx, offset);
+
+    pack_into(ctarget, target);
+}
+
+void roll_bits_into_composite(word_t *x, int32_t o, word_t *target) {
+    // FIXME WIP, do not use
     if (o < 0) {
-        roll_bits_into_reference(x, BITS - o, target);
+        roll_bits_into_composite(x, BITS + o, target);
         return;
     }
     if (o == 0) {
@@ -40,7 +60,6 @@ void roll_bits_into_reference(word_t *x, int32_t o, word_t *target) {
     int32_t b = o / BITS_PER_WORD;
     int32_t e = o % BITS_PER_WORD;
 
-    bool cs [BITS];
     word_t c [WORDS];
     word_t l [WORDS];
     word_t h [WORDS];
@@ -51,16 +70,16 @@ void roll_bits_into_reference(word_t *x, int32_t o, word_t *target) {
     roll_word_bits_into(l, e, l);
     roll_word_bits_into(h, BITS_PER_WORD-e, h);
 
-    for (bit_iter_t i = 0; i < BITS; ++i)
-        cs[i] = (i % BITS_PER_WORD) >= e;
-    pack_into(cs, c);
+    for (word_iter_t i = 0; i < WORDS; ++i)
+        c[i] = ONE_WORD << e;
 
     select_into(c, l, h, target);
 }
 
 void roll_bits_into_single_pass(word_t *x, int32_t o, word_t *target) {
+    // FIXME close to correct, but doesn't pass permute test
     if (o < 0) {
-        roll_bits_into_single_pass(x, BITS - o, target);
+        roll_bits_into_single_pass(x, BITS + o, target);
         return;
     }
     if (o == 0) {
