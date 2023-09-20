@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <random>
 #include <bitset>
@@ -173,6 +174,51 @@ void test_independent_opt() {
     cout << bhv::active(full) << " |full_opt|  (" << BITS/2 << ")" << endl;
 }
 
+void test_linear_search() {
+    auto v_ref = bhv::rand();
+    auto v = bhv::rand();
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,initial|" << endl;
+
+    auto close_to_ref = [v_ref](word_t *x) { return bhv::hamming(x, v_ref); };
+    bhv::opt_linear_search<uint64_t>(v, close_to_ref);
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,final|" << endl;
+
+//    auto full = bhv::one();
+//
+//    auto half = [](word_t *x) { return abs(bhv::active(x) - BITS/2); };
+//    bhv::opt_linear_search<uint64_t>(full, half);
+//
+//    cout << bhv::active(full) << " |full_opt|  (" << BITS/2 << ")" << endl;
+}
+
+void test_parallel_search() {
+    auto v_ref = bhv::rand();
+    auto v = bhv::rand();
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,initial|" << endl;
+
+    auto close_to_ref = [v_ref](word_t *x) { word_t tmp [WORDS]; bhv::permute_into(x, 12, tmp); bhv::xor_into(x, tmp, tmp); return bhv::hamming(tmp, v_ref); };
+    auto t1 = chrono::high_resolution_clock::now();
+
+    bhv::opt_parallel_search<uint64_t, 8*64>(v, close_to_ref);
+    auto t2 = chrono::high_resolution_clock::now();
+
+    cout << bhv::hamming(v_ref, v) << " |v_ref,final|" << endl;
+    double test_time = (double) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (double) (1000000000);
+    cout << test_time << " seconds" << endl;
+
+//    auto full = bhv::one();
+//
+//    auto half = [](word_t *x) { return abs(bhv::active(x) - BITS/2); };
+//    bhv::opt_parallel_search<uint64_t, 11>(full, half, 10);
+//
+//    cout << bhv::active(full) << " |full_opt|  (" << BITS/2 << ")" << endl;
+}
+
 int main() {
-    test_independent_opt();
+    bhv::parallel_init();
+
+    test_parallel_search();
 }

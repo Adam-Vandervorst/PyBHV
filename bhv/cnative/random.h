@@ -24,13 +24,9 @@ void rand_into_aes(word_t *x) {
 #endif
 
 #ifdef __AVX2__
-avx2_pcg32_random_t avx2_key = {
-        .state = {_mm256_set_epi64x(0xb5f380a45f908741, 0x88b545898d45385d, 0xd81c7fe764f8966c, 0x44a9a3b6b119e7bc),
-                  _mm256_set_epi64x(0x3cb6e04dc22f629, 0x727947debc931183, 0xfbfa8fdcff91891f, 0xb9384fd8f34c0f49)},
-        .inc = {_mm256_set_epi64x(0xbf2de0670ac3d03e, 0x98c40c0dc94e71e, 0xf3565f35a8c61d00, 0xd3c83e29b30df640),
-                _mm256_set_epi64x(0x14b7f6e4c89630fa, 0x37cc7b0347694551, 0x4a052322d95d485b, 0x10f3ade77a26e15e)},
-        .pcg32_mult_l =  _mm256_set1_epi64x(UINT64_C(0x5851f42d4c957f2d) & 0xffffffffu),
-        .pcg32_mult_h = _mm256_set1_epi64x(UINT64_C(0x5851f42d4c957f2d) >> 32)};
+static __thread avx2_pcg32_random_t avx2_key;
+#pragma omp threadprivate(avx2_key)
+
 
 void rand_into_avx2(word_t *x) {
     for (word_iter_t i = 0; i < WORDS; i += 4) {
