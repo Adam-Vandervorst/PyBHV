@@ -63,7 +63,16 @@ class NumPyBoolBHV(AbstractBHV):
         return self.permute_bits(NumPyBoolPermutation.get(permutation_id))
 
     @classmethod
-    def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+    def threshold(cls, vs: list['NumPyBoolBHV'], t: int) -> 'NumPyBoolBHV':
+        data = [v.data for v in vs]
+
+        tensor = np.stack(data)
+        counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
+
+        return NumPyBoolBHV(np.greater_equal(counts, t))
+
+    @classmethod
+    def _direct_majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
         data = [v.data for v in vs]
         extra = [cls.rand().data] if len(vs) % 2 == 0 else []
 
@@ -73,6 +82,12 @@ class NumPyBoolBHV(AbstractBHV):
         threshold = (len(vs) + len(extra))//2
 
         return NumPyBoolBHV(np.greater(counts, threshold))
+
+    @classmethod
+    def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        extra = [cls.rand()] if len(vs) % 2 == 0 else []
+        threshold = (len(vs) + len(extra))//2 + 1
+        return cls.threshold(vs + extra, threshold)
 
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:
         return np.array_equal(self.data, other.data)

@@ -6,6 +6,9 @@ class Slice(AbstractBHV):
     def __init__(self, b):
         self.b = b
 
+    def __repr__(self):
+        return f"Slice({self.b})"
+
     @classmethod
     def rand(cls) -> Self:
         return cls.random(.5)
@@ -25,7 +28,7 @@ class Slice(AbstractBHV):
         raise NotImplementedError()
 
     def __eq__(self, other: Self) -> bool:
-        return Slice(self.b == other.b)
+        return self.b == other.b
 
     def __xor__(self, other: Self) -> Self:
         return Slice(self.b ^ other.b)
@@ -45,5 +48,9 @@ class Slice(AbstractBHV):
 
     def active(self) -> int:
         return int(self.b)
+
+    @classmethod
+    def threshold(cls, vs: list[Self], t: int) -> Self:
+        return Slice(sum(v.b for v in vs) >= t)
 Slice.ONE = Slice(True)
 Slice.ZERO = Slice(False)

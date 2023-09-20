@@ -2,7 +2,7 @@ from statistics import NormalDist
 from itertools import accumulate
 from functools import cache
 from operator import or_, and_
-from math import comb, log2
+from math import comb, log2, floor, ceil
 from typing import Iterator
 
 from .shared import *
@@ -90,8 +90,8 @@ class BaseBHV(StoreBHV):
         return self.frac_to_std(self.bit_error_rate(other), invert)
 
     @staticmethod
-    def normal(mean=0., p=.5):
-        return NormalDist(mean, (DIMENSION*p*(1 - p))**.5)
+    def normal(mean=0., af=.5):
+        return NormalDist(mean, (DIMENSION*af*(1 - af))**.5)
 
     @staticmethod
     def maj_ber(n):
@@ -491,7 +491,47 @@ class CryptoBHV(FractionalBHV):
     HALF: Self
 
 
-class AbstractBHV(CryptoBHV):
+class LevelBHV(FractionalBHV):
+    @classmethod
+    def threshold(cls, vs: list[Self], t: int) -> Self:
+        assert 0 <= t <= len(vs)
+        # threshold(vs, t) = t <= counts(vs)
+        raise NotImplementedError()
+
+    @classmethod
+    def window(cls, vs: list[Self], b: int, t: int) -> Self:
+        assert 0 <= b <= t <= len(vs)
+        # window(vs, b, t) = threshold(vs, b) and not threshold(not vs, t)
+        # window(vs, b, t) = b <= counts(vs) <= t
+        #                  = b <= counts(vs) and counts(vs) <= t
+        #                  = b <= counts(vs) and not (t < counts(vs))
+        #                  = b <= counts(vs) and not (t + 1 <= counts(vs))
+        return cls.threshold(vs, b) & ~cls.threshold(vs, t + 1)
+
+    @classmethod
+    def agreement(cls, vs: list[Self], p: float) -> Self:
+        assert .5 <= p <= 1.
+        # agreement(vs, 100%) = all(v_i) or not any(v_i) = counts(vs) >= len(vs) or counts(vs) <= 0
+        # agreement(vs, 3/5) = 5*counts(vs) >= 3*len(vs) or 5*counts(vs) <= 2*len(vs)
+        # agreement(vs, 1/2) = true
+        # agreement(vs, p) = not window(vs, p*len(vs), (1 - p)*len(vs))
+        if p == .5: return cls.ONE
+        t = ceil(p*len(vs))
+        b = len(vs) - t
+        return ~cls.window(vs, b + 1, t - 1)
+
+    @classmethod
+    def best_division(cls, vs: list[Self], f: float = .5, af=.5):
+        # best_division(vs, f) = min_p (f - avg(agreement(vs, p)))
+        # Note, uses Normal approximation and may deviate from the actual best p
+        n = len(vs)
+        d = NormalDist(n*af, (n*af*(1. - af))**.5)
+        b = round(d.inv_cdf((1. - f)/2))
+        t = round(d.inv_cdf((1. + f)/2))
+        return ~cls.window(vs, b + 1, t - 1)
+
+
+class AbstractBHV(CryptoBHV, LevelBHV):
     pass
 
 
