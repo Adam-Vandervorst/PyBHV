@@ -202,6 +202,31 @@ void test_harder_search() {
     cout << test_time << " seconds" << endl;
 }
 
+void test_opt_centroid() {
+    // while the min_sum vector is unique and equals the MAJ
+    // there is a family of vectors min_diff vectors unrelated to each other
+    auto v = bhv::rand();
+    auto x = bhv::rand();
+    auto y = bhv::rand();
+    auto z = bhv::rand();
+    word_t m [WORDS];
+    bhv::majority3_into(x, y, z, m);
+
+    auto min_sum = [x, y, z](word_t *a) { auto dx = bhv::hamming(a, x); auto dy = bhv::hamming(a, y); auto dz = bhv::hamming(a, z); return dx + dy + dz; };
+//    auto min_diff = [x, y, z](word_t *a) { int64_t dx = bhv::hamming(a, x); int64_t dy = bhv::hamming(a, y); int64_t dz = bhv::hamming(a, z); return abs(dx - dy) + abs(dy - dz) + abs(dx - dz); };
+
+    auto t1 = chrono::high_resolution_clock::now();
+    bhv::opt_linear_search<uint64_t>(v, min_sum, 1000000);
+    auto t2 = chrono::high_resolution_clock::now();
+
+    cout << min_sum(v) << " loss" << endl;
+    cout << bhv::hamming(v, m) << " |maj(x,y,z),final|" << endl;
+    cout << bhv::hamming(v, x) << " |x,final|, " << bhv::hamming(v, y) << " |y,final|, " << bhv::hamming(v, z) << " |z,final|" << endl;
+    cout << bhv::hash(v) << " h" << endl;
+    double test_time = (double) chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count() / (double) (1000000000);
+    cout << test_time << " seconds" << endl;
+}
+
 int main() {
-    test_harder_search();
+    test_opt_centroid();
 }
