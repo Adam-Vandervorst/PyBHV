@@ -132,19 +132,6 @@ namespace bhv {
         d[i/BITS_PER_WORD] ^= (1ULL << (i % BITS_PER_WORD));
     }
 
-    template <typename N>
-    void opt_independent(word_t* x, std::function<N (word_t*)> loss) {
-        N last = loss(x);
-        for (bit_iter_t i = 0; i < BITS; ++i) {
-            toggle(x, i);
-            N l = loss(x);
-            if (l > last)
-                toggle(x, i);
-            else
-                last = l;
-        }
-    }
-
     #include "ternary.h"
 
     #include "distance.h"
@@ -160,5 +147,7 @@ namespace bhv {
     #include "permutation.h"
 
     #include "hash.h"
+
+    #include "optimization.h"
 }
 #endif //BHV_CORE_H
