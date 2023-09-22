@@ -201,6 +201,10 @@ class NumPyPacked8BHV(AbstractBHV):
         rehashed_byte_data = hashlib.shake_256(byte_data).digest(DIMENSION//8)
         return NumPyPacked8BHV.from_bytes(rehashed_byte_data)
 
+    @classmethod
+    def threshold(cls, vs: list[Self], t: int) -> Self:
+        return NumPyBoolBHV.threshold([v.unpack() for v in vs], t).pack8()
+
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
 
@@ -297,6 +301,10 @@ class NumPyPacked64BHV(AbstractBHV):
     @classmethod
     def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
+
+    @classmethod
+    def threshold(cls, vs: list[Self], t: int) -> Self:
+        return NumPyBoolBHV.threshold([v.unpack() for v in vs], t).pack64()
 
     def swap_halves(self) -> 'NumPyPacked64BHV':
         return self.roll_words(DIMENSION//128)
