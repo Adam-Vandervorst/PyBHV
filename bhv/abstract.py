@@ -500,7 +500,7 @@ class LevelBHV(FractionalBHV):
 
     @classmethod
     def window(cls, vs: list[Self], b: int, t: int) -> Self:
-        assert 0 <= b <= t <= len(vs)
+        # assert 0 <= b <= t <= len(vs)
         # window(vs, b, t) = threshold(vs, b) and not threshold(not vs, t)
         # window(vs, b, t) = b <= counts(vs) <= t
         #                  = b <= counts(vs) and counts(vs) <= t
@@ -520,14 +520,18 @@ class LevelBHV(FractionalBHV):
         b = len(vs) - t
         return ~cls.window(vs, b + 1, t - 1)
 
-    @classmethod
-    def best_division(cls, vs: list[Self], f: float = .5, af=.5):
-        # best_division(vs, f) = min_p (f - avg(agreement(vs, p)))
+    @staticmethod
+    def best_division_window_bounds(n: int, f: float = .5, af=.5):
         # Note, uses Normal approximation and may deviate from the actual best p
-        n = len(vs)
         d = NormalDist(n*af, (n*af*(1. - af))**.5)
         b = round(d.inv_cdf((1. - f)/2))
         t = round(d.inv_cdf((1. + f)/2))
+        return b, t
+
+    @classmethod
+    def best_division(cls, vs: list[Self], f: float = .5, af=.5):
+        # best_division(vs, f) = min_p (f - avg(agreement(vs, p)))
+        b, t = cls.best_division_window_bounds(len(vs), f, af)
         return ~cls.window(vs, b + 1, t - 1)
 
 

@@ -1,4 +1,5 @@
 from bhv.slice import Slice
+from bhv.native import NativePackedBHV as BHV
 
 import unittest
 
@@ -49,7 +50,17 @@ class TestLevels(unittest.TestCase):
             l, h = binom.interval(v, 5, .5)
             print(v)
             print((round(l), round(h)))
-            print(Slice.best_division([1]*5, v, .5))
+            print(Slice.best_division_window_bounds(5, v, .5))
+
+    def test_real_correspondence(self):
+        import numpy as np
+
+        vs = BHV.nrand(50)
+        print()
+        for v in np.linspace(.01, .99, 20):
+            print(v)
+            print(BHV.best_division(vs, v, .5).active_fraction())
+            print()
 
 
 if __name__ == '__main__':

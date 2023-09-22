@@ -34,6 +34,8 @@ static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_select(BHV *cond, PyObject *args);
@@ -96,11 +98,13 @@ static PyMethodDef BHV_methods[] = {
                 "Bernoulli p distributed bit vector"},
         {"majority",          (PyCFunction) BHV_majority,          METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
+        {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
+                "The threshold of a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
-        {"ternary",            (PyCFunction) BHV_ternary,          METH_VARARGS,
+        {"ternary",           (PyCFunction) BHV_ternary,           METH_VARARGS,
                 "Ternary logic operation"},
         {"roll_words",        (PyCFunction) BHV_roll_words,        METH_VARARGS,
                 "Word-level rotation"},
@@ -204,6 +208,27 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::true_majority_into(vs, n_vectors + even, ((BHV *) v)->data);
+    return v;
+}
+
+static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args) {
+    PyObject * vector_list;
+    int32_t t;
+
+    if (!PyArg_ParseTuple(args, "O!i", &PyList_Type, &vector_list, &t))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc((n_vectors) * sizeof(word_t *));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::threshold_into(vs, n_vectors, t, ((BHV *) v)->data);
     return v;
 }
 
