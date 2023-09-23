@@ -1,5 +1,5 @@
 from bhv.slice import Slice
-from bhv.native import NativePackedBHV as BHV
+from bhv.np import NumPyPacked64BHV as BHV
 
 import unittest
 
@@ -40,6 +40,17 @@ class TestLevels(unittest.TestCase):
         self.assertEqual(Slice.agreement(vs06, 1/2), Slice.ONE)
         self.assertEqual(Slice.agreement(vs43, 1/2), Slice.ONE)
         self.assertEqual(Slice.agreement(vs33, 1/2), Slice.ONE)
+
+    def test_real_window(self):
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ZERO, BHV.ZERO], 3, 3), BHV.ZERO)
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ONE, BHV.ZERO], 3, 3), BHV.ONE)
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ONE, BHV.ONE], 3, 3), BHV.ZERO)
+
+
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ZERO, BHV.ZERO, BHV.ZERO], 2, 3), BHV.ZERO)
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ZERO, BHV.ZERO], 2, 3), BHV.ONE)
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ONE, BHV.ZERO], 2, 3), BHV.ONE)
+        self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ONE, BHV.ONE], 2, 3), BHV.ZERO)
 
     def test_correspondence(self):
         from scipy.stats import binom
