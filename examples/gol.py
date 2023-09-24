@@ -1,6 +1,7 @@
+from bhv.visualization import Image
 from bhv.native import NativePackedBHV as BHV
 # from bhv.np import NumPyPacked64BHV as BHV
-from time import sleep
+from time import sleep, time_ns
 
 
 init = [
@@ -60,7 +61,7 @@ step2 = [
     ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
 ]
 
-step13 = [
+step30 = [
     ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
     ". . . . . . . . . . . . . . . . . . . . . . . . . 1 . . . . . . . . . . . . . .",
     ". . . . . . . . . . . . . . . . . . . . . . . 1 . 1 . . . . . . . . . . . . . .",
@@ -111,20 +112,6 @@ def hv_to_grid(hv: BHV) -> list[list[bool]]:
     return [bs[i:i+W] for i in range(0, W*H, W)]
 
 
-def sanity_check():
-    print(len(init), len([c for c in init[0] if c != ' ']))
-    for r in grid_to_viz(pad_grid(viz_to_grid(step13))):
-        print(r)
-
-    step13_hv = grid_to_hv(pad_grid(viz_to_grid(step13)))
-    # print(step13_hv.active())
-    assert hv_to_grid(step13_hv) == pad_grid(viz_to_grid(step13))
-    print()
-
-    for r in grid_to_viz(hv_to_grid(step13_hv.roll_word_bits(1))):
-        print(r)
-
-
 def step(hv: BHV) -> BHV:
     l = hv.roll_word_bits(-1)
     r = hv.roll_word_bits(1)
@@ -139,6 +126,20 @@ def step(hv: BHV) -> BHV:
     nbs = [l, r, b, t, tl, bl, tr, br]
 
     return hv.select(BHV.window(nbs, 2, 3), BHV.window(nbs, 3, 3))
+
+
+def sanity_check():
+    print(len(init), len([c for c in init[0] if c != ' ']))
+    for r in grid_to_viz(pad_grid(viz_to_grid(step30))):
+        print(r)
+
+    step13_hv = grid_to_hv(pad_grid(viz_to_grid(step30)))
+    # print(step13_hv.active())
+    assert hv_to_grid(step13_hv) == pad_grid(viz_to_grid(step30))
+    print()
+
+    for r in grid_to_viz(hv_to_grid(step13_hv.roll_word_bits(1))):
+        print(r)
 
 
 def run(initial_viz: list[str], generations: int):
@@ -158,4 +159,34 @@ def run(initial_viz: list[str], generations: int):
         sleep(.4)
 
 
-run(init, 50)
+def export(initial_viz: list[str], generations: int, filename: str):
+    init_hv = grid_to_hv(pad_grid(viz_to_grid(initial_viz)))
+    petri_dish_history = [init_hv]
+
+    for _ in range(generations):
+        petri_dish_history.append(step(petri_dish_history[-1]))
+
+    with open(filename, 'wb') as f:
+        Image(petri_dish_history).pbm(f, binary=True)
+
+
+def benchmark():
+    # 50 ms
+    init_hv = grid_to_hv(pad_grid(viz_to_grid(init)))
+    step30_hv = grid_to_hv(pad_grid(viz_to_grid(step30)))
+    petri_dish_hv = init_hv
+
+    t0 = time_ns()
+    for _ in range(1000):
+        petri_dish_hv = step(petri_dish_hv)
+
+    t1 = time_ns()
+
+    print(t1 - t0)
+
+    print(petri_dish_hv == step30_hv)
+
+
+# run(init, 50)
+# benchmark()
+export(init, 1000, "gol1000.pbm")
