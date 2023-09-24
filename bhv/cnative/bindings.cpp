@@ -38,6 +38,8 @@ static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_window(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_select(BHV *cond, PyObject *args);
 
 static PyObject *BHV_ternary(BHV *x, PyObject *args);
@@ -102,6 +104,8 @@ static PyMethodDef BHV_methods[] = {
                 "Checks if the count is greater than a threshold for a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
+        {"window",             (PyCFunction) BHV_window,           METH_CLASS | METH_VARARGS,
+                "Checks if the count is Between two (inclusive) thresholds of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
         {"ternary",           (PyCFunction) BHV_ternary,           METH_VARARGS,
@@ -250,6 +254,28 @@ static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {
     PyObject * ret = BHV_new(type, nullptr, nullptr);
     bhv::representative_into(vs, n_vectors, ((BHV *) ret)->data);
     return ret;
+}
+
+static PyObject *BHV_window(PyTypeObject *type, PyObject *args) {
+    PyObject * vector_list;
+    int32_t b;
+    int32_t t;
+
+    if (!PyArg_ParseTuple(args, "O!ii", &PyList_Type, &vector_list, &b, &t))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc((n_vectors) * sizeof(word_t *));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::window_into(vs, n_vectors, b, t, ((BHV *) v)->data);
+    return v;
 }
 
 static PyObject *BHV_xor(PyObject * v1, PyObject * v2) {

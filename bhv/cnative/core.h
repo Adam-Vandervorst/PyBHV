@@ -144,6 +144,8 @@ namespace bhv {
 
     #include "representative.h"
 
+    #include "window.h"
+
     #include "permutation.h"
 
     #include "hash.h"

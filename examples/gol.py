@@ -189,4 +189,4 @@ def benchmark():
 
 # run(init, 50)
 # benchmark()
-export(init, 1000, "gol1000.pbm")
+export(init, 1000, "../bhv/cnative/gol1000.pbm")
