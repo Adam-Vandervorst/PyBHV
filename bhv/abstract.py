@@ -495,7 +495,7 @@ class LevelBHV(FractionalBHV):
     @classmethod
     def threshold(cls, vs: list[Self], t: int) -> Self:
         assert 0 <= t <= len(vs)
-        # threshold(vs, t) = t <= counts(vs)
+        # threshold(vs, t) = t < counts(vs)
         raise NotImplementedError()
 
     @classmethod
@@ -505,8 +505,8 @@ class LevelBHV(FractionalBHV):
         # window(vs, b, t) = b <= counts(vs) <= t
         #                  = b <= counts(vs) and counts(vs) <= t
         #                  = b <= counts(vs) and not (t < counts(vs))
-        #                  = b <= counts(vs) and not (t + 1 <= counts(vs))
-        return cls.threshold(vs, b) & ~cls.threshold(vs, t + 1)
+        #                  = (b - 1 < counts(vs)) and not (t < counts(vs))
+        return cls.threshold(vs, b - 1) & ~cls.threshold(vs, t)
 
     @classmethod
     def agreement(cls, vs: list[Self], p: float) -> Self:

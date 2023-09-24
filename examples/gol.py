@@ -1,5 +1,5 @@
-# from bhv.native import NativePackedBHV as BHV
-from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import NativePackedBHV as BHV
+# from bhv.np import NumPyPacked64BHV as BHV
 from time import sleep
 
 

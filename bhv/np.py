@@ -69,7 +69,7 @@ class NumPyBoolBHV(AbstractBHV):
         tensor = np.stack(data)
         counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
 
-        return NumPyBoolBHV(np.greater_equal(counts, t))
+        return NumPyBoolBHV(np.greater(counts, t))
 
     @classmethod
     def _direct_majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
@@ -86,7 +86,7 @@ class NumPyBoolBHV(AbstractBHV):
     @classmethod
     def majority(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
         extra = [cls.rand()] if len(vs) % 2 == 0 else []
-        threshold = (len(vs) + len(extra))//2 + 1
+        threshold = (len(vs) + len(extra))//2
         return cls.threshold(vs + extra, threshold)
 
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:

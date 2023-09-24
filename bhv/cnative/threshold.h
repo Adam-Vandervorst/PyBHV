@@ -1,5 +1,5 @@
 
-/// @brief A generic implementation for threshold_into, that can use any size counter
+/// @brief A generic implementation for (exclusive) threshold_into, that can use any size counter
 template<typename N>
 void threshold_into_reference(word_t ** xs, size_t size, N threshold, word_t *dst) {
 

@@ -99,7 +99,7 @@ static PyMethodDef BHV_methods[] = {
         {"majority",          (PyCFunction) BHV_majority,          METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
         {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
-                "The threshold of a list of BHVs"},
+                "Checks if the count is greater than a threshold for a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
