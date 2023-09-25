@@ -2,6 +2,8 @@ from bhv.visualization import Image
 from bhv.native import NativePackedBHV as BHV
 # from bhv.np import NumPyPacked64BHV as BHV
 from time import sleep, time_ns
+import io
+from PIL import Image as PImage
 
 
 init = [
@@ -166,8 +168,21 @@ def export(initial_viz: list[str], generations: int, filename: str):
     for _ in range(generations):
         petri_dish_history.append(step(petri_dish_history[-1]))
 
-    with open(filename, 'wb') as f:
-        Image(petri_dish_history).pbm(f, binary=True)
+    # with open(f"{filename}.pbm", 'wb') as f:
+    #     Image(petri_dish_history).pbm(f, binary=True)
+
+    t = Image(petri_dish_history).gif(binary=True, H=H, W=W)
+    frames = [PImage.open(io.BytesIO(frame)).convert('L') for frame in t]
+
+    frames[0].save(
+        f"{filename}.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=100,  # Adjust the frame duration as needed
+        loop=0
+    )
+
+
 
 
 def benchmark():
@@ -189,4 +204,4 @@ def benchmark():
 
 # run(init, 50)
 # benchmark()
-export(init, 1000, "../bhv/cnative/gol1000.pbm")
+export(init, 1000, "../bhv/cnative/gol1000")

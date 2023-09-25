@@ -52,3 +52,9 @@ class Image:
             for hv in self.hvs:
                 file.write(hv.bitstring())
                 file.write('\n')
+    def gif(self, binary=False, H=100, W=100):
+        if binary:
+            return [b"P4\n" + bytes(str(W), "ascii") + b" " + bytes(str(H), "ascii") + b"\n" + hv.to_bytes() for hv in self.hvs]
+
+        else:
+            raise NotImplementedError()
