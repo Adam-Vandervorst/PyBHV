@@ -176,17 +176,20 @@ def benchmark():
     step30_hv = grid_to_hv(pad_grid(viz_to_grid(step30)))
     petri_dish_hv = init_hv
 
+    for _ in range(30):
+        petri_dish_hv = step(petri_dish_hv)
+
+    print(petri_dish_hv == step30_hv)
+
     t0 = time_ns()
-    for _ in range(1000):
+    for _ in range(1000000):
         petri_dish_hv = step(petri_dish_hv)
 
     t1 = time_ns()
 
-    print(t1 - t0)
-
-    print(petri_dish_hv == step30_hv)
+    print(1000000/((t1 - t0)/1e9))
 
 
 # run(init, 50)
-# benchmark()
-export(init, 1000, "../bhv/cnative/gol1000.pbm")
+benchmark()
+# export(init, 8191, "../bhv/cnative/gol8192.pbm")

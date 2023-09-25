@@ -494,9 +494,27 @@ class CryptoBHV(FractionalBHV):
 class LevelBHV(FractionalBHV):
     @classmethod
     def threshold(cls, vs: list[Self], t: int) -> Self:
-        assert 0 <= t <= len(vs)
         # threshold(vs, t) = t < counts(vs)
-        raise NotImplementedError()
+        return cls._logic_threshold(vs, t)
+
+    @classmethod
+    def _logic_threshold(cls, vs: list[Self], t: int) -> Self:
+        t_ = len(vs) - t
+        disjunction = list(accumulate(vs[:t-1:-1], or_))[1:]
+        conjunction = list(accumulate(vs[:t_-1:-1], and_))[1:]
+
+        @cache
+        def rec(ons, offs):
+            if ons + 1 > t:
+                return disjunction[-offs - 1]
+            if offs + 1 >= t_:
+                return conjunction[-ons - 1]
+            return vs[ons + offs].select(
+                rec(ons + 1, offs),
+                rec(ons, offs + 1)
+            )
+
+        return rec(0, 0)
 
     @classmethod
     def window(cls, vs: list[Self], b: int, t: int) -> Self:
