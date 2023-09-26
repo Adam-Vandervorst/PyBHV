@@ -2,12 +2,18 @@ from bhv.abstract import AbstractBHV
 from bhv.symbolic import Var, SymbolicBHV, Rand
 
 
-def large_majority_plot():
+def logic_majority_plot():
     print("digraph {")
-    all_vars = [Var.shortname(i) for i in range(8, -1, -1)]
-    AbstractBHV.majority(all_vars).graphviz(structural=False, compact_select=True)
+    all_vars = [Var.shortname(i) for i in range(16, -1, -1)]
+    SymbolicBHV._true_majority(all_vars).graphviz(structural=False, compact_select=True)
     print("}")
 
+
+def logic_window_plot():
+    print("digraph {")
+    all_vars = [Var.shortname(i) for i in range(16, -1, -1)]
+    SymbolicBHV._logic_window(all_vars, 7, 12).graphviz(structural=False, compact_select=True)
+    print("}")
 
 def active_fraction():
     rfs = [1/2, 1/4, 3/4, 5/8, 3/8, 9/16, 11/16, 31/32, 61/128, 123/256]
@@ -24,8 +30,11 @@ def mock(T, **fields):
 
 
 if __name__ == '__main__':
-    print(SymbolicBHV.random(.25).select((Var("X") & ~Var("Y")), (Var("X") | ~Var("Y")))
-          .show(impl="SymbolicBHV.", symbolic_var=True))
+    # print(SymbolicBHV.random(.25).select((Var("X") & ~Var("Y")), (Var("X") | ~Var("Y")))
+    #       .show(impl="SymbolicBHV.", symbolic_var=True))
 
-    print(mock(SymbolicBHV, majority=vars(AbstractBHV)['majority']).majority([Var("X"), Var("Y")])
-          .show(random_id=True))
+    # print(mock(SymbolicBHV, majority=vars(AbstractBHV)['majority']).majority([Var("X"), Var("Y")])
+    #       .show(random_id=True))
+
+    # logic_majority_plot()
+    logic_window_plot()

@@ -500,15 +500,13 @@ class LevelBHV(FractionalBHV):
     @classmethod
     def _logic_threshold(cls, vs: list[Self], t: int) -> Self:
         t_ = len(vs) - t
-        disjunction = list(accumulate(vs[:t-1:-1], or_))[1:]
-        conjunction = list(accumulate(vs[:t_-1:-1], and_))[1:]
 
         @cache
         def rec(ons, offs):
-            if ons + 1 > t:
-                return disjunction[-offs - 1]
-            if offs + 1 >= t_:
-                return conjunction[-ons - 1]
+            if ons > t:
+                return cls.ONE
+            if offs >= t_:
+                return cls.ZERO
             return vs[ons + offs].select(
                 rec(ons + 1, offs),
                 rec(ons, offs + 1)
@@ -525,6 +523,29 @@ class LevelBHV(FractionalBHV):
         #                  = b <= counts(vs) and not (t < counts(vs))
         #                  = (b - 1 < counts(vs)) and not (t < counts(vs))
         return cls.threshold(vs, b - 1) & ~cls.threshold(vs, t)
+
+    @classmethod
+    def _logic_window(cls, vs: list[Self], b: int, t: int) -> Self:
+        #   b   t
+        #   |   |
+        # --+---+----
+        #   +---+      Sure that you'll land in the inclusive interval
+        #              ons >= b and offs >= len(vs) - t
+        # --     ----  Sure that you'll land in one of the two exclusive intervals
+        #              ons > t or offs > len(vs) - b
+
+        @cache
+        def rec(ons, offs):
+            if ons >= b and offs >= len(vs) - t:
+                return cls.ONE
+            if ons > t or offs > len(vs) - b:
+                return cls.ZERO
+            return vs[ons + offs].select(
+                rec(ons + 1, offs),
+                rec(ons, offs + 1)
+            )
+
+        return rec(0, 0)
 
     @classmethod
     def agreement(cls, vs: list[Self], p: float) -> Self:
