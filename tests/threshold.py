@@ -48,11 +48,13 @@ class TestLevels(unittest.TestCase):
             self.assertEqual(BHV.threshold(rs, i), BHV._logic_threshold(rs, i))
 
     def test_window_equivalence(self):
-        rs = BHV.nrand(15)
+        rs = BHV.nrand(17)
 
         for t in range(16):
             for b in range(t + 1):
-                self.assertEqual(BHV.window(rs, b, t), BHV._logic_window(rs, b, t))
+                self.assertEqual(BHV.window(rs, b, t), BHV._ite_window(rs, b, t))
+
+        self.assertEqual(BHV.window(rs, 3, 10), BHV._ite_window(rs, 3, 10))
 
     def test_real_window(self):
         self.assertEqual(BHV.window([BHV.ONE, BHV.ONE, BHV.ZERO, BHV.ZERO], 3, 3), BHV.ZERO)

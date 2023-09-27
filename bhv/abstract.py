@@ -499,20 +499,27 @@ class LevelBHV(FractionalBHV):
 
     @classmethod
     def _logic_threshold(cls, vs: list[Self], t: int) -> Self:
-        t_ = len(vs) - t
+        if t >= len(vs): return cls.ZERO
+        if t < 0: return cls.ONE
 
-        @cache
-        def rec(ons, offs):
-            if ons > t:
-                return cls.ONE
-            if offs >= t_:
-                return cls.ZERO
-            return vs[ons + offs].select(
-                rec(ons + 1, offs),
-                rec(ons, offs + 1)
-            )
+        size = len(vs)
+        t_ = size - t - 1
 
-        return rec(0, 0)
+        grid: list[list[Self]] = [[None]*(t_+1) for _ in range(t + 1)]
+
+        grid[t][t_] = vs[size - 1]
+
+        for i in range(t):
+            grid[t - i - 1][t_] = grid[t - i][t_] & vs[size - i - 2]
+
+        for i in range(t_):
+            grid[t][t_ - i - 1] = grid[t][t_ - i] | vs[size - i - 2]
+
+        for i in range(t - 1, -1, -1):
+            for j in range(t_ - 1, -1, -1):
+                grid[i][j] = vs[i + j].select(grid[i + 1][j], grid[i][j + 1])
+
+        return grid[0][0]
 
     @classmethod
     def window(cls, vs: list[Self], b: int, t: int) -> Self:
@@ -525,7 +532,7 @@ class LevelBHV(FractionalBHV):
         return cls.threshold(vs, b - 1) & ~cls.threshold(vs, t)
 
     @classmethod
-    def _logic_window(cls, vs: list[Self], b: int, t: int) -> Self:
+    def _ite_window(cls, vs: list[Self], b: int, t: int) -> Self:
         #   b   t
         #   |   |
         # --+---+----
@@ -533,17 +540,32 @@ class LevelBHV(FractionalBHV):
         #              ons >= b and offs >= len(vs) - t
         # --     ----  Sure that you'll land in one of the two exclusive intervals
         #              ons > t or offs > len(vs) - b
+        l = len(vs)
 
         @cache
         def rec(ons, offs):
-            if ons >= b and offs >= len(vs) - t:
-                return cls.ONE
-            if ons > t or offs > len(vs) - b:
-                return cls.ZERO
-            return vs[ons + offs].select(
-                rec(ons + 1, offs),
-                rec(ons, offs + 1)
-            )
+            on1 = ons + 1 >= b and offs >= l - t
+            on0 = ons + 1 > t or offs > l - b
+            off1 = ons >= b and offs + 1 >= l - t
+            off0 = ons > t or offs + 1 > l - b
+
+            if on1 and off0:
+                return vs[ons + offs]
+            elif on0 and off1:
+                return ~vs[ons + offs]
+            elif on1:
+                return vs[ons + offs] | rec(ons, offs + 1)
+            elif on0:
+                return ~vs[ons + offs] & rec(ons, offs + 1)
+            elif off1:
+                return ~vs[ons + offs] | rec(ons + 1, offs)
+            elif off0:
+                return vs[ons + offs] & rec(ons + 1, offs)
+            else:
+                return vs[ons + offs].select(
+                    rec(ons + 1, offs),
+                    rec(ons, offs + 1)
+                )
 
         return rec(0, 0)
 
