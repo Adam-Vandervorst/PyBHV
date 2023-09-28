@@ -268,10 +268,10 @@ class BooleanAlgBHV(BaseBHV):
         elif n % 2 == 0:
             return cls.majority([cls.rand()] + vs)
         else:
-            return cls._true_majority(vs)
+            return cls._logic_majority(vs)
 
     @classmethod
-    def _true_majority(cls, vs: list[Self]) -> Self:
+    def _logic_majority(cls, vs: list[Self]) -> Self:
         assert len(vs) % 2 == 1,  "The true majority function which is only defined on uneven length inputs, see `majority`"
         half = len(vs)//2
         disjunction = list(accumulate(vs[:half-1:-1], or_))[1:]
@@ -590,10 +590,10 @@ class LevelBHV(FractionalBHV):
         return b, t
 
     @classmethod
-    def best_division(cls, vs: list[Self], f: float = .5, af=.5):
-        # best_division(vs, f) = min_p (f - avg(agreement(vs, p)))
+    def variant(cls, vs: list[Self], f: float = .5, af=.5):
+        # best_division(vs, f) = min_p E[(f - avg(agreement(vs, p)))]
         b, t = cls.best_division_window_bounds(len(vs), f, af)
-        return ~cls.window(vs, b + 1, t - 1)
+        return cls.window(vs, b + 1, t - 1)
 
 
 class AbstractBHV(CryptoBHV, LevelBHV):

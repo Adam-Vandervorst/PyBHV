@@ -1,6 +1,6 @@
 from bhv.visualization import Image
-from bhv.native import NativePackedBHV as BHV
-# from bhv.np import NumPyPacked64BHV as BHV
+# from bhv.native import NativePackedBHV as BHV
+from bhv.np import NumPyPacked64BHV as BHV
 from time import sleep, time_ns
 
 
@@ -171,7 +171,6 @@ def export(initial_viz: list[str], generations: int, filename: str):
 
 
 def benchmark():
-    # 50 ms
     init_hv = grid_to_hv(pad_grid(viz_to_grid(init)))
     step30_hv = grid_to_hv(pad_grid(viz_to_grid(step30)))
     petri_dish_hv = init_hv

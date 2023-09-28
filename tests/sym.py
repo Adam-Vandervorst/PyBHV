@@ -5,7 +5,7 @@ from bhv.symbolic import Var, SymbolicBHV, Rand
 def logic_majority_plot():
     print("digraph {")
     all_vars = [Var.shortname(i) for i in range(16, -1, -1)]
-    SymbolicBHV._true_majority(all_vars).graphviz(structural=False, compact_select=True)
+    SymbolicBHV._logic_majority(all_vars).graphviz(structural=False, compact_select=True)
     print("}")
 
 
