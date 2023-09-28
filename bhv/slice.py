@@ -43,7 +43,7 @@ class Slice(AbstractBHV):
         return Slice(not self.b)
 
     @classmethod
-    def _true_majority(cls, vs: list[Self]) -> Self:
+    def _logic_majority(cls, vs: list[Self]) -> Self:
         return Slice(sum(v.b for v in vs) > len(vs)//2)
 
     def active(self) -> int:

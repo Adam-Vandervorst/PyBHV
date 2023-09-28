@@ -186,7 +186,6 @@ def export(initial_viz: list[str], generations: int, filename: str):
 
 
 def benchmark():
-    # 50 ms
     init_hv = grid_to_hv(pad_grid(viz_to_grid(init)))
     step30_hv = grid_to_hv(pad_grid(viz_to_grid(step30)))
     petri_dish_hv = init_hv
