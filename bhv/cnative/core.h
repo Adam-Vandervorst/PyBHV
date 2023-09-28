@@ -132,6 +132,9 @@ namespace bhv {
         d[i/BITS_PER_WORD] ^= (1ULL << (i % BITS_PER_WORD));
     }
 
+
+    #include "io.h"
+
     #include "ternary.h"
 
     #include "distance.h"
