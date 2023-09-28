@@ -7,18 +7,18 @@
 using namespace std;
 
 #define DO_VALIDATION true
-#define SLOPPY_VALIDATION false
+#define SLOPPY_VALIDATION true
 
 #define MAJ_INPUT_HYPERVECTOR_COUNT 1000001
 #define INPUT_HYPERVECTOR_COUNT 100
 
-//#define THRESHOLD
+#define THRESHOLD
 //#define MAJ
 //#define RAND
 //#define RAND2
 //#define RANDOM
 //#define PERMUTE
-#define ROLL
+//#define ROLL
 //#define ACTIVE
 //#define HAMMING
 //#define INVERT
@@ -1136,5 +1136,11 @@ int main() {
     threshold_benchmark(200001, 200000, .5, true, false);
 
     threshold_benchmark(1000001, 498384, .5, true, false);
+
+    cout << "*-= CART =-*" << endl;
+    for (uint8_t i = 0; i < 12; ++i) for (uint8_t j = 0; j < i; ++j) {
+        threshold_benchmark(i, j, .5, true, true);
+    }
+
 #endif
 }

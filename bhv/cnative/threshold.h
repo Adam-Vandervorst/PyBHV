@@ -348,6 +348,42 @@ void threshold_into_avx512(word_t ** xs, size_t size, size_t threshold, word_t* 
 #endif //__AVX512BW__
 
 #ifdef __AVX2__
+
+template<uint8_t size, uint8_t t>
+void logic_threshold_into_avx2(word_t **xs, word_t *target) {
+    constexpr uint8_t t_ = size - t - 1;
+    __m256i grid[t + 1][t_ + 1];
+
+    for (word_iter_t word_id = 0; word_id < WORDS; word_id += 4) {
+        word_t *x = xs[size - 1];
+        grid[t][t_] = _mm256_loadu_si256((__m256i *) (x + word_id));
+
+        for (uint8_t i = 0; i < t; ++i) {
+            x = xs[size - i - 2];
+            __m256i chunk = _mm256_loadu_si256((__m256i *) (x + word_id));
+
+            grid[t - i - 1][t_] = grid[t - i][t_] & chunk;
+        }
+
+        for (uint8_t i = 0; i < t_; ++i) {
+            x = xs[size - i - 2];
+            __m256i chunk = _mm256_loadu_si256((__m256i *) (x + word_id));
+
+            grid[t][t_ - i - 1] = grid[t][t_ - i] | chunk;
+        }
+
+        for (uint8_t i = t - 1; i < t; --i)
+            for (uint8_t j = t_ - 1; j < t_; --j) {
+                x = xs[i + j];
+                __m256i chunk = _mm256_loadu_si256((__m256i *) (x + word_id));
+
+                grid[i][j] = grid[i][j + 1] ^ (chunk & (grid[i][j + 1] ^ grid[i + 1][j])); // select
+            }
+
+        _mm256_storeu_si256((__m256i *) (target + word_id), grid[0][0]);
+    }
+}
+
 /// @brief INTERNAL Counts 256 input bits (32 Bytes) for 1 input hypervector
 /// @param xs pointer to pointer to input hypervector data
 /// @param byte_offset offset (in bytes) into each hypervector.  Must be aligned to 32 Bytes
@@ -655,8 +691,74 @@ void threshold_into_32bit_avx2(word_t ** xs, uint32_t size, uint32_t threshold, 
 /// @param threshold threshold to count against
 /// @param dst the hypervector to write the results into
 void threshold_into_avx2(word_t ** xs, size_t size, size_t threshold, word_t* dst) {
-    //FUTURE OPTIMIZATION: Should we have a path for smaller sizes?  Currently the main user of
-    // threshold_into() is true_majority(), and it has dedicated code for cases where n <= 21
+//    switch ((size*(size-1))/2 + threshold) {
+//        case 0: logic_threshold_into_avx2<1, 0>(xs, dst); return;
+//        case 1: logic_threshold_into_avx2<2, 0>(xs, dst); return;
+//        case 2: logic_threshold_into_avx2<2, 1>(xs, dst); return;
+//        case 3: logic_threshold_into_avx2<3, 0>(xs, dst); return;
+//        case 4: logic_threshold_into_avx2<3, 1>(xs, dst); return;
+//        case 5: logic_threshold_into_avx2<3, 2>(xs, dst); return;
+//        case 6: logic_threshold_into_avx2<4, 0>(xs, dst); return;
+//        case 7: logic_threshold_into_avx2<4, 1>(xs, dst); return;
+//        case 8: logic_threshold_into_avx2<4, 2>(xs, dst); return;
+//        case 9: logic_threshold_into_avx2<4, 3>(xs, dst); return;
+//        case 10: logic_threshold_into_avx2<5, 0>(xs, dst); return;
+//        case 11: logic_threshold_into_avx2<5, 1>(xs, dst); return;
+//        case 12: logic_threshold_into_avx2<5, 2>(xs, dst); return;
+//        case 13: logic_threshold_into_avx2<5, 3>(xs, dst); return;
+//        case 14: logic_threshold_into_avx2<5, 4>(xs, dst); return;
+//        case 15: logic_threshold_into_avx2<6, 0>(xs, dst); return;
+//        case 16: logic_threshold_into_avx2<6, 1>(xs, dst); return;
+//        case 17: logic_threshold_into_avx2<6, 2>(xs, dst); return;
+//        case 18: logic_threshold_into_avx2<6, 3>(xs, dst); return;
+//        case 19: logic_threshold_into_avx2<6, 4>(xs, dst); return;
+//        case 20: logic_threshold_into_avx2<6, 5>(xs, dst); return;
+//        case 21: logic_threshold_into_avx2<7, 0>(xs, dst); return;
+//        case 22: logic_threshold_into_avx2<7, 1>(xs, dst); return;
+//        case 23: logic_threshold_into_avx2<7, 2>(xs, dst); return;
+//        case 24: logic_threshold_into_avx2<7, 3>(xs, dst); return;
+//        case 25: logic_threshold_into_avx2<7, 4>(xs, dst); return;
+//        case 26: logic_threshold_into_avx2<7, 5>(xs, dst); return;
+//        case 27: logic_threshold_into_avx2<7, 6>(xs, dst); return;
+//        case 28: logic_threshold_into_avx2<8, 0>(xs, dst); return;
+//        case 29: logic_threshold_into_avx2<8, 1>(xs, dst); return;
+//        case 30: logic_threshold_into_avx2<8, 2>(xs, dst); return;
+//        case 31: logic_threshold_into_avx2<8, 3>(xs, dst); return;
+//        case 32: logic_threshold_into_avx2<8, 4>(xs, dst); return;
+//        case 33: logic_threshold_into_avx2<8, 5>(xs, dst); return;
+//        case 34: logic_threshold_into_avx2<8, 6>(xs, dst); return;
+//        case 35: logic_threshold_into_avx2<8, 7>(xs, dst); return;
+//        case 36: logic_threshold_into_avx2<9, 0>(xs, dst); return;
+//        case 37: logic_threshold_into_avx2<9, 1>(xs, dst); return;
+//        case 38: logic_threshold_into_avx2<9, 2>(xs, dst); return;
+//        case 39: logic_threshold_into_avx2<9, 3>(xs, dst); return;
+//        case 40: logic_threshold_into_avx2<9, 4>(xs, dst); return;
+//        case 41: logic_threshold_into_avx2<9, 5>(xs, dst); return;
+//        case 42: logic_threshold_into_avx2<9, 6>(xs, dst); return;
+//        case 43: logic_threshold_into_avx2<9, 7>(xs, dst); return;
+//        case 44: logic_threshold_into_avx2<9, 8>(xs, dst); return;
+//        case 45: logic_threshold_into_avx2<10, 0>(xs, dst); return;
+//        case 46: logic_threshold_into_avx2<10, 1>(xs, dst); return;
+//        case 47: logic_threshold_into_avx2<10, 2>(xs, dst); return;
+//        case 48: logic_threshold_into_avx2<10, 3>(xs, dst); return;
+//        case 49: logic_threshold_into_avx2<10, 4>(xs, dst); return;
+//        case 50: logic_threshold_into_avx2<10, 5>(xs, dst); return;
+//        case 51: logic_threshold_into_avx2<10, 6>(xs, dst); return;
+//        case 52: logic_threshold_into_avx2<10, 7>(xs, dst); return;
+//        case 53: logic_threshold_into_avx2<10, 8>(xs, dst); return;
+//        case 54: logic_threshold_into_avx2<10, 9>(xs, dst); return;
+//        case 55: logic_threshold_into_avx2<11, 0>(xs, dst); return;
+//        case 56: logic_threshold_into_avx2<11, 1>(xs, dst); return;
+//        case 57: logic_threshold_into_avx2<11, 2>(xs, dst); return;
+//        case 58: logic_threshold_into_avx2<11, 3>(xs, dst); return;
+//        case 59: logic_threshold_into_avx2<11, 4>(xs, dst); return;
+//        case 60: logic_threshold_into_avx2<11, 5>(xs, dst); return;
+//        case 61: logic_threshold_into_avx2<11, 6>(xs, dst); return;
+//        case 62: logic_threshold_into_avx2<11, 7>(xs, dst); return;
+//        case 63: logic_threshold_into_avx2<11, 8>(xs, dst); return;
+//        case 64: logic_threshold_into_avx2<11, 9>(xs, dst); return;
+//        case 65: logic_threshold_into_avx2<11, 10>(xs, dst); return;
+//    }
     if (size < 256) { threshold_into_byte_avx2(xs, size, threshold, dst); return; }
     if (size < 65536) { threshold_into_short_avx2(xs, size, threshold, dst); return; }
     threshold_into_32bit_avx2(xs, size, threshold, dst);

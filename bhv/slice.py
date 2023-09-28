@@ -51,6 +51,6 @@ class Slice(AbstractBHV):
 
     @classmethod
     def threshold(cls, vs: list[Self], t: int) -> Self:
-        return Slice(sum(v.b for v in vs) >= t)
+        return Slice(sum(v.b for v in vs) > t)
 Slice.ONE = Slice(True)
 Slice.ZERO = Slice(False)

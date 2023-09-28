@@ -68,16 +68,19 @@ int main() {
 
     word_t* petri_dish_hv = hvs[0];
 
+    for (size_t i = 0; i < 30; ++i)
+        step_into(petri_dish_hv, petri_dish_hv);
+
+    cout << bhv::eq(petri_dish_hv, hvs[30]) << endl;
+
     auto t0 = chrono::high_resolution_clock::now();
 
-    for (size_t i = 0; i < 1000; ++i)
+    for (size_t i = 0; i < 1000000; ++i)
         step_into(petri_dish_hv, petri_dish_hv);
 
     auto t1 = chrono::high_resolution_clock::now();
 
-    cout << chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count() << endl;
-
-    cout << bhv::eq(petri_dish_hv, hvs[30]) << endl;
+    cout << (1000000.)/((double)chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count()/1e9) << " fps" << endl;
 
     for (size_t i = 0; i < n; ++i)
         free(hvs[i]);
