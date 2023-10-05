@@ -27,16 +27,16 @@ class Random(Embedding[T]):
             self.hvs[x] = hv
             return hv
 
-    def back(self, input_hv: AbstractBHV, threshold=.1) -> Optional[T]:
+    def back(self, input_hv: AbstractBHV, threshold=6) -> Optional[T]:
         best_x = None
-        best_distance = 1.
+        best_distance = self.hvt.EXPECTED_RAND_APART
         for x, hv in self.hvs.items():
-            distance = input_hv.bit_error_rate(hv)
+            distance = input_hv.std_apart(hv)
             if distance < best_distance:
                 best_distance = distance
                 best_x = x
 
-        if best_distance < threshold:
+        if best_distance < self.hvt.EXPECTED_RAND_APART - threshold:
             return best_x
 
 

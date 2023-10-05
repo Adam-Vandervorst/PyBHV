@@ -199,8 +199,9 @@ class BooleanAlgBHV(BaseBHV):
     def flip_pow_off(self, pow_flip_off: int) -> Self:
         return self & self.rand2(pow_flip_off)
 
-    def overlap(self, other: Self) -> float:
-        return (self & other).active_fraction()
+    def overlap(self, other: Self, distance=False) -> float:
+        active = (self & other).active_fraction()
+        return 1. - active if distance else active
 
     def jaccard(self, other: Self, distance=False) -> float:
         union_active = (self | other).active()
