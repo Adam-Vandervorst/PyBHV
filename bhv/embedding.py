@@ -252,6 +252,41 @@ class BeanMachine(Embedding[float]):
         return self._position_infer(ds, self.kernel, self.border)/(self.ncolumns - 1)
 
 
+class Periodic(Embedding[float]):
+    @classmethod
+    def simple(cls, hvt: Type[AbstractBHV], divisions: int, periods: list[float]):
+        # e.g. Periodic.simple(BHV, 4, [1, 1, 1, 1/2])
+        cells = []
+
+        for period in periods:
+            roffset = uniform(0, period)
+            sensitive = period/divisions
+            for i in range(divisions):
+                offset = (i*sensitive + roffset) % period
+                cells.append((period, sensitive, offset))
+
+        return cls(hvt, cells)
+
+    @classmethod
+    def random(cls, hvt: Type[AbstractBHV], n: int, p: Callable[[], float], s: Callable[[], float], o: Callable[[], float]):
+        # e.g. Periodic.random(BHV, 25, lambda: uniform(.5, 1.), lambda: uniform(0, 1.), lambda: triangular(.1, .5, .2))
+        cells = [(p(), s(), o()) for _ in range(n)]
+
+        return cls(hvt, cells)
+
+    def __init__(self, hvt: Type[AbstractBHV], cells: list[tuple[float, float, float]]):
+        self.hvt = hvt
+        self.cells = cells
+        self.cell_hvs = hvt.nrand(len(cells))
+
+    def forward(self, x: float) -> AbstractBHV:
+        return self.hvt.majority([hv for (period, sensitive, offset), hv in zip(self.cells, self.cell_hvs) if
+                                  (abs(x - offset) % period) <= sensitive])
+
+    def back(self, input_hv: AbstractBHV, threshold=.1) -> Optional[float]:
+        raise NotImplementedError()
+
+
 class Collapse(Embedding[Iterable[float]]):
     def __init__(self, hvt: Type[AbstractBHV]):
         self.hvt = hvt
