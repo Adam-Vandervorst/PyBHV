@@ -7,8 +7,8 @@
 #include <cstring>
 #include <cassert>
 #include <algorithm>
-#include "shared.h"
 #include <immintrin.h>
+#include "shared.h"
 #ifdef __AVX2__
 #include "simdpcg.h"
 #endif

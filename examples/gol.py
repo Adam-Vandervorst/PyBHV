@@ -189,6 +189,6 @@ def benchmark():
     print(1000000/((t1 - t0)/1e9))
 
 
-# run(init, 50)
-benchmark()
+run(init, 50)
+# benchmark()
 # export(init, 8191, "../bhv/cnative/gol8192.pbm")

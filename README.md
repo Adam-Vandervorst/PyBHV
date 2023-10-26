@@ -19,6 +19,7 @@ The fundamental research includes finding algebras with interesting properties o
 - Hamming, jaccard, cosine, bit-error-rate, tversky, and mutual-information metrics
 - A system for relatedness, unrelatedness, and standard deviations apart
 - zscore and pvalue
+- Everything available for 
 
 Additionally, provided are
 - [A symbolic implementation with simplification, analysis, plotting and pretty printing](bhv/symbolic.py)
@@ -40,6 +41,10 @@ Additionally, provided are
 Make sure you have a recent Python version, 3.10 is recommended.
 
 `pip install bhv`
+
+If you want a specific definition of "hyper" (the default is 8192) you can specify that as follows:
+
+`DIMENSION=512 pip install bhv` Note, use multiples of 512 and preferably powers of 2.
 
 If you only want to work with plain Python, you're good to go with `from bhv.vanilla VanillaBHV as BHV`.
 

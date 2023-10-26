@@ -132,29 +132,6 @@ void test_ternary_instruction() {
 //    cout << "expected: " << 123.f/256.f << ", active: " << (double) bhv::active(x) / (double) BITS << endl;
 }
 
-void test_bfwht() {
-    auto v1 = bhv::random(.95);
-    bhv::rehash_into(v1, v1);
-
-    cout << bhv::active(v1) << " initial af" << endl;
-
-    auto v1_t = bhv::empty();
-    bhv::bfwht_into(v1, v1_t);
-
-    cout << bhv::active(v1_t) << " initial transformed af" << endl;
-
-    cout << bhv::hamming(v1, v1_t) << " |v,v_t|" << endl;
-
-    auto v1_t_t = bhv::empty();
-    bhv::bfwht_into(v1_t, v1_t_t);
-
-    cout << bhv::active(v1_t_t) << " twice transformed af" << endl;
-
-    cout << bhv::hamming(v1, v1_t_t) << " |v,v_t_t|" << endl;
-    cout << bhv::hamming(v1_t, v1_t_t) << " |v_t,v_t_t|" << endl;
-}
-
-
 void test_independent_opt() {
     auto v_ref = bhv::rand();
     auto v = bhv::rand();
@@ -168,7 +145,7 @@ void test_independent_opt() {
 
     auto full = bhv::one();
 
-    auto half = [](word_t *x) { return abs(bhv::active(x) - BITS/2); };
+    auto half = [](word_t *x) { return abs(int64_t(bhv::active(x) - BITS/2)); };
     bhv::opt_independent<uint64_t>(full, half);
 
     cout << bhv::active(full) << " |full_opt|  (" << BITS/2 << ")" << endl;

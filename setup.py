@@ -1,6 +1,15 @@
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
+import os
 
-VERSION = '0.9.4'
+
+dimension_arg = int(os.environ.get("DIMENSION", "8192"))
+assert dimension_arg >= 512 and dimension_arg % 512 == 0
+
+with open("bhv/dimension.py", "w") as f:
+    f.write(f"DIMENSION = {dimension_arg}")
+
+VERSION = '0.10.1'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
@@ -11,6 +20,7 @@ native = Extension("bhv.cnative",
                             'bhv/cnative/TurboSHAKE_AVX512/TurboSHAKE.cpp',
                             'bhv/cnative/TurboSHAKE_AVX512/KeccakP-1600-AVX512.cpp',
                             ],
+                   define_macros=[("DIMENSION", dimension_arg)],
                    include_dirs=['bhv/cnative', 'bhv/cnative/TurboSHAKEopt'],
                    extra_compile_args=['-std=c++2a', '-O3', '-march=native', '-Wall'],
                    language='c++',

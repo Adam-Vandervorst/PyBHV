@@ -3,7 +3,10 @@ try:
 except ImportError:
     Self = 'AbstractBHV'
 
-DIMENSION = 8192
+try:
+    from .dimension import DIMENSION
+except ImportError:
+    DIMENSION = 8192
 
 from itertools import groupby
 from functools import partial

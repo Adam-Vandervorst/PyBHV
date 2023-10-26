@@ -13,24 +13,23 @@ using namespace std;
 #define INPUT_HYPERVECTOR_COUNT 100
 
 #define THRESHOLD
-//#define MAJ
-//#define RAND
-//#define RAND2
-//#define RANDOM
-//#define PERMUTE
-//#define ROLL
-//#define ACTIVE
-//#define HAMMING
-//#define INVERT
-//#define SWAP_HALVES
-//#define REHASH
-//#define AND
-//#define OR
-//#define XOR
-//#define SELECT
-//#define MAJ3
-//#define TERNARY
-//#define BWHT
+#define MAJ
+#define RAND
+#define RAND2
+#define RANDOM
+#define PERMUTE
+#define ROLL
+#define ACTIVE
+#define HAMMING
+#define INVERT
+#define SWAP_HALVES
+#define REHASH
+#define AND
+#define OR
+#define XOR
+#define SELECT
+#define MAJ3
+#define TERNARY
 
 uint64_t hash_combine(uint64_t h, uint64_t k) {
     static constexpr uint64_t kM = 0xc6a4a7935bd1e995ULL;
@@ -105,7 +104,7 @@ float threshold_benchmark(size_t n, size_t threshold, float af, bool display, bo
 
             val_checksum = integrate(val_checksum, summary(m));
         }
-        validation_status = ((checksum == val_checksum) ? "equiv: √, " : "equiv: X, ");
+        validation_status = ((checksum == val_checksum) ? "equiv: v, " : "equiv: x, ");
     } else {
         validation_status = "";
     }
@@ -178,7 +177,7 @@ float majority_benchmark(size_t n, bool display, bool keep_in_cache) {
 
             val_checksum = integrate(val_checksum, summary(m));
         }
-        validation_status = ((checksum == val_checksum) ? "equiv: √, " : "equiv: X, ");
+        validation_status = ((checksum == val_checksum) ? "equiv: v, " : "equiv: x, ");
     } else {
         validation_status = "";
     }
@@ -304,7 +303,7 @@ float random_benchmark(bool display, bool keep_in_cache, float base_frac, bool r
     double mean_observed_frac =
             std::reduce(observed_frac, observed_frac + test_count, 0., std::plus<double>()) / (double) test_count - n;
     if (display)
-        cout << base_frac << "frac, observed: " << abs(base_frac - mean_observed_frac) << ", in_cache: "
+        cout << base_frac << "frac, observed error: " << abs(base_frac - mean_observed_frac) << ", in_cache: "
              << keep_in_cache << ", total: " << mean_test_time / 1000.0 << "µs" << endl;
 
     //Clean up our mess
@@ -660,15 +659,6 @@ int main() {
 
     cout << "*-= STARTING (" << x << ") =-*" << endl;
 
-#ifdef BWHT
-    unary_benchmark<bhv::bfwht_into, bhv::bfwht_into>(false, true);
-
-    cout << "*-= Boolean Walsh-Hadamard transform =-*" << endl;
-
-    unary_benchmark<bhv::bfwht_into, bhv::bfwht_into>(true, true);
-    unary_benchmark<nondestructive_unary<bhv::bfwht_destructive>, bhv::bfwht_into>(true, true);
-    unary_benchmark<nondestructive_unary<bhv::bfwht_destructive>, nondestructive_unary<bhv::bfwht_destructive>>(true, true);
-#endif
 #ifdef TERNARY
     ternary_benchmark<simulated_select, bhv::select_into_reference>(false, true);
 

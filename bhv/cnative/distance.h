@@ -100,7 +100,11 @@ bit_iter_t active_avx512(word_t *x) {
 #if __AVX512BW__
 #define active active_avx512
 #elif __AVX2__
+#if BITS >= 4096
 #define active active_adder_avx2
+#else
+#define active active_reference
+#endif
 #else
 #define active active_reference
 #endif
@@ -214,7 +218,11 @@ bit_iter_t hamming_avx512(word_t *x, word_t *y) {
 #if __AVX512BW__
 #define hamming hamming_avx512
 #elif __AVX2__
+#if BITS >= 4096
 #define hamming hamming_adder_avx2
+#else
+#define hamming hamming_reference
+#endif
 #else
 #define hamming hamming_reference
 #endif
