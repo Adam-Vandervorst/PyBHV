@@ -5,7 +5,7 @@
 #include <Python.h>
 #include "structmember.h"
 
-#include "core.h"
+#include "CBHV/core.h"
 
 typedef struct {
     PyObject_HEAD

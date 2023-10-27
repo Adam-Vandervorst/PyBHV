@@ -23,7 +23,7 @@ The fundamental research includes finding algebras with interesting properties o
 
 Additionally, provided are
 - [A symbolic implementation with simplification, analysis, plotting and pretty printing](bhv/symbolic.py)
-- A native [C++ implementation](bhv/cnative)
+- A native [C++ implementation](bhv/CBHV)
 - Law and unification backed expression simplification
 - Compilation to operation sequences (circuits)
 - Efficient bit-packed representation (saves 8x memory compared to the traditional NumPy and PyTorch bool!)
