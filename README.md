@@ -4,6 +4,7 @@ A rich research framework for [hyperdimensional computing](https://en.wikipedia.
 
 If your application is a relatively direct pipeline, take a look at [HDCC](https://arxiv.org/abs/2304.12398).
 If you want a more stable library, or want to work with another base field than the booleans, use [torch-hd](https://pypi.org/project/torch-hd/).
+For C/C++, please see [CBHV](https://github.com/Adam-Vandervorst/CBHV/).
 
 ## Overview
 The fundamental research includes finding algebras with interesting properties on top of large boolean vectors. To this extent the library has [laws used for testing](tests/laws.py) and an expansive [set of operators](bhv/abstract.py) including:
@@ -23,7 +24,7 @@ The fundamental research includes finding algebras with interesting properties o
 
 Additionally, provided are
 - [A symbolic implementation with simplification, analysis, plotting and pretty printing](bhv/symbolic.py)
-- A native [C++ implementation](bhv/CBHV)
+- A native [C++ implementation](https://github.com/Adam-Vandervorst/CBHV/)
 - Law and unification backed expression simplification
 - Compilation to operation sequences (circuits)
 - Efficient bit-packed representation (saves 8x memory compared to the traditional NumPy and PyTorch bool!)
