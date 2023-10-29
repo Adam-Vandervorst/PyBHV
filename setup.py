@@ -9,7 +9,7 @@ assert dimension_arg >= 512 and dimension_arg % 512 == 0
 with open("bhv/dimension.py", "w") as f:
     f.write(f"DIMENSION = {dimension_arg}")
 
-VERSION = '0.11.0'
+VERSION = '0.11.1'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 

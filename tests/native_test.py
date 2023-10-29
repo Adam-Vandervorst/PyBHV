@@ -1,8 +1,8 @@
 from time import monotonic_ns
 
 # from bhv.np import NumPyBoolBHV as BHV
-from bhv.np import NumPyPacked64BHV as BHV
-# from bhv.native import CNativePackedBHV as BHV
+# from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import NativePackedBHV as BHV
 
 x = 0x7834d688d8827099
 for i in range(5000000):
@@ -17,13 +17,13 @@ rs = [BHV.rand() for _ in range(N)]
 t1 = monotonic_ns()
 print("rand", t1 - t0)
 
-ps = [r.roll_words(42) for r in rs]
+ps = [r.permute(42) for r in rs]
 
 t2 = monotonic_ns()
 print("new permute", t2 - t1)
 
 for r, p in zip(rs, ps):
-    assert r == p.roll_words(-42)
+    assert r == p.permute(-42)
 
 t3 = monotonic_ns()
 print("rpermute eq", t3 - t2)
