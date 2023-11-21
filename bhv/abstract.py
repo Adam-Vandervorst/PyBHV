@@ -70,6 +70,13 @@ class BaseBHV(StoreBHV):
     def __xor__(self, other: Self) -> Self:
         raise NotImplementedError()
 
+    @classmethod
+    def parity(cls, vs: list[Self]) -> Self:
+        a = cls.ZERO
+        for v in vs:
+            a = a ^ v
+        return a
+
     def active(self) -> int:
         raise NotImplementedError()
 
@@ -81,6 +88,9 @@ class BaseBHV(StoreBHV):
 
     def hamming(self, other: Self) -> int:
         return (self ^ other).active()
+
+    def closest(self, vs: list[Self]) -> int:
+        return min(range(len(vs)), key=lambda i: self.hamming(vs[i]))
 
     def bit_error_rate(self, other: Self) -> float:
         return self.hamming(other)/DIMENSION
@@ -149,6 +159,8 @@ class BaseBHV(StoreBHV):
 
         m = cls.majority3(mabc, mdef, mghi)
         return cls.majority3(l, m, r)
+
+    ZERO: Self
 
 
 class BooleanAlgBHV(BaseBHV):
@@ -433,7 +445,6 @@ class BooleanAlgBHV(BaseBHV):
         else:
             raise RuntimeError(f"No optimal implementations beyond MAJORITY-9 (tried to take MAJORITY-{n})")
 
-    ZERO: Self
     ONE: Self
 
 

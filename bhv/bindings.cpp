@@ -34,6 +34,8 @@ static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_parity(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
@@ -78,6 +80,7 @@ static PyObject *BHV_or(PyObject * v1, PyObject * v2);
 static PyObject *BHV_invert(PyObject * v);
 
 static PyObject *BHV_hamming(BHV * v1, PyObject * args);
+static PyObject *BHV_closest(BHV * q, PyObject *args);
 
 static PyObject *BHV_to_bytes(BHV * x, PyObject * Py_UNUSED(ignored));
 static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args);
@@ -100,6 +103,8 @@ static PyMethodDef BHV_methods[] = {
                 "Bernoulli p distributed bit vector"},
         {"majority",          (PyCFunction) BHV_majority,          METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
+        {"parity",          (PyCFunction) BHV_parity,              METH_CLASS | METH_VARARGS,
+                "The parity of a list of BHVs"},
         {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
                 "Checks if the count is greater than a threshold for a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
@@ -130,6 +135,8 @@ static PyMethodDef BHV_methods[] = {
                 "Check equality"},
         {"hamming",           (PyCFunction) BHV_hamming,           METH_VARARGS,
                 "Hamming distance between two BHVs"},
+        {"closest",           (PyCFunction) BHV_closest,           METH_VARARGS,
+                "Returns the index of the closest BHV"},
         {"active",            (PyCFunction) BHV_active,            METH_NOARGS,
                 "Count the number of active bits"},
         {"to_bytes",          (PyCFunction) BHV_to_bytes,          METH_NOARGS,
@@ -192,6 +199,24 @@ static PyObject *BHV_hamming(BHV * v1, PyObject * args) {
     return Py_BuildValue("i", bhv::hamming(v1->data, v2->data));
 }
 
+static PyObject *BHV_closest(BHV * q, PyObject *args) {
+    PyObject * vector_list;
+
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &vector_list))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc(n_vectors * sizeof(word_t *));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    return Py_BuildValue("i", bhv::closest(vs, n_vectors, q->data));
+}
+
 static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
     PyObject * vector_list;
 
@@ -212,6 +237,26 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::true_majority_into(vs, n_vectors + even, ((BHV *) v)->data);
+    return v;
+}
+
+static PyObject *BHV_parity(PyTypeObject *type, PyObject *args) {
+    PyObject * vector_list;
+
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &vector_list))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc(n_vectors * sizeof(word_t *));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::parity_into(vs, n_vectors, ((BHV *) v)->data);
     return v;
 }
 

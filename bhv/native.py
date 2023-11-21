@@ -39,6 +39,10 @@ class NativePackedBHV(AbstractBHV):
         return NativePackedBHV(CNativePackedBHV.majority([x.ins for x in xs]))
 
     @classmethod
+    def parity(cls, xs):
+        return NativePackedBHV(CNativePackedBHV.parity([x.ins for x in xs]))
+
+    @classmethod
     def threshold(cls, xs, t):
         return NativePackedBHV(CNativePackedBHV.threshold([x.ins for x in xs], t))
 
@@ -51,6 +55,9 @@ class NativePackedBHV(AbstractBHV):
 
     def hamming(self, other):
         return self.ins.hamming(other.ins)
+
+    def closest(self, xs):
+        return self.ins.closest([x.ins for x in xs])
 
     def permute_words(self, permutation_id: int):
         return NativePackedBHV(self.ins.permute_words(permutation_id))

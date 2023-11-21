@@ -9,7 +9,7 @@ assert dimension_arg >= 512 and dimension_arg % 512 == 0
 with open("bhv/dimension.py", "w") as f:
     f.write(f"DIMENSION = {dimension_arg}")
 
-VERSION = '0.11.1'
+VERSION = '0.12.0'
 DESCRIPTION = 'Boolean Hypervectors'
 LONG_DESCRIPTION = 'Boolean Hypervectors with various operators for experiments in hyperdimensional computing (HDC).'
 
@@ -20,9 +20,9 @@ native = Extension("bhv.cnative",
                             'bhv/CBHV/TurboSHAKE_AVX512/TurboSHAKE.cpp',
                             'bhv/CBHV/TurboSHAKE_AVX512/KeccakP-1600-AVX512.cpp',
                             ],
-                   define_macros=[("DIMENSION", dimension_arg)],
+                   define_macros=[("DIMENSION", dimension_arg), ("NOPARALLELISM", None)],
                    include_dirs=['bhv/CBHV'],
-                   extra_compile_args=['-std=c++2a', '-O3', '-march=native', '-Wall'],
+                   extra_compile_args=['-std=c++20', '-O3', '-march=native', '-Wall'],
                    language='c++',
                    optional=True)
 
