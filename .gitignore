@@ -1,3 +1,6 @@
+/benchmarks/results
+/cmake-build-debug
+/resources
 /venv
 /dist
 /build
