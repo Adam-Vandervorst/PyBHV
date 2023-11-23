@@ -48,11 +48,11 @@ copy_zeros = [BHV.ZERO.permute(0) for _ in range(6)]
 (dollar_of_mexico, _and, _and) = linear.xor(dollar_copy, pair_one)
 
 # ignoring linearity for these checks, we'd have to make another copy of peso and dollar
-assert not peso.unrelated(dollar_of_mexico)
+assert peso.related(dollar_of_mexico)
 assert peso.hamming(dollar_of_mexico) < dollar.hamming(dollar_of_mexico)
 
 (mexico_city_of_usa, _and, _and) = linear.xor(mexico_city_copy, pair_two)
 
 # ignoring linearity
-assert not washington_dc.unrelated(mexico_city_of_usa)
+assert washington_dc.related(mexico_city_of_usa)
 assert washington_dc.hamming(mexico_city_of_usa) < mexico_city.hamming(mexico_city_of_usa)

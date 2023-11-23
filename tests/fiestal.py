@@ -47,7 +47,7 @@ class TestFeistal(unittest.TestCase):
                     if eq: self.fail("different keys produce the same result")
                     eq = True
                 else:
-                    self.assertTrue(x_enc_i.unrelated(x_enc_j))
+                    self.assertFalse(x_enc_i.related(x_enc_j))
 
 
 class TestRehash(unittest.TestCase):
@@ -69,7 +69,7 @@ class TestRehash(unittest.TestCase):
                     if eq: self.fail("different keys produce the same result")
                     eq = True
                 else:
-                    self.assertTrue(v.unrelated(v_))
+                    self.assertFalse(v.related(v_))
 
     def test_close_different(self):
         seed = BHV.rand()
@@ -93,7 +93,7 @@ class TestRehash(unittest.TestCase):
                     if eq: self.fail("different keys produce the same result")
                     eq = True
                 else:
-                    self.assertTrue(v.unrelated(v_))
+                    self.assertFalse(v.related(v_))
 
 
 if __name__ == '__main__':

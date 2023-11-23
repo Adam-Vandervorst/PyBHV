@@ -10,7 +10,7 @@ class TestRandomEmbedding(unittest.TestCase):
         embedding = Random(BHV)
         hva = embedding.forward(a)
         hvb = embedding.forward(b)
-        self.assertTrue(hva.unrelated(hvb))
+        self.assertFalse(hva.related(hvb))
         hva_ = embedding.forward(a)
         self.assertEqual(hva, hva_)
 

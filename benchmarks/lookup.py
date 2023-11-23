@@ -32,15 +32,15 @@ for _ in range(repeat_pipeline):
               for deviation in deviations}
 
         t_index = monotonic()
-        index = StoreChunks.auto_associative(rs)
+        # index = StoreChunks.auto_associative(rs)
         index_times[size].append(monotonic() - t_index)
 
         for threshold in thresholds:
             t_lookup = monotonic()
             for deviation in deviations:
                 for p in ps[deviation]:
-                    ms = list(index.related(p, threshold))
-                    distances[size][threshold][deviation].append([index.hvs[m].std_apart(p) for m in ms])
+                    ms = list(p.within_std(rs, threshold))
+                    distances[size][threshold][deviation].append([rs[m].std_apart(p) for m in ms])
 
             lookup_times[size][threshold].append(monotonic() - t_lookup)
 

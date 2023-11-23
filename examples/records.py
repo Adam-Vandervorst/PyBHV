@@ -42,16 +42,16 @@ def encode_person(p: Person) -> BHV:
     return BHV.majority([Person_hv, name_hv, age_hv, pet_hv])
 
 def decode_person(hv: BHV) -> Person:
-    assert not hv.unrelated(Person_hv)
+    assert hv.related(Person_hv)
     person_hv = hv.permute(-1)
     name = name_embed.back(person_hv)
     age = age_embed.back(person_hv)
-    if not person_hv.unrelated(Cat_hv):
+    if person_hv.related(Cat_hv):
         cat_hv = person_hv.permute(-2)
         cat_name = name_embed.back(cat_hv)
         cat_age = age_embed.back(cat_hv)
         pet = Cat(cat_name, cat_age)
-    elif not person_hv.unrelated(Dog_hv):
+    elif person_hv.related(Dog_hv):
         dog_hv = person_hv.permute(-3)
         dog_name = name_embed.back(dog_hv)
         dog_age = age_embed.back(dog_hv)

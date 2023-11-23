@@ -401,9 +401,6 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def bias_rel(self, other: Self, rel: Self) -> float:
         return BiasRel(rel, self, other)
 
-    def unrelated(self, other: Self, stdvs=6) -> bool:
-        return Unrelated(self, other, stdvs)
-
     def expected_active_fraction(self, **kwargs):
         raise NotImplementedError()
 
@@ -847,17 +844,3 @@ class Related(Symbolic):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs).related(self.r.execute(**kwargs), self.stdvs)
-@dataclass
-class Unrelated(Symbolic):
-    l: SymbolicBHV
-    r: SymbolicBHV
-    stdvs: float
-
-    def reconstruct(self, l, r):
-        return Unrelated(l, r, self.stdvs)
-
-    def show(self, **kwargs):
-        return f"{self.l.show(**kwargs)}.unrelated({self.r.show(**kwargs)}, {self.stdvs})"
-
-    def instantiate(self, **kwargs):
-        return self.l.execute(**kwargs).unrelated(self.r.execute(**kwargs), self.stdvs)

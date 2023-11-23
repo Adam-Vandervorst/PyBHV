@@ -70,7 +70,7 @@ class TestLevels(unittest.TestCase):
         print()
         for v in np.linspace(.01, .99, 20):
             print(v)
-            print(BHV.best_division(vs, v, .5).active_fraction())
+            print(BHV.variant(vs, v, .5).active_fraction())
             print()
 
 

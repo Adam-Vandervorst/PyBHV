@@ -2,7 +2,7 @@ from statistics import NormalDist
 from itertools import accumulate
 from functools import cache
 from operator import or_, and_
-from math import comb, log2, floor, ceil
+from math import comb, log2, floor, ceil, e
 from typing import Iterator
 
 from .shared import *
@@ -92,48 +92,88 @@ class BaseBHV(StoreBHV):
     def closest(self, vs: list[Self]) -> int:
         return min(range(len(vs)), key=lambda i: self.hamming(vs[i]))
 
+    def top(self, vs: list[Self], k: int) -> list[int]:
+        return list(sorted(range(len(vs)), key=lambda i: self.hamming(vs[i])))[:k]
+
+    def within(self, vs: list[Self], d: int) -> list[int]:
+        return list(filter(lambda i: self.hamming(vs[i]) <= d, range(len(vs))))
+
+    def within_std(self, vs: list[Self], d: float, to_random: bool = False) -> list[int]:
+        return self.within(vs, int(DIMENSION*self.std_to_frac(d, to_random)))
+
+    def distribution(self, vs: list[Self], metric=lambda x, y: x.std_apart(y), softmax: bool = False, base: int = e):
+        ds = [metric(self, v) for v in vs]
+        if softmax:
+            eds = [base**d for d in ds]
+            sed = sum(eds)
+            return [ed/sed for ed in eds]
+        return ds
+
     def bit_error_rate(self, other: Self) -> float:
         return self.hamming(other)/DIMENSION
 
     EXPECTED_RAND_APART: float = NormalDist(0, (DIMENSION/4)**.5).zscore(DIMENSION/2)
-    def std_apart(self, other: Self, invert=False) -> float:
-        return self.frac_to_std(self.bit_error_rate(other), invert)
+    SPACE_WIDTH: float = NormalDist(0, (DIMENSION/4)**.5).zscore(DIMENSION)
+    def std_apart(self, other: Self, to_random=False) -> float:
+        return self.frac_to_std(self.bit_error_rate(other), to_random)
+
+    def std_relation(self, other: Self, compact=False, stdev=6, rounding=1) -> str:
+        #    d=0   d < stdev   d < EXPECTED - stdev   EXPECTED - stdev < d    d = 0    d < EXPECTED + stdev  EXPECTED + stdev < d   WIDTH - stdev < d   d=WIDTH
+        #   equal    noisy     closer than average       about average       halfway       about avergage       further opposite      noisy opposite    opposite
+        #    NP       dNP                dN                   dNE               E               dSE                    dS                  dSP            SP
+        r = int if rounding == 0 else lambda x: round(x, rounding)
+        d = self.std_apart(other)
+        dr = d - self.EXPECTED_RAND_APART
+        if d == 0.:
+            return "NP" if compact else "equal"
+        elif d == self.SPACE_WIDTH:
+            return "SP" if compact else "opposite"
+        elif d < stdev:
+            return f"{r(d)}NP" if compact else f"{r(d)}σ away from equal"
+        elif self.SPACE_WIDTH - d < stdev:
+            return f"{r(self.SPACE_WIDTH - d)}SP" if compact else f"{r(self.SPACE_WIDTH - d)}σ away from opposite"
+        elif dr < 0. and abs(dr) < stdev:
+            return f"{r(abs(dr))}NE" if compact else f"{r(abs(dr))}σ random closer to equal"
+        elif dr < 0.:
+            return f"{r(abs(dr))}N" if compact else f"{r(abs(dr))}σ closer to equal"
+        elif dr > 0. and abs(dr) < stdev:
+            return f"{r(dr)}SE" if compact else f"{r(dr)}σ random closer to opposite"
+        elif dr > 0.:
+            return f"{r(dr)}S" if compact else f"{r(dr)}σ closer to opposite"
+        else:
+            return "halfway"
 
     @staticmethod
     def normal(mean=0., af=.5):
         return NormalDist(mean, (DIMENSION*af*(1 - af))**.5)
 
     @staticmethod
-    def maj_ber(n):
+    def maj_frac(n):
         return comb(n - 1, (n - 1)//2)/2**n
 
     @staticmethod
-    def frac_to_std(frac, invert=False):
-        n = AbstractBHV.normal(0.0)
-        estdvs = n.zscore(0.5*DIMENSION)
+    def frac_to_std(frac, to_random=False):
+        n = AbstractBHV.normal(0)
         stdvs = n.zscore(frac*DIMENSION)
-        return estdvs - stdvs if invert else stdvs
+        estdvs = n.zscore(.5*DIMENSION)
+        return stdvs - to_random*estdvs
 
     @staticmethod
-    def std_to_frac(std, invert=False):
-        n = AbstractBHV.normal(0.0)
+    def std_to_frac(std, to_random=False):
+        n = AbstractBHV.normal(0)
         frac = (std*n.stdev + n.mean)/DIMENSION
-        return 1. - frac if invert else frac
+        efrac = .5
+        return frac - to_random*efrac
 
     def zscore(self) -> float:
         n = AbstractBHV.normal(0.5*DIMENSION)
         return n.zscore(self.active())
 
-    def pvalue(self) -> float:
-        n = AbstractBHV.normal(0.5*DIMENSION)
-        s = n.cdf(self.active())
-        return 2.*min(s, 1. - s)
-
-    def related(self, other: Self, stdvs=6) -> bool:
+    def close(self, other: Self, stdvs=6) -> bool:
         return abs(self.std_apart(other)) <= stdvs
 
-    def unrelated(self, other: Self, stdvs=6) -> bool:
-        return abs(self.std_apart(other, invert=True)) <= stdvs
+    def related(self, other: Self, stdvs=6) -> bool:
+        return abs(self.std_apart(other, to_random=True)) > stdvs
 
     @classmethod
     def _majority5_via_3(cls, a: Self, b: Self, c: Self, d: Self, e: Self) -> Self:

@@ -41,13 +41,13 @@ orig_pair = adiabatic.xor(USA, MEX)
 dollar_of_mexico = adiabatic.xor(dollar_copy, pair_one)
 
 # ignoring adiabaticity for these checks, we'd have to make another copy of peso and dollar
-assert not peso.unrelated(dollar_of_mexico)
+assert peso.related(dollar_of_mexico)
 assert peso.hamming(dollar_of_mexico) < dollar.hamming(dollar_of_mexico)
 
 mexico_city_of_usa = adiabatic.xor(mexico_city_copy, pair_two)
 
 # ignoring adiabaticity
-assert not washington_dc.unrelated(mexico_city_of_usa)
+assert washington_dc.related(mexico_city_of_usa)
 assert washington_dc.hamming(mexico_city_of_usa) < mexico_city.hamming(mexico_city_of_usa)
 
 historical_levels = tank.historical_levels()

@@ -82,7 +82,7 @@ random_bhvs = BHV.nrand(10)
 for x in random_bhvs:
     for y in random_bhvs:
         if x != y:
-            assert x.unrelated(y)
+            assert not x.related(y)
 
 """
 
@@ -201,7 +201,7 @@ vs_mean = BHV.majority(vs)
 
 # while the random vectors are pairwise unrelated
 for i in range(5):
-    assert vs[i].unrelated(vs[(i + 1) % 5])
+    assert not vs[i].related(vs[(i + 1) % 5])
 # they're all related to the mean
 print(vs[0].bit_error_rate(vs_mean))
 print(vs[0].std_apart(vs_mean))
@@ -354,4 +354,4 @@ Let's generate another permutation."""
 
 X = BHV.rand()
 
-assert Π(X).unrelated(Γ(X))
+assert not Π(X).related(Γ(X))

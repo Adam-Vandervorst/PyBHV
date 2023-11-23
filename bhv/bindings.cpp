@@ -81,6 +81,8 @@ static PyObject *BHV_invert(PyObject * v);
 
 static PyObject *BHV_hamming(BHV * v1, PyObject * args);
 static PyObject *BHV_closest(BHV * q, PyObject *args);
+static PyObject *BHV_top(BHV * q, PyObject *args);
+static PyObject *BHV_within(BHV * q, PyObject *args);
 
 static PyObject *BHV_to_bytes(BHV * x, PyObject * Py_UNUSED(ignored));
 static PyObject *BHV_from_bytes(PyTypeObject *type, PyObject *args);
@@ -103,13 +105,13 @@ static PyMethodDef BHV_methods[] = {
                 "Bernoulli p distributed bit vector"},
         {"majority",          (PyCFunction) BHV_majority,          METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
-        {"parity",          (PyCFunction) BHV_parity,              METH_CLASS | METH_VARARGS,
+        {"parity",            (PyCFunction) BHV_parity,            METH_CLASS | METH_VARARGS,
                 "The parity of a list of BHVs"},
         {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
                 "Checks if the count is greater than a threshold for a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
-        {"window",             (PyCFunction) BHV_window,           METH_CLASS | METH_VARARGS,
+        {"window",            (PyCFunction) BHV_window,            METH_CLASS | METH_VARARGS,
                 "Checks if the count is Between two (inclusive) thresholds of a list of BHVs"},
         {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
@@ -137,6 +139,10 @@ static PyMethodDef BHV_methods[] = {
                 "Hamming distance between two BHVs"},
         {"closest",           (PyCFunction) BHV_closest,           METH_VARARGS,
                 "Returns the index of the closest BHV"},
+        {"top",               (PyCFunction) BHV_top,               METH_VARARGS,
+                "Returns the indices of the top-k closest BHVs"},
+        {"within",            (PyCFunction) BHV_within,            METH_VARARGS,
+                "Returns the index of every BHV within hamming distance d"},
         {"active",            (PyCFunction) BHV_active,            METH_NOARGS,
                 "Count the number of active bits"},
         {"to_bytes",          (PyCFunction) BHV_to_bytes,          METH_NOARGS,
@@ -215,6 +221,63 @@ static PyObject *BHV_closest(BHV * q, PyObject *args) {
     }
 
     return Py_BuildValue("i", bhv::closest(vs, n_vectors, q->data));
+}
+
+static PyObject *BHV_top(BHV * q, PyObject *args) {
+    PyObject * vector_list;
+    size_t k;
+
+    if (!PyArg_ParseTuple(args, "O!i", &PyList_Type, &vector_list, &k))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc(n_vectors * sizeof(word_t *));
+    size_t *top = (size_t *) malloc(k * sizeof(size_t));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    bhv::top_into(vs, n_vectors, q->data, k, top);
+
+    PyObject * top_list = PyList_New(k);
+
+    for (size_t i = 0; i < k; ++i) {
+        PyObject * top_i_py = PyLong_FromSsize_t(top[i]);
+        PyList_SET_ITEM(top_list, i, top_i_py);
+    }
+
+    return top_list;
+}
+
+static PyObject *BHV_within(BHV * q, PyObject *args) {
+    PyObject * vector_list;
+    size_t d;
+
+    if (!PyArg_ParseTuple(args, "O!i", &PyList_Type, &vector_list, &d))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc(n_vectors * sizeof(word_t *));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+    }
+
+    std::vector<size_t> within = bhv::within(vs, n_vectors, q->data, d);
+
+    PyObject * within_list = PyList_New(within.size());
+
+    for (size_t i = 0; i < within.size(); ++i) {
+        PyObject * within_d_py = PyLong_FromSsize_t(within[i]);
+        PyList_SET_ITEM(within_list, i, within_d_py);
+    }
+
+    return within_list;
 }
 
 static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {

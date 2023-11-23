@@ -9,7 +9,7 @@ class DistanceGraph:
     def __init__(self, hvs: 'list[AbstractBHV]', labels: 'list[str]'):
         self.hvs = hvs
         self.labels = labels
-        self.adj = [[round(min(v.std_apart(w, invert=True), v.std_apart(w))) if not v.unrelated(w) else None
+        self.adj = [[v.std_relation(w, compact=True) if v.related(w) else None
                      for v in self.hvs]
                     for w in self.hvs]
 

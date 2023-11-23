@@ -59,6 +59,12 @@ class NativePackedBHV(AbstractBHV):
     def closest(self, xs):
         return self.ins.closest([x.ins for x in xs])
 
+    def top(self, xs, k):
+        return self.ins.top([x.ins for x in xs], k)
+
+    def within(self, xs, d):
+        return self.ins.within([x.ins for x in xs], d)
+
     def permute_words(self, permutation_id: int):
         return NativePackedBHV(self.ins.permute_words(permutation_id))
 

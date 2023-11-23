@@ -108,7 +108,7 @@ class Intervals(Embedding[float]):
     def back(self, input_hv: AbstractBHV, threshold=4) -> Optional[float]:
         L, H = self.span
         for hv, (l, h) in zip(self.hvs, self.intervals):
-            if not hv.unrelated(input_hv, threshold):
+            if hv.related(input_hv, threshold):
                 L = max(L, l)
                 H = min(H, h)
                 if L > H:

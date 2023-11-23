@@ -3,7 +3,7 @@ from bhv.visualization import DistanceGraph
 
 
 def lolipop(p, q, U, neighborhood=3):
-    return BHV.majority([r for r in U if not (q ^ r).unrelated(p, neighborhood)])
+    return BHV.majority([r for r in U if (q ^ r).related(p, neighborhood)])
 
 
 a, b, c, d = BHV.nrand(4)

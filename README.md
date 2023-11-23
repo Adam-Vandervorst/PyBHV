@@ -20,9 +20,9 @@ The fundamental research includes finding algebras with interesting properties o
 - Hamming, jaccard, cosine, bit-error-rate, tversky, and mutual-information metrics
 - A system for relatedness, unrelatedness, and standard deviations apart
 - zscore and pvalue
-- Everything available for 
 
 Additionally, provided are
+- [Convenient utilities for probabilistic distances](examples/distances.py)
 - [A symbolic implementation with simplification, analysis, plotting and pretty printing](bhv/symbolic.py)
 - A native [C++ implementation](https://github.com/Adam-Vandervorst/CBHV/)
 - Law and unification backed expression simplification
@@ -64,13 +64,11 @@ The fundamental angle is to start is with [Kanerva's initial paper](http://ww.ro
 For that, multiple resources are provided:
 - [A notebook going over the very basics](examples/Kanerva09.ipynb)
 - [The grandmother example](examples/grandmother_example.py)
-- [A Google Colab "reasoning by analogy" hosted notebook](https://colab.research.google.com/drive/10gOc39TsM5CE-6u3kj2oe1t-8KZHr_bB?usp=sharing)
 - [A guide to picking metrics](examples/Metric_Picker.ipynb)
 
 As for a Machine Learning angle, you may enjoy:
-- [A minimal implementation](examples/winnow_classification.py) of the [winnow algorithm](https://en.wikipedia.org/wiki/Winnow_(algorithm)) on a minimal problem
 - [A minimal implementation of classification based on the majority operator](examples/majority_classification.py) on a minimal problem
-- [A Google Colab hosted digit classification via plain majority notebook](https://colab.research.google.com/drive/1xYQAXxcdFw89RV5CsflcvFhx3zpmEUxk?usp=sharing)
+- TODO replace image classification notebook
 - [Graph classification notebook](https://colab.research.google.com/drive/1NrmCc99GrkmHm_VLs5nv9Q7BCbCLs0ar?usp=sharing) re-implementing [GraphHD](https://arxiv.org/abs/2205.07826)
 
 ### Evaluating the library
@@ -80,7 +78,6 @@ If you like to dive into the code directly, I suggest the following entrypoints:
 - [The most idiomatic implementation NumPyBoolBHV](bhv/np.py)
 
 Example exploratory usages of the library:
-- [Trying to improve upon linear hypervector search](benchmarks/lookup.py) and [its implementation](bhv/lookup.py)
 - [Exact logic synthesis](https://en.wikipedia.org/wiki/Logic_synthesis), [the benchmarking code](benchmarks/exact_synthesis.py)
 - [Cellular automata](https://en.wikipedia.org/wiki/Cellular_automaton), [the code (which produces pretty pictures)](examples/ca_rules.py), [a talk on them in relation to VSA](https://youtu.be/GZ9pNTQmrsY?t=17), and [comments on the relation to the library](https://youtu.be/GZ9pNTQmrsY?t=985)
 - [Fiestal Cipher](https://en.wikipedia.org/wiki/Feistel_cipher), [the tests (for statistical properties)](tests/fiestal.py), and [the implementation](bhv/abstract.py)
