@@ -43,4 +43,4 @@ bill_father_of_cid = apply_rel(father_of, bill, cid)
 calculated_anna_grandmother_of_cid = grandmother_rule ^ BHV.majority([anna_mother_of_bill, bill_father_of_cid])
 actual_anna_grandmother_of_cid = apply_rel(grandmother_of, anna, cid)
 
-assert not calculated_anna_grandmother_of_cid.unrelated(actual_anna_grandmother_of_cid)
+assert calculated_anna_grandmother_of_cid.related(actual_anna_grandmother_of_cid)

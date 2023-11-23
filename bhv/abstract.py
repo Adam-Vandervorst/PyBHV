@@ -98,8 +98,8 @@ class BaseBHV(StoreBHV):
     def within(self, vs: list[Self], d: int) -> list[int]:
         return list(filter(lambda i: self.hamming(vs[i]) <= d, range(len(vs))))
 
-    def within_std(self, vs: list[Self], d: float, to_random: bool = False) -> list[int]:
-        return self.within(vs, int(DIMENSION*self.std_to_frac(d, to_random)))
+    def within_std(self, vs: list[Self], d: float, relative: bool = False) -> list[int]:
+        return self.within(vs, int(DIMENSION*(self.std_to_frac(d + self.EXPECTED_RAND_APART*relative))))
 
     def distribution(self, vs: list[Self], metric=lambda x, y: x.std_apart(y), softmax: bool = False, base: int = e):
         ds = [metric(self, v) for v in vs]
@@ -114,8 +114,8 @@ class BaseBHV(StoreBHV):
 
     EXPECTED_RAND_APART: float = NormalDist(0, (DIMENSION/4)**.5).zscore(DIMENSION/2)
     SPACE_WIDTH: float = NormalDist(0, (DIMENSION/4)**.5).zscore(DIMENSION)
-    def std_apart(self, other: Self, to_random=False) -> float:
-        return self.frac_to_std(self.bit_error_rate(other), to_random)
+    def std_apart(self, other: Self, relative=False) -> float:
+        return self.frac_to_std(self.bit_error_rate(other) - .5*relative, relative)
 
     def std_relation(self, other: Self, compact=False, stdev=6, rounding=1) -> str:
         #    d=0   d < stdev   d < EXPECTED - stdev   EXPECTED - stdev < d    d = 0    d < EXPECTED + stdev  EXPECTED + stdev < d   WIDTH - stdev < d   d=WIDTH
@@ -152,18 +152,16 @@ class BaseBHV(StoreBHV):
         return comb(n - 1, (n - 1)//2)/2**n
 
     @staticmethod
-    def frac_to_std(frac, to_random=False):
-        n = AbstractBHV.normal(0)
-        stdvs = n.zscore(frac*DIMENSION)
-        estdvs = n.zscore(.5*DIMENSION)
-        return stdvs - to_random*estdvs
+    def frac_to_std(frac, relative=False):
+        n = AbstractBHV.normal(.5*DIMENSION if relative else 0)
+        stdvs = n.zscore((frac*DIMENSION + .5*DIMENSION) if relative else frac*DIMENSION)
+        return stdvs
 
     @staticmethod
-    def std_to_frac(std, to_random=False):
-        n = AbstractBHV.normal(0)
+    def std_to_frac(std, relative=False):
+        n = AbstractBHV.normal(.5*DIMENSION if relative else 0)
         frac = (std*n.stdev + n.mean)/DIMENSION
-        efrac = .5
-        return frac - to_random*efrac
+        return frac - .5 if relative else frac
 
     def zscore(self) -> float:
         n = AbstractBHV.normal(0.5*DIMENSION)
@@ -173,7 +171,7 @@ class BaseBHV(StoreBHV):
         return abs(self.std_apart(other)) <= stdvs
 
     def related(self, other: Self, stdvs=6) -> bool:
-        return abs(self.std_apart(other, to_random=True)) > stdvs
+        return abs(self.std_apart(other, relative=True)) > stdvs
 
     @classmethod
     def _majority5_via_3(cls, a: Self, b: Self, c: Self, d: Self, e: Self) -> Self:
@@ -269,11 +267,6 @@ class BooleanAlgBHV(BaseBHV):
             raise RuntimeError("Cosine similarity where one of the two vectors is zero")
         res = (self & other).active() / (s_active*o_active)**.5
         return 1. - res if distance else res
-
-    def bias_rel(self, other: Self, rel: Self) -> float:
-        rel_l = rel.overlap(self)
-        rel_r = rel.overlap(other)
-        return rel_l/(rel_l + rel_r)
 
     def mutual_information(self, other: Self, distance=False) -> float:
         nself = ~self

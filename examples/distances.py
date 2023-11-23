@@ -23,6 +23,8 @@ print("top-2 closest to a:")
 print(*map(ns.__getitem__, a.top(vs, 2)))
 print("within 50σ of a:")
 print(*map(ns.__getitem__, a.within_std(vs, 50)))
+print("4σ closer to a than random:")
+print(*map(ns.__getitem__, a.within_std(vs, -6, relative=True)))
 
 print()
 
@@ -33,10 +35,10 @@ print(f"{BHV.frac_to_std(.96):<7.1f} standard deviations corresponding to 96% ac
 
 print()
 
-print(f"{BHV.std_to_frac(6, to_random=True):<7.2%} active fraction corresponding to 6σ")
-print(f"{BHV.frac_to_std(0.033, to_random=True):<7.1f} standard deviations corresponding to 3% active fraction")
-print(f"{BHV.std_to_frac(173, to_random=True):<7.2%} active fraction corresponding to 173σ")
-print(f"{BHV.frac_to_std(.96, to_random=True):<7.1f} standard deviations corresponding to 96% active fraction")
+print(f"{BHV.std_to_frac(-6, relative=True):<7.2%} more/less difference compared to random, corresponding to -6σ")
+print(f"{BHV.frac_to_std(-0.033, relative=True):<7.1f} more/less standard deviations compared to random, corresponding to -3.3%")
+print(f"{BHV.std_to_frac(10, relative=True):<7.2%} more/less difference compared to random, corresponding to 10σ")
+print(f"{BHV.frac_to_std(0.055, relative=True):<7.1f} more/less standard deviations compared to random, corresponding to 5.5%")
 
 print()
 
@@ -48,11 +50,11 @@ print(f"{BHV.std_apart(a, BHV.ONE):<6.1f} standard deviations apart: d(a, 1)")
 
 print()
 
-print(f"{BHV.std_apart(a, b, to_random=True):<6.1f} standard deviations further/closer than random: d(a, b)")
-print(f"{BHV.std_apart(a, a1, to_random=True):<6.1f} standard deviations further/closer than random: d(a, a1)")
-print(f"{BHV.std_apart(a, ~a, to_random=True):<6.1f} standard deviations further/closer than random: d(a, ~a)")
-print(f"{BHV.std_apart(a, BHV.ZERO, to_random=True):<6.1f} standard deviations further/closer than random: d(a, 0)")
-print(f"{BHV.std_apart(a, BHV.ONE, to_random=True):<6.1f} standard deviations further/closer than random: d(a, 1)")
+print(f"{BHV.std_apart(a, b, relative=True):<6.1f} more/less standard deviations than two randoms: d(a, b)")
+print(f"{BHV.std_apart(a, a1, relative=True):<6.1f} more/less standard deviations than two randoms: d(a, a1)")
+print(f"{BHV.std_apart(a, ~a, relative=True):<6.1f} more/less standard deviations than two randoms: d(a, ~a)")
+print(f"{BHV.std_apart(a, BHV.ZERO, relative=True):<6.1f} more/less standard deviations than two randoms: d(a, 0)")
+print(f"{BHV.std_apart(a, BHV.ONE, relative=True):<6.1f} more/less standard deviations than two randoms: d(a, 1)")
 
 print()
 

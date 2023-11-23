@@ -398,9 +398,6 @@ class SymbolicBHV(Symbolic, AbstractBHV):
     def active_fraction(self) -> int:
         return ActiveFraction(self)
 
-    def bias_rel(self, other: Self, rel: Self) -> float:
-        return BiasRel(rel, self, other)
-
     def expected_active_fraction(self, **kwargs):
         raise NotImplementedError()
 
@@ -816,20 +813,6 @@ class ActiveFraction(Symbolic):
 
     def instantiate(self, **kwargs):
         return self.v.execute(**kwargs).active_fraction()
-@dataclass
-class BiasRel(Symbolic):
-    rel: SymbolicBHV
-    l: SymbolicBHV
-    r: SymbolicBHV
-
-    def reconstruct(self, rel, l, r):
-        return BiasRel(rel, l, r)
-
-    def show(self, **kwargs):
-        return f"{self.l.show(**kwargs)}.bias_rel({self.r.show(**kwargs)}, {self.rel.show(**kwargs)})"
-
-    def instantiate(self, **kwargs):
-        return self.l.execute(**kwargs).bias_rel(self.r.execute(**kwargs), self.rel.execute(**kwargs))
 @dataclass
 class Related(Symbolic):
     l: SymbolicBHV

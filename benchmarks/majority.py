@@ -32,7 +32,7 @@ for i in range(repeat_pipeline):
 
         execution_times[size].append(monotonic() - t_exec)
 
-        distances[size].append(fmean(AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION, invert=True) for r in s))
+        distances[size].append(fmean(AbstractBHV.frac_to_std(r.hamming(maj)/DIMENSION - .5, relative=True) for r in s))
 
         del s
 
