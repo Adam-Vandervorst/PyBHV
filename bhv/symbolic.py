@@ -118,7 +118,10 @@ class Symbolic:
             calculated[id(self)] = result
             return result
 
-    def optimal_sharing(self, form=None, **kwargs):
+    def optimal_sharing(self, form=None, **kwargs) -> 'Symbolic':
+        """
+        Merge branches that are the same. Commutativity is not taken into account.
+        """
         if form is None: form = {}
         kwargs |= dict(form=form)
 
@@ -136,7 +139,7 @@ class Symbolic:
     def internal_size(self):
         return 1
 
-    def size(self, counted=None, recount=False, **kwargs):
+    def size(self, counted=None, recount=False, **kwargs) -> 'int':
         if counted is None: counted = {}
         kwargs |= dict(counted=counted)
         if id(self) in counted:
@@ -148,11 +151,16 @@ class Symbolic:
             counted[id(self)] = t
             return t
 
-    def simplify(self, **kwargs):
+    def fix(self, f, **kwargs):
+        """
+        Calculates and returns the fix-point of operator `f` on self.
+        Recursively applies until no change was made.
+        If `f` returns None, the term remains unchanged (and no copy is performed).
+        """
         x = self
         while True:
-            x_ = x.map(lambda c: c.simplify(**kwargs))
-            x_r = x_.reduce(**kwargs)
+            x_ = x.map(lambda c: c.fix(f, **kwargs))
+            x_r = f(x_, **kwargs)
             if x_r is not None:
                 x_ = x_r
             if x == x_:
@@ -160,7 +168,16 @@ class Symbolic:
             else:
                 x = x_
 
+    def simplify(self, **kwargs):
+        return self.fix(lambda x, **kws: x.reduce(**kws), **kwargs)
+
     def reduce(self, **kwargs):
+        return None
+
+    def shred(self, **kwargs):
+        return self.fix(lambda x, **kws: x.distribute(**kws), **kwargs)
+
+    def distribute(self, **kwargs):
         return None
 
     def preorder(self, p=lambda x: True):
@@ -227,9 +244,11 @@ class SymbolicPermutation(Symbolic, MemoizedPermutation):
     def __call__(self, hv: 'SymbolicBHV') -> 'SymbolicBHV':
         return PermApply(self, hv)
 
+
 @dataclass
 class PermVar(SymbolicPermutation):
     name: str
+
     def nodename(self, **kwargs):
         return self.name
 
@@ -245,6 +264,8 @@ class PermVar(SymbolicPermutation):
             raise RuntimeError(f"Perm var `{self.name}` not in permvars ({set(permvars.keys())})")
         else:
             return permvars[self.name]
+
+
 randpermid = 0
 def next_perm_id():
     global randpermid
@@ -267,6 +288,8 @@ class PermRandom(SymbolicPermutation):
             r = kwargs.get("perm").random()
             randomperms[self.id] = r
             return r
+
+
 @dataclass
 class PermCompose(SymbolicPermutation):
     l: SymbolicPermutation
@@ -281,6 +304,8 @@ class PermCompose(SymbolicPermutation):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) * self.r.execute(**kwargs)
+
+
 @dataclass
 class PermInvert(SymbolicPermutation):
     p: SymbolicPermutation
@@ -416,8 +441,14 @@ class PermApply(SymbolicBHV):
     def instantiate(self, **kwargs):
         return self.p.execute(**kwargs)(self.v.execute(**kwargs))
 
+    def distribute(self, **kwargs):
+        if isinstance(self.v, Xor) or isinstance(self.v, Majority):
+            return self.v.map(lambda c: self.p(c))
+
     def expected_active_fraction(self, **kwargs):
-        return self.v.expected_active(**kwargs)
+        return self.v.expected_active_fraction(**kwargs)
+
+
 @dataclass
 class Var(SymbolicBHV):
     name: str
@@ -444,6 +475,8 @@ class Var(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return kwargs.get("vars").get(self.name)
+
+
 @dataclass
 class Zero(SymbolicBHV):
     def show(self, **kwargs):
@@ -454,6 +487,8 @@ class Zero(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return 0.
+
+
 @dataclass
 class One(SymbolicBHV):
     def show(self, **kwargs):
@@ -464,6 +499,8 @@ class One(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return 1.
+
+
 SymbolicBHV.ZERO = Zero()
 SymbolicBHV.ONE = One()
 randid = 0
@@ -491,6 +528,8 @@ class Rand(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return .5
+
+
 @dataclass
 class Rand2(SymbolicBHV):
     power: int
@@ -509,6 +548,8 @@ class Rand2(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return 1/self.power
+
+
 @dataclass
 class Random(SymbolicBHV):
     frac: float
@@ -527,6 +568,8 @@ class Random(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return self.frac
+
+
 @dataclass
 class Majority(SymbolicBHV):
     vs: list[SymbolicBHV]
@@ -535,7 +578,7 @@ class Majority(SymbolicBHV):
         return list(zip(self.vs, map(str, range(len(self.vs)))))
 
     def reconstruct(self, *cs):
-        return Majority(cs)
+        return Majority(list(cs))
 
     def show(self, **kwargs):
         args = format_list((v.show(**kwargs) for v in self.vs), **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
@@ -547,6 +590,8 @@ class Majority(SymbolicBHV):
     def expected_active_fraction(self, **kwargs):
         from .poibin import PoiBin
         return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
+
+
 @dataclass
 class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
@@ -563,6 +608,8 @@ class Permute(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return self.v.expected_active_fraction(**kwargs)
+
+
 @dataclass
 class SwapHalves(SymbolicBHV):
     v: SymbolicBHV
@@ -578,6 +625,8 @@ class SwapHalves(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return self.v.expected_active_fraction(**kwargs)
+
+
 @dataclass
 class ReHash(SymbolicBHV):
     v: SymbolicBHV
@@ -593,6 +642,8 @@ class ReHash(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return .5
+
+
 @dataclass
 class Eq(Symbolic):
     l: SymbolicBHV
@@ -611,6 +662,8 @@ class Eq(Symbolic):
 
     def instantiate(self, **kwargs):
         return self.l.execute(**kwargs) == self.r.execute(**kwargs)
+
+
 @dataclass
 class Xor(SymbolicBHV):
     l: SymbolicBHV
@@ -647,10 +700,18 @@ class Xor(SymbolicBHV):
             elif self.l.r == self.r.l: return And(self.l.r, Xor(self.l.l, self.r.r))
             elif self.l.r == self.r.r: return And(self.l.r, Xor(self.l.l, self.r.l))
 
+    def distribute(self, **kwargs):
+        if isinstance(self.l, Majority):
+            return self.l.map(lambda c: Xor(c, self.r))
+        if isinstance(self.r, Majority):
+            return self.r.map(lambda c: Xor(self.l, c))
+
     def expected_active_fraction(self, **kwargs):
         afl = self.l.expected_active_fraction(**kwargs)
         afr = self.r.expected_active_fraction(**kwargs)
         return afl*(1. - afr) + (1. - afl)*afr
+
+
 @dataclass
 class And(SymbolicBHV):
     l: SymbolicBHV
@@ -684,6 +745,8 @@ class And(SymbolicBHV):
         afl = self.l.expected_active_fraction(**kwargs)
         afr = self.r.expected_active_fraction(**kwargs)
         return afl*afr
+
+
 @dataclass
 class Or(SymbolicBHV):
     l: SymbolicBHV
@@ -717,6 +780,8 @@ class Or(SymbolicBHV):
         afl = self.l.expected_active_fraction(**kwargs)
         afr = self.r.expected_active_fraction(**kwargs)
         return 1. - ((1. - afl)*(1. - afr))
+
+
 @dataclass
 class Invert(SymbolicBHV):
     v: SymbolicBHV
@@ -741,6 +806,8 @@ class Invert(SymbolicBHV):
 
     def expected_active_fraction(self, **kwargs):
         return 1. - self.v.expected_active_fraction(**kwargs)
+
+
 @dataclass
 class Select(SymbolicBHV):
     cond: SymbolicBHV
@@ -801,6 +868,8 @@ class Select(SymbolicBHV):
         af1 = self.when1.expected_active_fraction(**kwargs)
         af0 = self.when0.expected_active_fraction(**kwargs)
         return afc*af1 + (1. - afc)*af0
+
+
 @dataclass
 class ActiveFraction(Symbolic):
     v: SymbolicBHV
@@ -813,6 +882,8 @@ class ActiveFraction(Symbolic):
 
     def instantiate(self, **kwargs):
         return self.v.execute(**kwargs).active_fraction()
+
+
 @dataclass
 class Related(Symbolic):
     l: SymbolicBHV
