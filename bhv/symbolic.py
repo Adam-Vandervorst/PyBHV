@@ -320,6 +320,10 @@ class PermInvert(SymbolicPermutation):
     def instantiate(self, **kwargs):
         return ~self.p.execute(**kwargs)
 
+    def reduce(self, **kwargs):
+        if isinstance(self.p, PermInvert):
+            return self.p.p
+
 
 class SymbolicBHV(Symbolic, AbstractBHV):
     @classmethod
@@ -440,6 +444,11 @@ class PermApply(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.p.execute(**kwargs)(self.v.execute(**kwargs))
+
+    def reduce(self, **kwargs):
+        if isinstance(self.v, PermApply):
+            if self.v.p == ~self.p or self.p == ~self.v.p:
+                return self.v.v
 
     def distribute(self, **kwargs):
         if isinstance(self.v, Xor) or isinstance(self.v, Majority):

@@ -21,10 +21,31 @@ class TestReduction(unittest.TestCase):
     def test_reduce(self):
         x = Var("x")
         y = Var("y")
+        p = PermVar("p")
+        q = PermVar("q")
 
         e = ~(~((x & y) ^ (x & (y & ~y))))
 
         self.assertEqual(e.simplify(), (x & y))
+
+        # perm invert merges
+        self.assertEqual(x, p((~p)(x)).reduce())
+        self.assertEqual(x, (~p)(p(x)).reduce())
+        self.assertEqual(x, (~p)((~~p)(x)).reduce())
+
+        self.assertIsNone(p(p(x)).reduce())
+        self.assertIsNone(p(q(x)).reduce())
+        self.assertIsNone(p((~~p)(x)).reduce())
+
+    def test_simplify(self):
+        x = Var("x")
+        p = PermVar("p")
+
+        # inverse of invert perm is perm
+        self.assertEqual(p(p(x)), p((~~p)(x)).simplify())
+        self.assertEqual(p(x), (~~p)(x).simplify())
+        self.assertEqual(x, (~~~p)(p(x)).simplify())
+        self.assertEqual(p(p(x)), (~~~~p)(p(x)).simplify())
 
     def test_distribute(self):
         # perm
