@@ -1,6 +1,6 @@
 import unittest
 
-from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, Zero
+from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation
 from bhv.shared import stable_hashcode
 
 
@@ -28,14 +28,27 @@ class TestReduction(unittest.TestCase):
 
         self.assertEqual(e.simplify(), (x & y))
 
-        # perm invert merges
+        # perm merges with its inverse
         self.assertEqual(x, p((~p)(x)).reduce())
         self.assertEqual(x, (~p)(p(x)).reduce())
         self.assertEqual(x, (~p)((~~p)(x)).reduce())
 
         self.assertIsNone(p(p(x)).reduce())
         self.assertIsNone(p(q(x)).reduce())
-        self.assertIsNone(p((~~p)(x)).reduce())
+        self.assertIsNone(p((~~p)(x)).reduce())  # reduce only rewrites outer operation
+
+        # double invert = perm
+        self.assertEqual(p, (~~p).reduce())
+
+        # identity perm
+        p_id = SymbolicPermutation.IDENTITY
+        self.assertEqual(p(x), p_id(p(x)).reduce())
+
+        # perm on 0 (resp. 1) is 0 (resp. 1)
+        zero = SymbolicBHV.ZERO
+        one = SymbolicBHV.ONE
+        self.assertEqual(zero, p(zero).reduce())
+        self.assertEqual(one, p(one).reduce())
 
     def test_simplify(self):
         x = Var("x")
@@ -47,8 +60,11 @@ class TestReduction(unittest.TestCase):
         self.assertEqual(x, (~~~p)(p(x)).simplify())
         self.assertEqual(p(p(x)), (~~~~p)(p(x)).simplify())
 
+        # identity perm
+        p_id = SymbolicPermutation.IDENTITY
+        self.assertEqual(p(x), p(p_id(x)).simplify())
+
     def test_distribute(self):
-        # perm
         a = Var("a")
         b = Var("b")
         x = Var("x")
@@ -57,6 +73,9 @@ class TestReduction(unittest.TestCase):
         p = PermVar("p")
         q = PermVar("q")
 
+        zero = SymbolicBHV.ZERO
+
+        # perm
         ex = p((x ^ y) ^ z)
         ex_ = p(x ^ y) ^ p(z)
         self.assertEqual(ex_, ex.distribute())
@@ -75,7 +94,7 @@ class TestReduction(unittest.TestCase):
         ep = p(q(x))
         self.assertIsNone(ep.distribute())
 
-        ez = p(Zero())
+        ez = p(zero)
         self.assertIsNone(ez.distribute())
 
         # Xor
@@ -97,7 +116,7 @@ class TestReduction(unittest.TestCase):
         ev = x ^ y
         self.assertIsNone(ev.distribute())
 
-        ez = Zero() ^ x
+        ez = zero ^ x
         self.assertIsNone(ez.distribute())
 
     def test_shred(self):
@@ -121,7 +140,7 @@ class TestReduction(unittest.TestCase):
         ex_ = Majority([(x ^ (y ^ a)), (x ^ (y ^ b))])
         self.assertEqual(ex_, ex.shred())
 
-        ezero = p(Zero())
+        ezero = p(SymbolicBHV.ZERO)
         self.assertEqual(ezero, ezero.shred())
 
 
