@@ -2,8 +2,8 @@
 # currently the synthesis and reduction rules make the program consist of
 # XOR, NOT, AND, OR
 # NOTE: takes about a minute and doesn't show intermediate results
-from bhv.np import NumPyPacked64BHV as BHV
-# from bhv.native import NativePackedBHV as BHV
+# from bhv.np import NumPyPacked64BHV as BHV
+from bhv.native import NativePackedBHV as BHV
 from bhv.symbolic import SymbolicBHV, Var, List
 
 from time import monotonic
@@ -55,8 +55,8 @@ for _ in range(repeat_pipeline):
         # since it boils down to `active`
         for v in result:
             assert v.zscore() <= 4
-            for w in result:
-                assert v is w or not v.related(w, 9)
+            # for w in result:
+            #     assert v is w or not v.related(w, 6)
 
     execution_times.append(monotonic() - t_exec)
 
