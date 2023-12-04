@@ -455,8 +455,12 @@ class PermApply(SymbolicBHV):
 
     def reduce(self, **kwargs):
         if isinstance(self.v, PermApply):
-            if self.v.p == ~self.p or self.p == ~self.v.p:
-                return self.v.v
+            if isinstance(self.p, PermInvert):
+                if self.p.p == self.v.p:
+                    return self.v.v
+            if isinstance(self.v.p, PermInvert):
+                if self.p == self.v.p.p:
+                    return self.v.v
         if self.v == SymbolicBHV.ZERO or self.v == SymbolicBHV.ONE:
             return self.v
         if self.p == SymbolicPermutation.IDENTITY:

@@ -35,6 +35,8 @@ class TestReduction(unittest.TestCase):
 
         self.assertIsNone(p(p(x)).reduce())
         self.assertIsNone(p(q(x)).reduce())
+        self.assertIsNone(p(~q(x)).reduce())
+        self.assertIsNone((~p)(q(x)).reduce())
         self.assertIsNone(p((~~p)(x)).reduce())  # reduce only rewrites outer operation
 
         # double invert = perm
