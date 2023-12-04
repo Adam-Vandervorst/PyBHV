@@ -266,6 +266,14 @@ class PermVar(SymbolicPermutation):
             return permvars[self.name]
 
 
+@dataclass
+class Identity(SymbolicPermutation):
+    pass
+
+
+SymbolicPermutation.IDENTITY = Identity()
+
+
 randpermid = 0
 def next_perm_id():
     global randpermid
@@ -319,6 +327,10 @@ class PermInvert(SymbolicPermutation):
 
     def instantiate(self, **kwargs):
         return ~self.p.execute(**kwargs)
+
+    def reduce(self, **kwargs):
+        if isinstance(self.p, PermInvert):
+            return self.p.p
 
 
 class SymbolicBHV(Symbolic, AbstractBHV):
@@ -440,6 +452,19 @@ class PermApply(SymbolicBHV):
 
     def instantiate(self, **kwargs):
         return self.p.execute(**kwargs)(self.v.execute(**kwargs))
+
+    def reduce(self, **kwargs):
+        if isinstance(self.v, PermApply):
+            if isinstance(self.p, PermInvert):
+                if self.p.p == self.v.p:
+                    return self.v.v
+            if isinstance(self.v.p, PermInvert):
+                if self.p == self.v.p.p:
+                    return self.v.v
+        if self.v == SymbolicBHV.ZERO or self.v == SymbolicBHV.ONE:
+            return self.v
+        if self.p == SymbolicPermutation.IDENTITY:
+            return self.v
 
     def distribute(self, **kwargs):
         if isinstance(self.v, Xor) or isinstance(self.v, Majority):
