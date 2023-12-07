@@ -502,6 +502,13 @@ class Var(SymbolicBHV):
     def expected_active_fraction(self, **kwargs):
         return kwargs.get("vars").get(self.name)
 
+    def expected_error(self, x: 'Self'):
+        if self == x:
+            return 0
+        else:
+            return Fraction(1, 2)
+
+
 
 @dataclass
 class Zero(SymbolicBHV):
@@ -644,16 +651,7 @@ class Representative(SymbolicBHV):
         Gives expected bit error rate between an expression that contains only representative operators and random
         hypervectors, and a given random hypervector.
         """
-        return self._expected_error(self, x)
-
-    def _expected_error(self, r: 'SymbolicBHV', x:'Var') -> 'Fraction':
-        if isinstance(r, Var):
-            if r == x:
-                return 0
-            else:
-                return Fraction(1, 2)  # assume that two random vectors have 1/2 overlap
-        elif isinstance(r, Representative):
-            return sum([Fraction(self._expected_error(b, x), len(r.children())) for b in r.children()])
+        return sum([Fraction(b.expected_error(x), len(self.children())) for b in self.children()])
 
 
 @dataclass
