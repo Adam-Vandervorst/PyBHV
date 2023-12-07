@@ -36,6 +36,8 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_parity(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_weighted_threshold(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_representative(PyTypeObject *type, PyObject *args);
@@ -107,6 +109,8 @@ static PyMethodDef BHV_methods[] = {
                 "The majority of a list of BHVs"},
         {"parity",            (PyCFunction) BHV_parity,            METH_CLASS | METH_VARARGS,
                 "The parity of a list of BHVs"},
+        {"weighted_threshold",         (PyCFunction) BHV_weighted_threshold,         METH_CLASS | METH_VARARGS,
+                "Checks if the count is greater than a threshold for a list of BHVs"},
         {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
                 "Checks if the count is greater than a threshold for a list of BHVs"},
         {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
@@ -220,7 +224,9 @@ static PyObject *BHV_closest(BHV * q, PyObject *args) {
         vs[i] = ((BHV *) v_i_py)->data;
     }
 
-    return Py_BuildValue("i", bhv::closest(vs, n_vectors, q->data));
+	size_t w = bhv::closest(vs, n_vectors, q->data);
+	free(vs);
+    return Py_BuildValue("i", w);
 }
 
 static PyObject *BHV_top(BHV * q, PyObject *args) {
@@ -248,6 +254,9 @@ static PyObject *BHV_top(BHV * q, PyObject *args) {
         PyObject * top_i_py = PyLong_FromSsize_t(top[i]);
         PyList_SET_ITEM(top_list, i, top_i_py);
     }
+
+	free(vs);
+	free(top);
 
     return top_list;
 }
@@ -277,6 +286,8 @@ static PyObject *BHV_within(BHV * q, PyObject *args) {
         PyList_SET_ITEM(within_list, i, within_d_py);
     }
 
+	free(vs);
+
     return within_list;
 }
 
@@ -300,6 +311,7 @@ static PyObject *BHV_majority(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::true_majority_into(vs, n_vectors + even, ((BHV *) v)->data);
+	free(vs);
     return v;
 }
 
@@ -320,6 +332,37 @@ static PyObject *BHV_parity(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::parity_into(vs, n_vectors, ((BHV *) v)->data);
+	free(vs);
+    return v;
+}
+
+static PyObject *BHV_weighted_threshold(PyTypeObject *type, PyObject *args) {
+    PyObject * vector_list;
+    PyObject * weight_list;
+    double_t td;
+
+    if (!PyArg_ParseTuple(args, "O!O!d", &PyList_Type, &vector_list, &PyList_Type, &weight_list, &td))
+        return nullptr;
+
+    size_t n_vectors = PyList_GET_SIZE(vector_list);
+
+    word_t **vs = (word_t **) malloc((n_vectors) * sizeof(word_t *));
+    double_t *ws = (double_t *) malloc((n_vectors) * sizeof(double_t));
+
+    for (size_t i = 0; i < n_vectors; ++i) {
+        PyObject * v_i_py = PyList_GetItem(vector_list, i);
+        vs[i] = ((BHV *) v_i_py)->data;
+        PyObject * w_i_py = PyList_GetItem(weight_list, i);
+        ws[i] = PyFloat_AsDouble(w_i_py);
+    }
+
+    if (PyErr_Occurred() != nullptr)
+        return nullptr;
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::distribution_threshold_into(vs, ws, n_vectors, td, ((BHV *) v)->data);
+	free(vs);
+	free(ws);
     return v;
 }
 
@@ -341,6 +384,7 @@ static PyObject *BHV_threshold(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::threshold_into(vs, n_vectors, t, ((BHV *) v)->data);
+	free(vs);
     return v;
 }
 
@@ -361,6 +405,7 @@ static PyObject *BHV_representative(PyTypeObject *type, PyObject *args) {
 
     PyObject * ret = BHV_new(type, nullptr, nullptr);
     bhv::representative_into(vs, n_vectors, ((BHV *) ret)->data);
+	free(vs);
     return ret;
 }
 
@@ -383,6 +428,7 @@ static PyObject *BHV_window(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::window_into(vs, n_vectors, b, t, ((BHV *) v)->data);
+	free(vs);
     return v;
 }
 

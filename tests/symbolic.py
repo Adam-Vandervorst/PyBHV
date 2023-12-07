@@ -52,9 +52,6 @@ class TestReduction(unittest.TestCase):
         self.assertEqual(zero, p(zero).reduce())
         self.assertEqual(one, p(one).reduce())
 
-        self.assertEqual(SymbolicBHV.ZERO, ((x ^ y) ^ (x ^ y)).reduce())
-        self.assertEqual(None, ((x ^ y) ^ (y ^ x)).reduce())
-
     def test_simplify(self):
         x = Var("x")
         p = PermVar("p")

@@ -47,6 +47,10 @@ class NativePackedBHV(AbstractBHV):
         return NativePackedBHV(CNativePackedBHV.threshold([x.ins for x in xs], t))
 
     @classmethod
+    def weighted_threshold(cls, xs, ws, t):
+        return NativePackedBHV(CNativePackedBHV.weighted_threshold([x.ins for x in xs], list(map(float, ws)), float(t)))
+
+    @classmethod
     def representative(cls, xs):
         return NativePackedBHV(CNativePackedBHV.representative([x.ins for x in xs]))
 
