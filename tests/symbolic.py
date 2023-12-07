@@ -1,5 +1,6 @@
 import unittest
 
+from fractions import Fraction
 from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation, Representative
 from bhv.shared import stable_hashcode
 
@@ -157,16 +158,16 @@ class TestRepresentative(unittest.TestCase):
         def R(*args): return Representative([*args])
 
         e1 = R(x, y, z)
-        self.assertAlmostEqual(1/3, e1.expected_error(x), delta=10e-5)
-        self.assertAlmostEqual(1/3, e1.expected_error(y), delta=10e-5)
-        self.assertAlmostEqual(1/3, e1.expected_error(z), delta=10e-5)
+        self.assertEqual(Fraction(1, 3), e1.expected_error(x))
+        self.assertEqual(Fraction(1, 3), e1.expected_error(y))
+        self.assertEqual(Fraction(1, 3), e1.expected_error(z))
 
-        self.assertAlmostEqual(1/2, e1.expected_error(a), delta=10e-5)
+        self.assertEqual(Fraction(1, 2), e1.expected_error(a))
 
         e2 = R(R(x, a, y), R(x, a, y), a)
-        self.assertAlmostEqual(7/18, e2.expected_error(x), delta=10e-5)
-        self.assertAlmostEqual(7/18, e2.expected_error(y), delta=10e-5)
-        self.assertAlmostEqual(4/18, e2.expected_error(a), delta=10e-5)
+        self.assertEqual(Fraction(7, 18), e2.expected_error(x))
+        self.assertEqual(Fraction(7, 18), e2.expected_error(y))
+        self.assertEqual(Fraction(4, 18), e2.expected_error(a))
 
 
 if __name__ == '__main__':

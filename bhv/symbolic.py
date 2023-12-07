@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field, fields
 from string import ascii_uppercase
+from fractions import Fraction
 from .abstract import *
 from .shared import stable_hashcode, bitconfigs, unique_by_id, format_multiple, format_list
 from .slice import Slice
@@ -645,14 +646,14 @@ class Representative(SymbolicBHV):
         """
         return self._expected_error(self, x)
 
-    def _expected_error(self, r, x):
+    def _expected_error(self, r: 'SymbolicBHV', x:'Var') -> 'Fraction':
         if isinstance(r, Var):
             if r == x:
                 return 0
             else:
-                return 1/2  # assume that two random vectors have 1/2 overlap
-        if isinstance(r, Representative):
-            return sum([self._expected_error(b, x)/len(r.children()) for b in r.children()])
+                return Fraction(1, 2)  # assume that two random vectors have 1/2 overlap
+        elif isinstance(r, Representative):
+            return sum([Fraction(self._expected_error(b, x), len(r.children())) for b in r.children()])
 
 
 @dataclass
