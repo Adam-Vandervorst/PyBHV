@@ -646,12 +646,15 @@ class Representative(SymbolicBHV):
     #     from .poibin import PoiBin
     #    return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
 
-    def expected_error(self, x: Var):
+    def expected_error(self, x: 'Var') -> 'Fraction':
         """
         Gives expected bit error rate between an expression that contains only representative operators and random
         hypervectors, and a given random hypervector.
         """
         return sum([Fraction(b.expected_error(x), len(self.children())) for b in self.children()])
+
+    def expected_errors(self) -> list['Fraction']:
+        return [self.expected_error(Var(x)) for x in self.vars()]
 
 
 @dataclass

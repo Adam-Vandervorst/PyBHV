@@ -158,9 +158,7 @@ class TestRepresentative(unittest.TestCase):
         def R(*args): return Representative([*args])
 
         e1 = R(x, y, z)
-        self.assertEqual(Fraction(1, 3), e1.expected_error(x))
-        self.assertEqual(Fraction(1, 3), e1.expected_error(y))
-        self.assertEqual(Fraction(1, 3), e1.expected_error(z))
+        self.assertEqual([Fraction(1, 3)]*3, e1.expected_errors())
 
         self.assertEqual(Fraction(1, 2), e1.expected_error(a))
 
