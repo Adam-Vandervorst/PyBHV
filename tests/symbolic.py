@@ -1,6 +1,6 @@
 import unittest
 
-from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation
+from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation, Representative
 from bhv.shared import stable_hashcode
 
 
@@ -51,6 +51,9 @@ class TestReduction(unittest.TestCase):
         one = SymbolicBHV.ONE
         self.assertEqual(zero, p(zero).reduce())
         self.assertEqual(one, p(one).reduce())
+
+        self.assertEqual(SymbolicBHV.ZERO, ((x ^ y) ^ (x ^ y)).reduce())
+        self.assertEqual(None, ((x ^ y) ^ (y ^ x)).reduce())
 
     def test_simplify(self):
         x = Var("x")
@@ -144,6 +147,29 @@ class TestReduction(unittest.TestCase):
 
         ezero = p(SymbolicBHV.ZERO)
         self.assertEqual(ezero, ezero.shred())
+
+
+class TestRepresentative(unittest.TestCase):
+    def test_expected_error(self):
+        a = Var("a")
+        b = Var("b")
+        x = Var("x")
+        y = Var("y")
+        z = Var("z")
+
+        def R(*args): return Representative([*args])
+
+        e1 = R(x, y, z)
+        self.assertAlmostEqual(1/3, e1.expected_error(x), delta=10e-5)
+        self.assertAlmostEqual(1/3, e1.expected_error(y), delta=10e-5)
+        self.assertAlmostEqual(1/3, e1.expected_error(z), delta=10e-5)
+
+        self.assertAlmostEqual(1/2, e1.expected_error(a), delta=10e-5)
+
+        e2 = R(R(x, a, y), R(x, a, y), a)
+        self.assertAlmostEqual(7/18, e2.expected_error(x), delta=10e-5)
+        self.assertAlmostEqual(7/18, e2.expected_error(y), delta=10e-5)
+        self.assertAlmostEqual(4/18, e2.expected_error(a), delta=10e-5)
 
 
 if __name__ == '__main__':

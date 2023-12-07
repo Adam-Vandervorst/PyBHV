@@ -618,6 +618,44 @@ class Majority(SymbolicBHV):
 
 
 @dataclass
+class Representative(SymbolicBHV):
+    vs: list[SymbolicBHV]
+
+    def labeled_children(self, **kwargs):
+        return list(zip(self.vs, map(str, range(len(self.vs)))))
+
+    def reconstruct(self, *cs):
+        return Representative(list(cs))
+
+    def show(self, **kwargs):
+        args = format_list((v.show(**kwargs) for v in self.vs), **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
+        return kwargs.get("impl", "") + f"representative({args})"
+
+    def instantiate(self, **kwargs):
+        return kwargs.get("bhv").representative([v.execute(**kwargs) for v in self.vs])
+
+    # def expected_active_fraction(self, **kwargs):
+    #     from .poibin import PoiBin
+    #    return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
+
+    def expected_error(self, x: Var):
+        """
+        Gives expected bit error rate between an expression that contains only representative operators and random
+        hypervectors, and a given random hypervector.
+        """
+        return self._expected_error(self, x)
+
+    def _expected_error(self, r, x):
+        if isinstance(r, Var):
+            if r == x:
+                return 0
+            else:
+                return 1/2  # assume that two random vectors have 1/2 overlap
+        if isinstance(r, Representative):
+            return sum([self._expected_error(b, x)/len(r.children()) for b in r.children()])
+
+
+@dataclass
 class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
     v: SymbolicBHV
