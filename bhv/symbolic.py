@@ -502,13 +502,6 @@ class Var(SymbolicBHV):
     def expected_active_fraction(self, **kwargs):
         return kwargs.get("vars").get(self.name)
 
-    def expected_error(self, x: 'Self'):
-        if self == x:
-            return 0
-        else:
-            return Fraction(1, 2)
-
-
 
 @dataclass
 class Zero(SymbolicBHV):
@@ -646,15 +639,27 @@ class Representative(SymbolicBHV):
     #     from .poibin import PoiBin
     #    return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
 
-    def expected_error(self, x: 'Var') -> 'Fraction':
+    def expected_error(self, x: 'str') -> 'Fraction':
         """
         Gives expected bit error rate between an expression that contains only representative operators and random
         hypervectors, and a given random hypervector.
         """
-        return sum([Fraction(b.expected_error(x), len(self.children())) for b in self.children()])
+        def error(r, s):
+            if isinstance(r, Var):
+                if r.name == s:
+                    return 0
+                else:
+                    return Fraction(1, 2)  # assume that two random vectors have 1/2 overlap
+                    # return (1 - r.active_fraction)*(1 - s.active_fractions) + r.active_fraction*s.active_fractions
+            elif isinstance(r, Representative):
+                if not r.children():
+                    return Fraction(1, 2)  # assume that Representative() = RAND
+                return sum([Fraction(error(b, s), len(r.children())) for b in r.children()])
+            else: raise NotImplementedError()
+        return error(self, x)
 
-    def expected_errors(self) -> list['Fraction']:
-        return [self.expected_error(Var(x)) for x in self.vars()]
+    def expected_errors(self) -> dict['Fraction']:
+        return {x: self.expected_error(x) for x in self.vars()}
 
 
 @dataclass

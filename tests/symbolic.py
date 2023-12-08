@@ -157,15 +157,29 @@ class TestRepresentative(unittest.TestCase):
 
         def R(*args): return Representative([*args])
 
-        e1 = R(x, y, z)
-        self.assertEqual([Fraction(1, 3)]*3, e1.expected_errors())
+        self.assertEqual({}, R().expected_errors())
+        self.assertEqual({'a': 0}, R(a).expected_errors())
+        self.assertEqual({'a': 0}, R(a, a).expected_errors())
+        self.assertEqual({'a': 0}, R(a, a, a).expected_errors())
 
-        self.assertEqual(Fraction(1, 2), e1.expected_error(a))
+        self.assertEqual({'x': Fraction(1, 4), 'y': Fraction(1, 4)}, R(x, y).expected_errors())
+        self.assertEqual({v.name: Fraction(1, 3) for v in [x, y, z]}, R(x, y, z).expected_errors())
+        self.assertEqual({v.name: Fraction(3, 8) for v in [a, x, y, z]}, R(a, x, y, z).expected_errors())
+        self.assertEqual({v.name: Fraction(2, 5) for v in [a, b, x, y, z]}, R(a, b, x, y, z).expected_errors())
 
-        e2 = R(R(x, a, y), R(x, a, y), a)
-        self.assertEqual(Fraction(7, 18), e2.expected_error(x))
-        self.assertEqual(Fraction(7, 18), e2.expected_error(y))
-        self.assertEqual(Fraction(4, 18), e2.expected_error(a))
+        # expected error of a non occurring variable
+        self.assertEqual(Fraction(1, 2), R().expected_error('a'))  # assume that R() == RAND
+        self.assertEqual(Fraction(1, 2), R(x, y, z).expected_error('a'))
+
+        self.assertEqual({'x': Fraction(7, 18), 'y': Fraction(7, 18), 'a': Fraction(4, 18)},
+                         R(R(x, a, y), R(x, a, y), a).expected_errors())
+
+        self.assertEqual({'a': Fraction(1, 6), 'b': Fraction(1, 3)}, R(a, a, b).expected_errors())
+
+        # print(R(Majority([x, y, z]), a).expected_errors())
+
+
+
 
 
 if __name__ == '__main__':
