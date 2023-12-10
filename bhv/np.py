@@ -89,6 +89,29 @@ class NumPyBoolBHV(AbstractBHV):
         threshold = (len(vs) + len(extra))//2
         return cls.threshold(vs + extra, threshold)
 
+    @classmethod
+    def _counting_representative(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        data = [v.data for v in vs]
+        tensor = np.stack(data)
+        counts = tensor.sum(axis=-2, dtype=np.uint8 if len(vs) < 256 else np.uint32)
+        refs = np.random.randint(low=0, high=len(vs), size=DIMENSION)
+        return NumPyBoolBHV(refs < counts)
+
+    @classmethod
+    def _sampling_representative(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        data = [v.data for v in vs]
+        tensor = np.stack(data)
+        ids = np.random.randint(low=0, high=len(vs), size=DIMENSION)
+        result = tensor[ids, np.arange(DIMENSION)]
+        return NumPyBoolBHV(result)
+
+    @classmethod
+    def representative(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
+        if len(vs) < 32:
+            return cls._counting_representative(vs)
+        else:
+            return cls._sampling_representative(vs)
+
     def __eq__(self, other: 'NumPyBoolBHV') -> bool:
         return np.array_equal(self.data, other.data)
 
@@ -202,8 +225,12 @@ class NumPyPacked8BHV(AbstractBHV):
         return NumPyPacked8BHV.from_bytes(rehashed_byte_data)
 
     @classmethod
-    def threshold(cls, vs: list[Self], t: int) -> Self:
+    def threshold(cls, vs: 'list[NumPyPacked8BHV]', t: int) -> 'NumPyPacked8BHV':
         return NumPyBoolBHV.threshold([v.unpack() for v in vs], t).pack8()
+
+    @classmethod
+    def representative(cls, vs: 'list[NumPyPacked8BHV]') -> 'NumPyPacked8BHV':
+        return NumPyBoolBHV.representative([v.unpack() for v in vs]).pack8()
 
     def __eq__(self, other: 'NumPyPacked8BHV') -> bool:
         return np.array_equal(self.data, other.data)
@@ -301,6 +328,10 @@ class NumPyPacked64BHV(AbstractBHV):
     @classmethod
     def _majority_via_unpacked(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
         return NumPyBoolBHV.majority([v.unpack() for v in vs]).pack64()
+
+    @classmethod
+    def representative(cls, vs: list['NumPyPacked64BHV']) -> 'NumPyPacked64BHV':
+        return NumPyBoolBHV.representative([v.unpack() for v in vs]).pack64()
 
     @classmethod
     def threshold(cls, vs: list[Self], t: int) -> Self:

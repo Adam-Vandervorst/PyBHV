@@ -317,6 +317,64 @@ class BooleanAlgBHV(BaseBHV):
             return cls._logic_majority(vs)
 
     @classmethod
+    def representative(cls, vs: list[Self]) -> Self:
+        n = len(vs)
+
+        if n == 0:
+            return cls.rand()
+        elif n == 1:
+            return vs[0]
+        elif n == 2:
+            return cls.select(cls.rand(), vs[0], vs[1])
+        else:
+            return cls._logic_representative(vs)
+
+    @classmethod
+    def _logic_representative(cls, vs: list[Self]) -> Self:
+        n = len(vs)
+
+        def smallest_power2_larger(x):
+            # returns log2(x) on x power of 2, else its adds the smallest d such that log2(x + d) is integer
+            k = 0
+            while 2 ** k < x:
+                k += 1
+            return k
+
+        circumscribed = smallest_power2_larger(n)
+        inscribed = circumscribed - 1
+
+        rs = cls.nrand(circumscribed)
+
+        def interval(p):
+            lower = (int(p, 2) if p else 0) * 2 ** (circumscribed - len(p))
+            upper = min(n, lower + 2 ** (circumscribed - len(p)))
+            return lower, upper
+
+        def length(lu):
+            d = lu[1] - lu[0]
+            if d >= 1:
+                return d
+            else:
+                return 0
+
+        def rec(p):
+            L0, L1 = length(interval(p + '0')), length(interval(p + '1'))
+
+            if L0 and L1:
+                # TODO could be replaced by fraction (created with AND, OR, and RAND)
+                d = rs[len(p)] if L0 == L1 else cls.random(L1 / (L0 + L1))
+                return d.select(rec(p + '1'), rec(p + '0'))
+            elif L0:
+                return rec(p + '0')
+            elif L1:
+                return rec(p + '1')
+            else:
+                i = int(p, 2)
+                return vs[i]
+
+        return rec('')
+
+    @classmethod
     def _logic_majority(cls, vs: list[Self]) -> Self:
         assert len(vs) % 2 == 1,  "The true majority function which is only defined on uneven length inputs, see `majority`"
         half = len(vs)//2

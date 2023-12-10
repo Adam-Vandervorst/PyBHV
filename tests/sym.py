@@ -15,6 +15,18 @@ def logic_window_plot():
     SymbolicBHV._ite_window(all_vars, 4, 10).simplify().optimal_sharing().graphviz(structural=False, compact_select=True)
     print("}")
 
+def logic_representative_plot():
+    all_vars = [Var.shortname(i) for i in range(0, 13)]
+    print(len(all_vars), all_vars)
+    res = SymbolicBHV._logic_representative(all_vars)
+    print(res.show_program(impl="BHV."))
+
+
+    print("digraph {")
+    print("rankdir = BT;")
+    res.graphviz(structural=False)
+    print("}")
+
 
 def active_fraction():
     rfs = [1/2, 1/4, 3/4, 5/8, 3/8, 9/16, 11/16, 31/32, 61/128, 123/256]
@@ -37,5 +49,5 @@ if __name__ == '__main__':
     # print(mock(SymbolicBHV, majority=vars(AbstractBHV)['majority']).majority([Var("X"), Var("Y")])
     #       .show(random_id=True))
 
-    logic_majority_plot()
+    logic_representative_plot()
     # logic_window_plot()

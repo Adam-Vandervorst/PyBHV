@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field, fields
 from string import ascii_uppercase
+from fractions import Fraction
 from .abstract import *
 from .shared import stable_hashcode, bitconfigs, unique_by_id, format_multiple, format_list
 from .slice import Slice
@@ -480,7 +481,7 @@ class Var(SymbolicBHV):
     @classmethod
     def shortname(cls, i: int, letters=ascii_uppercase):
         n = len(letters)
-        return cls(letters[i % n] + str(i // n) * (i > n))
+        return cls(letters[i % n] + str(i // n) * (i >= n))
 
     def nodename(self, **kwards):
         return self.name
@@ -562,6 +563,9 @@ class Rand2(SymbolicBHV):
     def show(self, **kwargs):
         return kwargs.get("impl", "") + f"rand2({self.power})"
 
+    def nodename(self, **kwards):
+        return f"RAND 2^{self.power}"
+
     def instantiate(self, **kwargs):
         rand2 = kwargs.get("rand2")
         if self.id in rand2:
@@ -581,6 +585,11 @@ class Random(SymbolicBHV):
 
     def show(self, **kwargs):
         return kwargs.get("impl", "") + f"random({self.frac})"
+
+    def nodename(self, **kwards):
+        f = Fraction.from_float(self.frac)
+        n = str(f.limit_denominator(512)) if abs(float(f.limit_denominator(512)) - self.frac) < 1e-7 else str(self.frac)
+        return f"RANDOM {n}"
 
     def instantiate(self, **kwargs):
         random = kwargs.get("random")
