@@ -47,8 +47,9 @@ class NumPyBoolBHV(AbstractBHV):
     #     return self.pack64().select(when1.pack64(), when0.pack64()).unpack()
     #     # return NumPyBoolBHV(np.where(self.data, when1.data, when0.data))
 
-    def swap_halves(self) -> 'NumPyBoolBHV':
-        return self.roll_bits(DIMENSION//2)
+    def swap_even_odd(self) -> 'NumPyBoolBHV':
+        n = np.where(np.arange(DIMENSION) % 2, np.roll(self.data, 1), np.roll(self.data, -1))
+        return NumPyBoolBHV(n)
 
     def rehash(self) -> 'NumPyBoolBHV':
         return self.pack8().rehash().unpack()
@@ -88,6 +89,13 @@ class NumPyBoolBHV(AbstractBHV):
         extra = [cls.rand()] if len(vs) % 2 == 0 else []
         threshold = (len(vs) + len(extra))//2
         return cls.threshold(vs + extra, threshold)
+
+    @classmethod
+    def level(cls, active_fraction: float) -> Self:
+        bits = int(DIMENSION*active_fraction)
+        zs = np.zeros(DIMENSION, dtype=np.bool_)
+        zs[:bits] = np.ones(bits, dtype=np.bool_)
+        return NumPyBoolBHV(zs)
 
     @classmethod
     def _counting_representative(cls, vs: list['NumPyBoolBHV']) -> 'NumPyBoolBHV':
@@ -163,9 +171,8 @@ class NumPyBoolBHV(AbstractBHV):
 NumPyBoolBHV.ZERO = NumPyBoolBHV(np.zeros(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV.ONE = NumPyBoolBHV(np.ones(DIMENSION, dtype=np.bool_))
 NumPyBoolBHV._FEISTAL_SUBKEYS = NumPyBoolBHV.nrand2(NumPyBoolBHV._FEISTAL_ROUNDS, 4)
-_halfb = np.zeros(DIMENSION, dtype=np.bool_)
-_halfb[:DIMENSION//2] = np.bool_(True)
-NumPyBoolBHV.HALF = NumPyBoolBHV(_halfb)
+NumPyBoolBHV.EVEN = NumPyBoolBHV((np.arange(DIMENSION, dtype=np.uint8) % 2).astype(np.bool_))
+NumPyBoolBHV.ODD = NumPyBoolBHV(((np.arange(DIMENSION, dtype=np.uint8) + 1) % 2).astype(np.bool_))
 
 
 class NumPyBytePermutation(MemoizedPermutation):
@@ -210,8 +217,8 @@ class NumPyPacked8BHV(AbstractBHV):
         assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return NumPyPacked8BHV(np.roll(self.data, n))
 
-    def swap_halves(self) -> 'NumPyPacked8BHV':
-        return self.roll_bytes(DIMENSION//16)
+    def swap_even_odd(self) -> 'NumPyPacked8BHV':
+        return self.repack64().swap_even_odd().repack8()
 
     def permute_bytes(self, permutation: 'NumPyBytePermutation') -> 'NumPyPacked8BHV':
         return NumPyPacked8BHV(self.data[permutation.data])
@@ -227,6 +234,10 @@ class NumPyPacked8BHV(AbstractBHV):
     @classmethod
     def threshold(cls, vs: 'list[NumPyPacked8BHV]', t: int) -> 'NumPyPacked8BHV':
         return NumPyBoolBHV.threshold([v.unpack() for v in vs], t).pack8()
+
+    @classmethod
+    def level(cls, active_fraction: float) -> Self:
+        return NumPyBoolBHV.level(active_fraction).pack8()
 
     @classmethod
     def representative(cls, vs: 'list[NumPyPacked8BHV]') -> 'NumPyPacked8BHV':
@@ -273,9 +284,8 @@ class NumPyPacked8BHV(AbstractBHV):
 NumPyPacked8BHV.ZERO = NumPyPacked8BHV(np.zeros(DIMENSION//8, dtype=np.uint8))
 NumPyPacked8BHV.ONE = NumPyPacked8BHV(np.full(DIMENSION//8, fill_value=255, dtype=np.uint8))
 NumPyPacked8BHV._FEISTAL_SUBKEYS = NumPyPacked8BHV.nrand2(NumPyPacked8BHV._FEISTAL_ROUNDS, 4)
-_half8 = np.zeros(DIMENSION//8, dtype=np.uint8)
-_half8[:DIMENSION//16] = np.uint8(255)
-NumPyPacked8BHV.HALF = NumPyPacked8BHV(_half8)
+NumPyPacked8BHV.EVEN = NumPyPacked8BHV(np.full(DIMENSION//8, 0x55, dtype=np.uint8))
+NumPyPacked8BHV.ODD = NumPyPacked8BHV(np.full(DIMENSION//8, 0xaa, dtype=np.uint8))
 
 
 class NumPyWordPermutation(MemoizedPermutation):
@@ -337,8 +347,12 @@ class NumPyPacked64BHV(AbstractBHV):
     def threshold(cls, vs: list[Self], t: int) -> Self:
         return NumPyBoolBHV.threshold([v.unpack() for v in vs], t).pack64()
 
-    def swap_halves(self) -> 'NumPyPacked64BHV':
-        return self.roll_words(DIMENSION//128)
+    @classmethod
+    def level(cls, active_fraction: float) -> Self:
+        return NumPyBoolBHV.level(active_fraction).pack64()
+
+    def swap_even_odd(self) -> 'NumPyPacked64BHV':
+        return self.EVEN.select(self.roll_word_bits(1), self.roll_word_bits(-1))
 
     def rehash(self) -> 'NumPyPacked64BHV':
         return self.repack8().rehash().repack64()
@@ -420,6 +434,5 @@ class NumPyPacked64BHV(AbstractBHV):
 NumPyPacked64BHV.ZERO = NumPyPacked64BHV(np.zeros(DIMENSION//64, dtype=np.uint64))
 NumPyPacked64BHV.ONE = NumPyPacked64BHV(np.full(DIMENSION//64, fill_value=-1, dtype=np.uint64))
 NumPyPacked64BHV._FEISTAL_SUBKEYS = NumPyPacked64BHV.nrand2(NumPyPacked64BHV._FEISTAL_ROUNDS, 4)
-_half64 = np.zeros(DIMENSION//64, dtype=np.uint64)
-_half64[:DIMENSION//128] = np.uint64(-1)
-NumPyPacked64BHV.HALF = NumPyPacked64BHV(_half64)
+NumPyPacked64BHV.EVEN = NumPyPacked64BHV(np.full(DIMENSION//64, 0x5555555555555555, dtype=np.uint64))
+NumPyPacked64BHV.ODD = NumPyPacked64BHV(np.full(DIMENSION//64, 0xaaaaaaaaaaaaaaaa, dtype=np.uint64))

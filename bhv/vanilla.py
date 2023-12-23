@@ -46,6 +46,10 @@ class VanillaBHV(AbstractBHV):
             (random.random() < active) << 4 | (random.random() < active) << 5 | (random.random() < active) << 6 | (random.random() < active) << 7
             for _ in range(DIMENSION//8)]))
 
+    @classmethod
+    def level(cls, active_fraction: float) -> 'VanillaBHV':
+        return VanillaBHV.from_int(cls.ONE.to_int() >> (DIMENSION - int(active_fraction*DIMENSION)))
+
     def roll_bytes(self, n: int) -> 'VanillaBHV':
         assert abs(n) < DIMENSION//8, "only supports DIMENSION/8 rolls"
         return VanillaBHV(self.data[n:] + self.data[:n])
@@ -55,8 +59,8 @@ class VanillaBHV(AbstractBHV):
         n = (DIMENSION + n) % DIMENSION
         return self.from_int(((self.to_int() << (DIMENSION - n)) & self.ONE.to_int()) | (self.to_int() >> n))
 
-    def swap_halves(self) -> 'VanillaBHV':
-        return self.roll_bytes(DIMENSION//16)
+    def swap_even_odd(self) -> 'VanillaBHV':
+        return self.EVEN.select(self.roll_bits(1), self.roll_bits(-1))
 
     def permute_bytes(self, permutation: 'VanillaPermutation') -> 'VanillaBHV':
         return VanillaBHV(bytes([self.data[i] for i in permutation.data]))
@@ -110,4 +114,5 @@ class VanillaBHV(AbstractBHV):
 VanillaBHV.ZERO = VanillaBHV(bytes([0 for _ in range(DIMENSION//8)]))
 VanillaBHV.ONE = VanillaBHV(bytes([0xff for _ in range(DIMENSION//8)]))
 VanillaBHV._FEISTAL_SUBKEYS = VanillaBHV.nrand2(VanillaBHV._FEISTAL_ROUNDS, 4)
-VanillaBHV.HALF = VanillaBHV(bytes([0 for _ in range(DIMENSION//16)] + [0xff for _ in range(DIMENSION//16)]))
+VanillaBHV.EVEN = VanillaBHV(bytes([0x55 for _ in range(DIMENSION//8)]))
+VanillaBHV.ODD = VanillaBHV(bytes([0xaa for _ in range(DIMENSION//8)]))

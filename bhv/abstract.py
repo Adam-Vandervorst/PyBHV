@@ -566,7 +566,7 @@ class FractionalBHV(BooleanAlgBHV):
 
 
 class CryptoBHV(FractionalBHV):
-    def swap_halves(self) -> Self:
+    def swap_even_odd(self) -> Self:
         raise NotImplementedError()
 
     def rehash(self) -> Self:
@@ -577,10 +577,10 @@ class CryptoBHV(FractionalBHV):
 
     @classmethod
     def _feistal_round(cls, block: Self, round_key: Self) -> Self:
-        L = block & cls.HALF
-        R = (block ^ (L ^ round_key).rehash().swap_halves()) & ~cls.HALF
+        L = block & cls.EVEN
+        R = (block ^ (L ^ round_key).rehash().swap_even_odd()) & cls.ODD
 
-        return (L | R).swap_halves()
+        return (L | R).swap_even_odd()
 
     def feistal(self, k: Self, inv=False) -> Self:
         block = self
@@ -589,12 +589,17 @@ class CryptoBHV(FractionalBHV):
         for r in reversed(rounds) if inv else rounds:
             block = self._feistal_round(block, self._FEISTAL_SUBKEYS[r] & k)
 
-        return block.swap_halves()
+        return block.swap_even_odd()
 
-    HALF: Self
+    EVEN: Self
+    ODD: Self
 
 
 class LevelBHV(FractionalBHV):
+    @classmethod
+    def level(cls, active_fraction: float) -> Self:
+        raise NotImplementedError()
+
     @classmethod
     def threshold(cls, vs: list[Self], t: int) -> Self:
         # threshold(vs, t) = t < counts(vs)

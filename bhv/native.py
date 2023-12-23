@@ -16,6 +16,10 @@ class NativePackedBHV(AbstractBHV):
     def random(cls, p):
         return NativePackedBHV(CNativePackedBHV.random(p))
 
+    @classmethod
+    def level(cls, active_fraction: float):
+        return NativePackedBHV(CNativePackedBHV.level(active_fraction))
+
     def __or__(self, other):
         return NativePackedBHV(self.ins | other.ins)
 
@@ -98,8 +102,8 @@ class NativePackedBHV(AbstractBHV):
     def rehash(self):
         return NativePackedBHV(self.ins.rehash())
 
-    def swap_halves(self):
-        return NativePackedBHV(self.ins.swap_halves())
+    def swap_even_odd(self):
+        return NativePackedBHV(self.ins.swap_even_odd())
 
     def __eq__(self, other):
         return self.ins == other.ins
@@ -119,5 +123,6 @@ class NativePackedBHV(AbstractBHV):
 
 NativePackedBHV.ZERO = NativePackedBHV(CNativePackedBHV.ZERO)
 NativePackedBHV.ONE = NativePackedBHV(CNativePackedBHV.ONE)
-NativePackedBHV.HALF = NativePackedBHV(CNativePackedBHV.HALF)
+NativePackedBHV.EVEN = NativePackedBHV(CNativePackedBHV.EVEN)
+NativePackedBHV.ODD = NativePackedBHV(CNativePackedBHV.ODD)
 NativePackedBHV._FEISTAL_SUBKEYS = NativePackedBHV.nrand2(NativePackedBHV._FEISTAL_ROUNDS, 4)

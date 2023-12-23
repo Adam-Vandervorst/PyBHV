@@ -32,6 +32,10 @@ static PyObject *BHV_rand(PyTypeObject *type, PyObject *Py_UNUSED(ignored));
 
 static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
 
+static PyObject *BHV_random(PyTypeObject *type, PyObject *args);
+
+static PyObject *BHV_level(PyTypeObject *type, PyObject *args);
+
 static PyObject *BHV_majority(PyTypeObject *type, PyObject *args);
 
 static PyObject *BHV_parity(PyTypeObject *type, PyObject *args);
@@ -62,7 +66,7 @@ static PyObject *BHV_permute(BHV *x, PyObject *args);
 
 static PyObject *BHV_rehash(BHV *x, PyObject *args);
 
-static PyObject *BHV_swap_halves(BHV *x, PyObject *args);
+static PyObject *BHV_swap_even_odd(BHV *x, PyObject *args);
 
 static PyObject *BHV_eq(BHV *v1, PyObject *args);
 
@@ -101,61 +105,63 @@ static PyMemberDef BHV_members[] = {
 };
 
 static PyMethodDef BHV_methods[] = {
-        {"rand",              (PyCFunction) BHV_rand,              METH_CLASS | METH_NOARGS,
+        {"rand",               (PyCFunction) BHV_rand,               METH_CLASS | METH_NOARGS,
                 "Bernoulli 1/2 distributed bit vector"},
-        {"random",            (PyCFunction) BHV_random,            METH_CLASS | METH_VARARGS,
+        {"random",             (PyCFunction) BHV_random,             METH_CLASS | METH_VARARGS,
                 "Bernoulli p distributed bit vector"},
-        {"majority",          (PyCFunction) BHV_majority,          METH_CLASS | METH_VARARGS,
+        {"level",              (PyCFunction) BHV_level,              METH_CLASS | METH_VARARGS,
+                "bit vector with a certain number of on bits (determinstic)"},
+        {"majority",           (PyCFunction) BHV_majority,           METH_CLASS | METH_VARARGS,
                 "The majority of a list of BHVs"},
-        {"parity",            (PyCFunction) BHV_parity,            METH_CLASS | METH_VARARGS,
+        {"parity",             (PyCFunction) BHV_parity,             METH_CLASS | METH_VARARGS,
                 "The parity of a list of BHVs"},
-        {"weighted_threshold",         (PyCFunction) BHV_weighted_threshold,         METH_CLASS | METH_VARARGS,
+        {"weighted_threshold", (PyCFunction) BHV_weighted_threshold, METH_CLASS | METH_VARARGS,
                 "Checks if the count is greater than a threshold for a list of BHVs"},
-        {"threshold",         (PyCFunction) BHV_threshold,         METH_CLASS | METH_VARARGS,
+        {"threshold",          (PyCFunction) BHV_threshold,          METH_CLASS | METH_VARARGS,
                 "Checks if the count is greater than a threshold for a list of BHVs"},
-        {"representative",    (PyCFunction) BHV_representative,    METH_CLASS | METH_VARARGS,
+        {"representative",     (PyCFunction) BHV_representative,     METH_CLASS | METH_VARARGS,
                 "Random representative of a list of BHVs"},
-        {"window",            (PyCFunction) BHV_window,            METH_CLASS | METH_VARARGS,
+        {"window",             (PyCFunction) BHV_window,             METH_CLASS | METH_VARARGS,
                 "Checks if the count is Between two (inclusive) thresholds of a list of BHVs"},
-        {"select",            (PyCFunction) BHV_select,            METH_VARARGS,
+        {"select",             (PyCFunction) BHV_select,             METH_VARARGS,
                 "MUX or IF-THEN-ELSE"},
-        {"ternary",           (PyCFunction) BHV_ternary,           METH_VARARGS,
+        {"ternary",            (PyCFunction) BHV_ternary,            METH_VARARGS,
                 "Ternary logic operation"},
-        {"roll_words",        (PyCFunction) BHV_roll_words,        METH_VARARGS,
+        {"roll_words",         (PyCFunction) BHV_roll_words,         METH_VARARGS,
                 "Word-level rotation"},
-        {"roll_word_bits",    (PyCFunction) BHV_roll_word_bits,    METH_VARARGS,
+        {"roll_word_bits",     (PyCFunction) BHV_roll_word_bits,     METH_VARARGS,
                 "Word-level rotation of bits"},
-        {"roll_bits",         (PyCFunction) BHV_roll_bits,         METH_VARARGS,
+        {"roll_bits",          (PyCFunction) BHV_roll_bits,          METH_VARARGS,
                 "A proper roll of bits"},
-        {"permute_byte_bits", (PyCFunction) BHV_permute_byte_bits, METH_VARARGS,
+        {"permute_byte_bits",  (PyCFunction) BHV_permute_byte_bits,  METH_VARARGS,
                 "Permutes the bits of every byte"},
-        {"permute_words",     (PyCFunction) BHV_permute_words,     METH_VARARGS,
+        {"permute_words",      (PyCFunction) BHV_permute_words,      METH_VARARGS,
                 "Word-level permutation"},
-        {"permute",           (PyCFunction) BHV_permute,           METH_VARARGS,
+        {"permute",            (PyCFunction) BHV_permute,            METH_VARARGS,
                 "Default permutation"},
-        {"rehash",            (PyCFunction) BHV_rehash,            METH_NOARGS,
+        {"rehash",             (PyCFunction) BHV_rehash,             METH_NOARGS,
                 "Hash the vector into another vector"},
-        {"swap_halves",       (PyCFunction) BHV_swap_halves,       METH_NOARGS,
-                "Swap the halves of the vector"},
-        {"eq",                (PyCFunction) BHV_eq,                METH_VARARGS,
+        {"swap_even_odd",        (PyCFunction) BHV_swap_even_odd,        METH_NOARGS,
+                "Swap the bits in even and odd positions of the vector"},
+        {"eq",                 (PyCFunction) BHV_eq,                 METH_VARARGS,
                 "Check equality"},
-        {"hamming",           (PyCFunction) BHV_hamming,           METH_VARARGS,
+        {"hamming",            (PyCFunction) BHV_hamming,            METH_VARARGS,
                 "Hamming distance between two BHVs"},
-        {"closest",           (PyCFunction) BHV_closest,           METH_VARARGS,
+        {"closest",            (PyCFunction) BHV_closest,            METH_VARARGS,
                 "Returns the index of the closest BHV"},
-        {"top",               (PyCFunction) BHV_top,               METH_VARARGS,
+        {"top",                (PyCFunction) BHV_top,                METH_VARARGS,
                 "Returns the indices of the top-k closest BHVs"},
-        {"within",            (PyCFunction) BHV_within,            METH_VARARGS,
+        {"within",             (PyCFunction) BHV_within,             METH_VARARGS,
                 "Returns the index of every BHV within hamming distance d"},
-        {"active",            (PyCFunction) BHV_active,            METH_NOARGS,
+        {"active",             (PyCFunction) BHV_active,             METH_NOARGS,
                 "Count the number of active bits"},
-        {"to_bytes",          (PyCFunction) BHV_to_bytes,          METH_NOARGS,
+        {"to_bytes",           (PyCFunction) BHV_to_bytes,           METH_NOARGS,
                 "Bytes normalized form"},
-        {"from_bytes",        (PyCFunction) BHV_from_bytes,        METH_CLASS | METH_VARARGS,
+        {"from_bytes",         (PyCFunction) BHV_from_bytes,         METH_CLASS | METH_VARARGS,
                 "Construct from bytes normalized form"},
-        {"__getstate__",      (PyCFunction) __getstate__,          METH_NOARGS,
+        {"__getstate__",       (PyCFunction) __getstate__,           METH_NOARGS,
                 "Pickle the vector"},
-        {"__setstate__",      (PyCFunction) __setstate__,          METH_VARARGS,
+        {"__setstate__",       (PyCFunction) __setstate__,           METH_VARARGS,
                 "Un-pickle the vector"},
         {nullptr}
 };
@@ -198,6 +204,16 @@ static PyObject *BHV_random(PyTypeObject *type, PyObject *args) {
 
     PyObject * v = BHV_new(type, nullptr, nullptr);
     bhv::random_into(((BHV *) v)->data, p);
+    return v;
+}
+
+static PyObject *BHV_level(PyTypeObject *type, PyObject *args) {
+    double p;
+    if (!PyArg_ParseTuple(args, "d", &p))
+        return nullptr;
+
+    PyObject * v = BHV_new(type, nullptr, nullptr);
+    bhv::level_into((size_t)(p*DIMENSION), ((BHV *) v)->data);
     return v;
 }
 
@@ -339,21 +355,21 @@ static PyObject *BHV_parity(PyTypeObject *type, PyObject *args) {
 static PyObject *BHV_weighted_threshold(PyTypeObject *type, PyObject *args) {
     PyObject * vector_list;
     PyObject * weight_list;
-    double_t td;
+    float_t td;
 
-    if (!PyArg_ParseTuple(args, "O!O!d", &PyList_Type, &vector_list, &PyList_Type, &weight_list, &td))
+    if (!PyArg_ParseTuple(args, "O!O!f", &PyList_Type, &vector_list, &PyList_Type, &weight_list, &td))
         return nullptr;
 
     size_t n_vectors = PyList_GET_SIZE(vector_list);
 
     word_t **vs = (word_t **) malloc((n_vectors) * sizeof(word_t *));
-    double_t *ws = (double_t *) malloc((n_vectors) * sizeof(double_t));
+    float_t *ws = (float_t *) malloc((n_vectors) * sizeof(float_t));
 
     for (size_t i = 0; i < n_vectors; ++i) {
         PyObject * v_i_py = PyList_GetItem(vector_list, i);
         vs[i] = ((BHV *) v_i_py)->data;
         PyObject * w_i_py = PyList_GetItem(weight_list, i);
-        ws[i] = PyFloat_AsDouble(w_i_py);
+        ws[i] = (float_t)PyFloat_AsDouble(w_i_py);
     }
 
     if (PyErr_Occurred() != nullptr)
@@ -584,9 +600,9 @@ static PyObject *BHV_rehash(BHV * x, PyObject * args) {
     return ret;
 }
 
-static PyObject *BHV_swap_halves(BHV * x, PyObject * args) {
+static PyObject *BHV_swap_even_odd(BHV * x, PyObject * args) {
     PyObject * ret = BHV_new(&BHVType, nullptr, nullptr);
-    bhv::swap_halves_into(x->data, ((BHV *) ret)->data);
+    bhv::swap_even_odd_into(x->data, ((BHV *) ret)->data);
     return ret;
 }
 
@@ -671,9 +687,14 @@ PyMODINIT_FUNC PyInit_cnative(void) {
     BHV * o = (BHV *) BHVType.tp_alloc(&BHVType, 0);
     o->data = bhv::one();
     PyDict_SetItemString(BHVType.tp_dict, "ONE", (PyObject *) o);
-    BHV * h = (BHV *) BHVType.tp_alloc(&BHVType, 0);
-    h->data = bhv::half();
-    PyDict_SetItemString(BHVType.tp_dict, "HALF", (PyObject *) h);
+    BHV * even = (BHV *) BHVType.tp_alloc(&BHVType, 0);
+    even->data = bhv::empty();
+    memcpy(even->data, bhv::EVEN, BYTES);
+    PyDict_SetItemString(BHVType.tp_dict, "EVEN", (PyObject *) even);
+    BHV * odd = (BHV *) BHVType.tp_alloc(&BHVType, 0);
+    odd->data = bhv::empty();
+    memcpy(odd->data, bhv::ODD, BYTES);
+    PyDict_SetItemString(BHVType.tp_dict, "ODD", (PyObject *) odd);
 
     Py_INCREF(&BHVType);
     PyModule_AddObject(m, "CNativePackedBHV", (PyObject *) &BHVType);
