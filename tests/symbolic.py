@@ -168,8 +168,8 @@ class TestRepresentative(unittest.TestCase):
         self.assertEqual({v.name: Fraction(2, 5) for v in [a, b, x, y, z]}, R(a, b, x, y, z).expected_errors())
 
         # expected error of a non occurring variable
-        self.assertEqual(Fraction(1, 2), R().expected_error('a'))  # assume that R() == RAND
-        self.assertEqual(Fraction(1, 2), R(x, y, z).expected_error('a'))
+        self.assertEqual(Fraction(1, 2), R().expected_error('a', dict()))  # assume that R() == RAND
+        self.assertEqual(Fraction(1, 2), R(x, y, z).expected_error('a', dict()))
 
         self.assertEqual({'x': Fraction(7, 18), 'y': Fraction(7, 18), 'a': Fraction(4, 18)},
                          R(R(x, a, y), R(x, a, y), a).expected_errors())

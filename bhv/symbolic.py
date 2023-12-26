@@ -639,7 +639,7 @@ class Representative(SymbolicBHV):
     #     from .poibin import PoiBin
     #    return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
 
-    def expected_error(self, x: 'str') -> 'Fraction':
+    def expected_error(self, x: 'str', active_fractions) -> 'Fraction':
         """
         Gives expected bit error rate between an expression that contains only representative operators and random
         hypervectors, and a given random hypervector.
@@ -649,8 +649,10 @@ class Representative(SymbolicBHV):
                 if r.name == s:
                     return 0
                 else:
-                    return Fraction(1, 2)  # assume that two random vectors have 1/2 overlap
-                    # return (1 - r.active_fraction)*(1 - s.active_fractions) + r.active_fraction*s.active_fractions
+                    f_r = active_fractions.get(r.name, Fraction(1, 2))
+                    f_s = active_fractions.get(s, Fraction(1, 2))
+                    # TODO warning if one of the defaults is used???
+                    return (1 - f_r)*(1 - f_s) + f_r*f_s
             elif isinstance(r, Representative):
                 if not r.children():
                     return Fraction(1, 2)  # assume that Representative() = RAND
@@ -658,8 +660,10 @@ class Representative(SymbolicBHV):
             else: raise NotImplementedError()
         return error(self, x)
 
-    def expected_errors(self) -> dict['Fraction']:
-        return {x: self.expected_error(x) for x in self.vars()}
+    def expected_errors(self, active_fractions=None) -> 'dict[Fraction]':
+        if active_fractions is None:
+            active_fractions = dict()
+        return {x: self.expected_error(x, active_fractions) for x in self.vars()}
 
 
 @dataclass
