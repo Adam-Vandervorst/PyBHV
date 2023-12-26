@@ -157,11 +157,18 @@ class TestRepresentative(unittest.TestCase):
 
         def R(*args): return Representative([*args])
 
+        # representative of vector and itself
         self.assertEqual({}, R().expected_errors())
         self.assertEqual({'a': 0}, R(a).expected_errors())
         self.assertEqual({'a': 0}, R(a, a).expected_errors())
         self.assertEqual({'a': 0}, R(a, a, a).expected_errors())
 
+        # test zero and one
+        self.assertEqual({'b': Fraction(1, 4), 'a': Fraction(1, 4)}, R(b, a).expected_errors({'b': 0}))
+        self.assertEqual({'a': Fraction(1, 4)}, R(SymbolicBHV.ZERO, a).expected_errors())
+        self.assertEqual({'a': Fraction(1, 4)}, R(SymbolicBHV.ONE, a).expected_errors())
+
+        # representative of independent random hypervectors
         self.assertEqual({'x': Fraction(1, 4), 'y': Fraction(1, 4)}, R(x, y).expected_errors())
         self.assertEqual({v.name: Fraction(1, 3) for v in [x, y, z]}, R(x, y, z).expected_errors())
         self.assertEqual({v.name: Fraction(3, 8) for v in [a, x, y, z]}, R(a, x, y, z).expected_errors())
@@ -177,9 +184,6 @@ class TestRepresentative(unittest.TestCase):
         self.assertEqual({'a': Fraction(1, 6), 'b': Fraction(1, 3)}, R(a, a, b).expected_errors())
 
         # print(R(Majority([x, y, z]), a).expected_errors())
-
-
-
 
 
 if __name__ == '__main__':

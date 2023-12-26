@@ -653,6 +653,10 @@ class Representative(SymbolicBHV):
                     f_s = active_fractions.get(s, Fraction(1, 2))
                     # TODO warning if one of the defaults is used???
                     return (1 - f_r)*(1 - f_s) + f_r*f_s
+            elif isinstance(r, Zero):
+                return 1 - active_fractions.get(s, Fraction(1, 2))
+            elif isinstance(r, One):
+                return active_fractions.get(s, Fraction(1, 2))
             elif isinstance(r, Representative):
                 if not r.children():
                     return Fraction(1, 2)  # assume that Representative() = RAND
