@@ -627,6 +627,58 @@ class Majority(SymbolicBHV):
 
 
 @dataclass
+class Representative(SymbolicBHV):
+    vs: list[SymbolicBHV]
+
+    def labeled_children(self, **kwargs):
+        return list(zip(self.vs, map(str, range(len(self.vs)))))
+
+    def reconstruct(self, *cs):
+        return Representative(list(cs))
+
+    def show(self, **kwargs):
+        args = format_list((v.show(**kwargs) for v in self.vs), **{k: kwargs[k] for k in ["indent", "aindent", "newline_threshold"] if k in kwargs})
+        return kwargs.get("impl", "") + f"representative({args})"
+
+    def instantiate(self, **kwargs):
+        return kwargs.get("bhv").representative([v.execute(**kwargs) for v in self.vs])
+
+    # def expected_active_fraction(self, **kwargs):
+    #     from .poibin import PoiBin
+    #    return 1. - PoiBin([v.expected_active_fraction(**kwargs) for v in self.vs]).cdf(len(self.vs)//2)
+
+    def expected_error(self, x: 'str', active_fractions) -> 'Fraction':
+        """
+        Gives expected bit error rate between an expression that contains only representative operators and random
+        hypervectors, and a given random hypervector.
+        """
+        def error(r, s):
+            if isinstance(r, Var):
+                if r.name == s:
+                    return 0
+                else:
+                    f_r = active_fractions.get(r.name, Fraction(1, 2))
+                    f_s = active_fractions.get(s, Fraction(1, 2))
+                    # TODO warning if one of the defaults is used???
+                    return (1 - f_r)*(1 - f_s) + f_r*f_s
+            elif isinstance(r, Zero):
+                return 1 - active_fractions.get(s, Fraction(1, 2))
+            elif isinstance(r, One):
+                return active_fractions.get(s, Fraction(1, 2))
+            elif isinstance(r, Representative):
+                if not r.children():
+                    return Fraction(1, 2)  # assume that Representative() = RAND
+                return sum([Fraction(error(b, s), len(r.children())) for b in r.children()])
+            else: raise NotImplementedError()
+        return error(self, x)
+
+    def expected_errors(self, active_fractions=None) -> 'dict[Fraction]':
+        if active_fractions is None:
+            active_fractions = dict()
+        return {x: self.expected_error(x, active_fractions) for x in self.vars()}
+
+
+@dataclass
 class Permute(SymbolicBHV):
     id: 'int | tuple[int, ...]'
     v: SymbolicBHV

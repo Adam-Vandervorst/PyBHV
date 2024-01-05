@@ -1,6 +1,7 @@
 import unittest
 
-from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation
+from fractions import Fraction
+from bhv.symbolic import Var, SymbolicBHV, PermVar, Majority, SymbolicPermutation, Representative
 from bhv.shared import stable_hashcode
 
 
@@ -144,6 +145,45 @@ class TestReduction(unittest.TestCase):
 
         ezero = p(SymbolicBHV.ZERO)
         self.assertEqual(ezero, ezero.shred())
+
+
+class TestRepresentative(unittest.TestCase):
+    def test_expected_error(self):
+        a = Var("a")
+        b = Var("b")
+        x = Var("x")
+        y = Var("y")
+        z = Var("z")
+
+        def R(*args): return Representative([*args])
+
+        # representative of vector and itself
+        self.assertEqual({}, R().expected_errors())
+        self.assertEqual({'a': 0}, R(a).expected_errors())
+        self.assertEqual({'a': 0}, R(a, a).expected_errors())
+        self.assertEqual({'a': 0}, R(a, a, a).expected_errors())
+
+        # test zero and one
+        self.assertEqual({'b': Fraction(1, 4), 'a': Fraction(1, 4)}, R(b, a).expected_errors({'b': 0}))
+        self.assertEqual({'a': Fraction(1, 4)}, R(SymbolicBHV.ZERO, a).expected_errors())
+        self.assertEqual({'a': Fraction(1, 4)}, R(SymbolicBHV.ONE, a).expected_errors())
+
+        # representative of independent random hypervectors
+        self.assertEqual({'x': Fraction(1, 4), 'y': Fraction(1, 4)}, R(x, y).expected_errors())
+        self.assertEqual({v.name: Fraction(1, 3) for v in [x, y, z]}, R(x, y, z).expected_errors())
+        self.assertEqual({v.name: Fraction(3, 8) for v in [a, x, y, z]}, R(a, x, y, z).expected_errors())
+        self.assertEqual({v.name: Fraction(2, 5) for v in [a, b, x, y, z]}, R(a, b, x, y, z).expected_errors())
+
+        # expected error of a non occurring variable
+        self.assertEqual(Fraction(1, 2), R().expected_error('a', dict()))  # assume that R() == RAND
+        self.assertEqual(Fraction(1, 2), R(x, y, z).expected_error('a', dict()))
+
+        self.assertEqual({'x': Fraction(7, 18), 'y': Fraction(7, 18), 'a': Fraction(4, 18)},
+                         R(R(x, a, y), R(x, a, y), a).expected_errors())
+
+        self.assertEqual({'a': Fraction(1, 6), 'b': Fraction(1, 3)}, R(a, a, b).expected_errors())
+
+        # print(R(Majority([x, y, z]), a).expected_errors())
 
 
 if __name__ == '__main__':
