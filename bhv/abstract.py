@@ -92,14 +92,26 @@ class BaseBHV(StoreBHV):
     def closest(self, vs: list[Self]) -> int:
         return min(range(len(vs)), key=lambda i: self.hamming(vs[i]))
 
+    def furthest(self, vs: list[Self]) -> int:
+        return max(range(len(vs)), key=lambda i: self.hamming(vs[i]))
+
     def top(self, vs: list[Self], k: int) -> list[int]:
         return list(sorted(range(len(vs)), key=lambda i: self.hamming(vs[i])))[:k]
+
+    def bottom_k(self, vs: list[Self], k: int) -> list[int]:
+        return list(sorted(range(len(vs)), key=lambda i: self.hamming(vs[i])))[(len(vs) - k):]
 
     def within(self, vs: list[Self], d: int) -> list[int]:
         return list(filter(lambda i: self.hamming(vs[i]) <= d, range(len(vs))))
 
+    def outside(self, vs: list[Self], d: int) -> list[int]:
+        return list(filter(lambda i: self.hamming(vs[i]) > d, range(len(vs))))
+
     def within_std(self, vs: list[Self], d: float, relative: bool = False) -> list[int]:
         return self.within(vs, int(DIMENSION*(self.std_to_frac(d + self.EXPECTED_RAND_APART*relative))))
+
+    def outside_std(self, vs: list[Self], d: float, relative: bool = False) -> list[int]:
+        return self.outside(vs, int(DIMENSION*(self.std_to_frac(d + self.EXPECTED_RAND_APART*relative))))
 
     def distribution(self, vs: list[Self], metric=lambda x, y: x.std_apart(y), softmax: bool = False, base: int = e):
         ds = [metric(self, v) for v in vs]
