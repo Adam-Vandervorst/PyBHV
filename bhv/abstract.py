@@ -90,27 +90,35 @@ class BaseBHV(StoreBHV):
         return (self ^ other).active()
 
     def closest(self, vs: list[Self]) -> int:
+        """Return index of the vector that is closest in hamming distance to self"""
         return min(range(len(vs)), key=lambda i: self.hamming(vs[i]))
 
     def furthest(self, vs: list[Self]) -> int:
+        """Return index of the vector that is furthest in hamming distance to self"""
         return max(range(len(vs)), key=lambda i: self.hamming(vs[i]))
 
     def top(self, vs: list[Self], k: int) -> list[int]:
+        """Return the indices of the k vectors that have the smallest hamming distance from self"""
         return list(sorted(range(len(vs)), key=lambda i: self.hamming(vs[i])))[:k]
 
-    def bottom_k(self, vs: list[Self], k: int) -> list[int]:
+    def bottom(self, vs: list[Self], k: int) -> list[int]:
+        """Return the indices of the k vectors that have the biggest hamming distance from self"""
         return list(sorted(range(len(vs)), key=lambda i: self.hamming(vs[i])))[(len(vs) - k):]
 
     def within(self, vs: list[Self], d: int) -> list[int]:
+        """Return the indices of all the vectors with maximum hamming distance d to self (including distance d)"""
         return list(filter(lambda i: self.hamming(vs[i]) <= d, range(len(vs))))
 
     def outside(self, vs: list[Self], d: int) -> list[int]:
+        """Return the indices of all the vectors with minimum hamming distance d to self (excluding distance d)"""
         return list(filter(lambda i: self.hamming(vs[i]) > d, range(len(vs))))
 
     def within_std(self, vs: list[Self], d: float, relative: bool = False) -> list[int]:
+        """Return the indices of all vectors that are less than d standard deviations away from self (including d)"""
         return self.within(vs, int(DIMENSION*(self.std_to_frac(d + self.EXPECTED_RAND_APART*relative))))
 
     def outside_std(self, vs: list[Self], d: float, relative: bool = False) -> list[int]:
+        """Return the indices of all vectors that are more than d standard deviations away from self (including d)"""
         return self.outside(vs, int(DIMENSION*(self.std_to_frac(d + self.EXPECTED_RAND_APART*relative))))
 
     def distribution(self, vs: list[Self], metric=lambda x, y: x.std_apart(y), softmax: bool = False, base: int = e):
