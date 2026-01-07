@@ -83,7 +83,6 @@ Example exploratory usages of the library:
 - [Fiestal Cipher](https://en.wikipedia.org/wiki/Feistel_cipher), [the tests (for statistical properties)](tests/fiestal.py), and [the implementation](bhv/abstract.py)
 
 ## Note
-This repository is (highly) active development, and a work-in-progress.
 Do expect changes to the naming, and even features to be swapped for more elegant alternatives.
 
 The codebase also works with PyPy. Use the vanilla Python implementation. The numeric operations are slower than on CPython, but the symbolic ones are way faster.
