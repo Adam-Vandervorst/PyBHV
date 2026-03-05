@@ -824,7 +824,7 @@ class And(SymbolicBHV):
             return self.ZERO
         elif isinstance(self.r, Invert) and self.r.v == self.l:
             return self.ZERO
-        elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
+        elif isinstance(self.l, Invert) and isinstance(self.r, Invert) and not kwargs.get("or_to_and", False):
             return Invert(Or(self.l.v, self.r.v))
 
     def expected_active_fraction(self, **kwargs):
@@ -859,6 +859,8 @@ class Or(SymbolicBHV):
             return self.ONE
         elif isinstance(self.r, Invert) and self.r.v == self.l:
             return self.ONE
+        elif kwargs.get("or_to_and", False):
+            return Invert(And(Invert(self.l), Invert(self.r)))
         elif isinstance(self.l, Invert) and isinstance(self.r, Invert):
             return Invert(And(self.l.v, self.r.v))
 
